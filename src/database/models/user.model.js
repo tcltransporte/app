@@ -2,7 +2,7 @@ import { DataTypes, Sequelize } from 'sequelize'
 
 export class User {
 
-  userId = {
+  id = {
     field: 'UserId',
     primaryKey: true,
     type: DataTypes.UUIDV4

@@ -31,7 +31,7 @@ export async function getSession() {
     const session = await sessionRepository.findOne({ db, transaction }, {
       attributes: ['id', 'lastAcess', 'expireIn'],
       include: [
-        { model: db.User, as: 'user', attributes: ['userId', 'userName'] },
+        { model: db.User, as: 'user', attributes: ['id', 'userName'] },
         { model: db.Company, as: 'company', attributes: ['id', 'name', 'surname'] }
       ],
       where: [{ id: token }]

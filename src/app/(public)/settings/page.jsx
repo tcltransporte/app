@@ -10,7 +10,7 @@ export default async () => {
 
     const companyResult = await ServiceRequest.run(companyService.findOne())
 
-    return <SettingsView initialCompany={companyResult.company} />
+    return <SettingsView initialCompany={companyResult.company} initialUser={companyResult.user} />
   
   } catch (error) {
 

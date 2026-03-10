@@ -37,7 +37,6 @@ export function LoginView() {
 
         router.push("/settings")
         router.refresh()
-        return
 
       }
 
