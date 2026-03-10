@@ -1,6 +1,6 @@
 "use server"
 
-import { LoginView } from "@/views/login.view"
+import { LoginView } from "@/app/views/login.view"
 
 export default async () => {
 

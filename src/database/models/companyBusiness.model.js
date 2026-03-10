@@ -2,14 +2,14 @@ import { DataTypes } from 'sequelize';
 
 export class CompanyBusiness {
 
-  codigo_empresa = {
+  id = {
     field: 'codigo_empresa',
     primaryKey: true,
     autoIncrement: true,
     type: DataTypes.INTEGER
   }
 
-  description = {
+  name = {
     field: 'descricao',
     type: DataTypes.STRING
   }

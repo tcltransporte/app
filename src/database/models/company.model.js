@@ -2,7 +2,7 @@ import { DataTypes } from 'sequelize';
 
 export class Company {
 
-  codigo_empresa_filial = {
+  id = {
     field: 'codigo_empresa_filial',
     primaryKey: true,
     type: DataTypes.INTEGER

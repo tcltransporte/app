@@ -1,6 +1,6 @@
 // src/app/api/v1/auth/login/route.js
-import * as loginService from "@/app/controllers/login.controller";
-import { NextResponse } from "next/server";
+import * as loginService from "@/app/services/login.service";
+import { ServiceResponse } from "@/libs/service";
 
 /**
  * @swagger
@@ -14,16 +14,10 @@ import { NextResponse } from "next/server";
  *       500:
  *         description: Detalhes do erro
  */
-export async function POST(request) {
-  try {
+export async function POST() {
 
-    await loginService.signOut()
+  const loginResult = await loginService.signOut()
 
-    return NextResponse.json(result)
+  return ServiceResponse.json(loginResult)
 
-  } catch (error) {
-
-    return NextResponse.json({message: error.message}, { status: 500 });
-
-  }
 }

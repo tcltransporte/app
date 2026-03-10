@@ -9,7 +9,7 @@
 */
 export async function findOne({ db, transaction }, { attributes, where }) {
 
-  const company = await db.Company.findOne({ attributes, where, transaction })
+  const company = await db.CompanyBusiness.findOne({ attributes, where, transaction })
 
   return company?.toJSON()
 

@@ -3,7 +3,7 @@
 * @param {{ 
 *   attributes?: string[],
 *   include?: import('sequelize').Includeable,
-*   where: object
+*   where?: object
 * }} params
 * 
 * @returns {Promise<object|null>}
@@ -33,7 +33,7 @@ export async function create({ db, transaction }, { userId, companyId, lastAcess
 
   const session = await db.Session.create({ userId, companyId, lastAcess, expireIn }, { transaction })
 
-  return session.toJSON()
+  return session?.toJSON()
 
 }
 
@@ -44,7 +44,7 @@ export async function create({ db, transaction }, { userId, companyId, lastAcess
 * }} context
 *
  * @param {{
-*   where: object
+*   where?: object
 * }} params
 */
 export async function destroy({ db, transaction }, { where }) {

@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server"
-import * as companyService from "@/app/controllers/settings/company.controller"
-import { ErrorResponse } from "@/libs/errors/error-response"
+import * as companyService from "@/app/services/settings/company.service"
+import { ServiceResponse } from "@/libs/service"
 
 /**
  * @swagger
@@ -23,15 +22,9 @@ import { ErrorResponse } from "@/libs/errors/error-response"
  *         description: Erro interno do servidor
  */
 export async function GET() {
-  try {
 
-    const response = await companyService.findOne()
+  const companyResponse = await companyService.findOne()
 
-    return NextResponse.json(response)
+  return ServiceResponse.json(companyResponse)
 
-  } catch (error) {
-
-    return ErrorResponse.json(error)
-
-  }
 }

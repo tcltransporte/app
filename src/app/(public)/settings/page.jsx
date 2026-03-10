@@ -1,20 +1,20 @@
 "use server"
 
-import * as companyService from "@/app/controllers/settings/company.controller"
+import * as companyService from "@/app/services/settings/company.service"
 
-import { SettingsView } from "@/views/settings"
-import { ErrorRender } from "@/libs/errors/error-render"
+import { SettingsView } from "@/app/views/settings"
+import { ServiceRequest } from "@/libs/service"
 
 export default async () => {
   try {
 
-    const company = await companyService.findOne()
+    const companyResult = await ServiceRequest.run(companyService.findOne())
 
-    return <SettingsView initialCompany={company} />
+    return <SettingsView initialCompany={companyResult.company} />
   
   } catch (error) {
 
-    return <ErrorRender error={error} />
+    return <h1>Erro: {error.message}</h1>
 
   }
 }

@@ -16,7 +16,7 @@ export async function POST(req) {
     where: [{userName: body.username}]
   })
 
-  if (user.userMember?.password != body.password) {
+  if (user?.userMember?.password != body.password) {
     return NextResponse.json({d: false})
   }
 

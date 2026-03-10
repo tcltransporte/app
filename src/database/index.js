@@ -50,19 +50,20 @@ export class AppContext extends Sequelize {
     })
 
     //this.Company.belongsTo(this.City, { as: 'city', foreignKey: 'CodigoMunicipio', onDelete: 'CASCADE' })
-    this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId', onDelete: 'CASCADE' })
+    this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     //this.Company.hasMany(this.CompanyNfseTributation, { as: 'tributations', foreignKey: 'companyId', onDelete: 'CASCADE' })
+    this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
 
-    this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId', onDelete: 'CASCADE' })
+    this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId' })
     
     this.CompanyUser.belongsTo(this.User, { as: 'user', foreignKey: 'userId' })
-    this.CompanyUser.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId', onDelete: 'CASCADE' })
+    this.CompanyUser.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId'})
 
-    this.Session.belongsTo(this.User, { as: 'user', foreignKey: 'userId', onDelete: 'CASCADE' })
-    this.Session.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId', onDelete: 'CASCADE' })
+    this.Session.belongsTo(this.User, { as: 'user', foreignKey: 'userId' })
+    this.Session.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
 
-    this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId', onDelete: 'CASCADE' })
-    this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId', onDelete: 'CASCADE' })
+    this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })
+    this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId' })
     //this.User.belongsTo(this.Partner, { as: 'employee', foreignKey: 'employeeId', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
 
 
