@@ -18,7 +18,7 @@ export async function signIn({ username, password, companyBusinessId, companyId 
 
     const db = new AppContext();
 
-    return await db.transaction(async (transaction) => {
+    const result = await db.transaction(async (transaction) => {
 
       const user = await userRepository.findOne(
         { db, transaction },
@@ -26,19 +26,18 @@ export async function signIn({ username, password, companyBusinessId, companyId 
       );
 
       if (!user)
-        return ServiceResponse.badRequest("USER_NOT_FOUND", "Usuário não encontrado!");
+        throw { code: "USER_NOT_FOUND", message: "Usuário não encontrado!" };
 
-        
       const validate = await fetch(process.env.VALIDATE_USER, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
       });
 
-      const result = await validate.json();
+      const validateResult = await validate.json();
 
-      if (!result.d)
-        return ServiceResponse.badRequest("UNAUTHORIZED_PASSWORD", "Senha incorreta!");
+      if (!validateResult.d)
+        throw { code: "UNAUTHORIZED_PASSWORD", message: "Senha incorreta!" };
 
       const companyUsers = await companyUserRepository.findAll(
         { db, transaction },
@@ -46,10 +45,14 @@ export async function signIn({ username, password, companyBusinessId, companyId 
           attributes: ["companyId"],
           include: [
             {
-              model: db.Company, as: "company", attributes: ["surname"],
+              model: db.Company,
+              as: "company",
+              attributes: ["surname"],
               include: [
                 {
-                  model: db.CompanyBusiness, as: "companyBusiness", attributes: ["id", "name"]
+                  model: db.CompanyBusiness,
+                  as: "companyBusiness",
+                  attributes: ["id", "name"]
                 }
               ]
             }
@@ -59,7 +62,7 @@ export async function signIn({ username, password, companyBusinessId, companyId 
       );
 
       if (!companyUsers.length)
-        return ServiceResponse.badRequest("NO_COMPANY_ACCESS");
+        throw { code: "NO_COMPANY_ACCESS" };
 
       const companyBusinesses = [
         ...new Map(
@@ -77,11 +80,11 @@ export async function signIn({ username, password, companyBusinessId, companyId 
           : null;
 
       if (!companyBusinessId)
-        return ServiceResponse.badRequest(
-          "SELECT_COMPANY_BUSINESS",
-          "Selecione a empresa!",
-          { companyBusinesses }
-        );
+        throw {
+          code: "SELECT_COMPANY_BUSINESS",
+          message: "Selecione a empresa!",
+          data: { companyBusinesses }
+        };
 
       const companies = companyUsers
         .filter(x => x.company.companyBusiness.id === companyBusinessId)
@@ -91,7 +94,7 @@ export async function signIn({ username, password, companyBusinessId, companyId 
         }));
 
       if (!companies.length)
-        return ServiceResponse.badRequest("COMPANY_NOT_FOUND");
+        throw { code: "COMPANY_NOT_FOUND" };
 
       companyId = companyId
         ? Number(companyId)
@@ -100,11 +103,11 @@ export async function signIn({ username, password, companyBusinessId, companyId 
           : null;
 
       if (!companyId)
-        return ServiceResponse.badRequest(
-          "SELECT_COMPANY",
-          "Selecione a filial!",
-          { companies }
-        );
+        throw {
+          code: "SELECT_COMPANY",
+          message: "Selecione a filial!",
+          data: { companies }
+        };
 
       const session = await sessionRepository.create(
         { db, transaction },
@@ -116,11 +119,16 @@ export async function signIn({ username, password, companyBusinessId, companyId 
         }
       );
 
-      return ServiceResponse.ok({ token: session.id });
+      return { token: session.id };
 
     });
 
+    return ServiceResponse.ok(result);
+
   } catch (error) {
+
+    if (error.code)
+      return ServiceResponse.badRequest(error.code, error.message, error.data);
 
     return ServiceResponse.error(error);
 

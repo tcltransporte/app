@@ -14,14 +14,14 @@ export const ServiceStatus = Object.freeze({
 
 export const ServiceResponse = {
 
-  ok: (data) =>
-    result(ServiceStatus.OK, data),
+  ok: (body) =>
+    result(ServiceStatus.OK, body),
 
-  badRequest: (code, message, data) =>
-    result(ServiceStatus.BAD_REQUEST, { code, message, ...data }),
+  badRequest: (code, message, body) =>
+    result(ServiceStatus.BAD_REQUEST, { code, message, ...body }),
 
-  unauthorized: (code, message, data) =>
-    result(ServiceStatus.UNAUTHORIZED, { code, message, ...data }),
+  unauthorized: (code, message, body) =>
+    result(ServiceStatus.UNAUTHORIZED, { code, message, ...body }),
 
   error: (error) => {
 

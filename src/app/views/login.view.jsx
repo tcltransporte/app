@@ -22,14 +22,11 @@ export function LoginView() {
   const router = useRouter()
 
   const handleLogin = async (e) => {
-
     try {
 
       e.preventDefault()
 
       const loginResult = await ServiceRequest.run(loginService.signIn(form))
-
-      console.log(loginResult)
 
       if (loginResult.token) {
 
@@ -86,7 +83,7 @@ export function LoginView() {
 
               {companyBusinesses.map((cb, key) => (
                 <option key={key} value={cb.id}>
-                  {cb.id} - {cb.name}
+                  {cb.name}
                 </option>
               ))}
 
@@ -105,7 +102,7 @@ export function LoginView() {
 
               {companies.map((c, key) => (
                 <option key={key} value={c.companyId}>
-                  {c.companyId} - {c.surname}
+                  {c.surname}
                 </option>
               ))}
 

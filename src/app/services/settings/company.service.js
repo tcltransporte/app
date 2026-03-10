@@ -14,7 +14,7 @@ export async function findOne() {
 
         const db = new AppContext()
     
-        const response = await db.transaction(async (transaction) => {
+        const result = await db.transaction(async (transaction) => {
     
             const company = await companyRepository.findOne({ db, transaction }, {
                 attributes: ['id', 'name', 'surname'],
@@ -30,7 +30,7 @@ export async function findOne() {
 
         })
 
-        return ServiceResponse.ok(response)
+        return ServiceResponse.ok(result)
     
     } catch (error) {
 
