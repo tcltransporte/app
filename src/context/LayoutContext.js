@@ -12,9 +12,16 @@ const LayoutContext = createContext({
 
 export const LayoutProvider = ({ children }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobileMediaQuery = useMediaQuery(theme.breakpoints.down('sm'));
+  const [mounted, setMounted] = React.useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isMobile = mounted ? isMobileMediaQuery : false;
 
   const toggleDrawer = () => setMobileOpen((prev) => !prev);
   const toggleSettings = () => setSettingsOpen((prev) => !prev);

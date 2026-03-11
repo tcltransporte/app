@@ -11,15 +11,19 @@ export const ViewContainer = ({ children }) => {
   let footer = null;
   const content = [];
 
+  const getComponentType = (child) => {
+    if (!isValidElement(child)) return null;
+    const type = child.type;
+    return type?.displayName || type?.name || type;
+  };
+
   React.Children.forEach(children, (child) => {
-    if (isValidElement(child)) {
-      if (child.type === Title || child.type?.name === 'Title' || child.type?.displayName === 'Title') {
-        title = child;
-      } else if (child.type === Footer || child.type?.name === 'Footer' || child.type?.displayName === 'Footer') {
-        footer = child;
-      } else {
-        content.push(child);
-      }
+    const typeIdentifier = getComponentType(child);
+    
+    if (typeIdentifier === Title || typeIdentifier === 'Title') {
+      title = child;
+    } else if (typeIdentifier === Footer || typeIdentifier === 'Footer') {
+      footer = child;
     } else {
       content.push(child);
     }
