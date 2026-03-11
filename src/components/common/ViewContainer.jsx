@@ -1,10 +1,29 @@
 'use client';
 
-import React from 'react';
+import React, { isValidElement } from 'react';
 import { Box } from '@mui/material';
 import Header from '@/components/layout/Header';
+import { Title } from '@/components/common/Title';
+import { Footer } from '@/components/common/Footer';
 
-export const ViewContainer = ({ children, title, footer }) => {
+export const ViewContainer = ({ children }) => {
+  let title = null;
+  let footer = null;
+  const content = [];
+
+  React.Children.forEach(children, (child) => {
+    if (isValidElement(child)) {
+      if (child.type === Title || child.type?.name === 'Title' || child.type?.displayName === 'Title') {
+        title = child;
+      } else if (child.type === Footer || child.type?.name === 'Footer' || child.type?.displayName === 'Footer') {
+        footer = child;
+      } else {
+        content.push(child);
+      }
+    } else {
+      content.push(child);
+    }
+  });
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header>
@@ -21,7 +40,7 @@ export const ViewContainer = ({ children, title, footer }) => {
         backgroundColor: 'background.default',
         gap: 2
       }}>
-        {children}
+        {content}
       </Box>
 
       {footer && (

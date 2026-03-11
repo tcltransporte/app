@@ -4,7 +4,6 @@ import React from 'react';
 import { Box } from '@mui/material';
 import Sidebar from './Sidebar';
 import SettingsDrawer from './SettingsDrawer';
-import { ThemeConfigProvider } from '@/components/ThemeConfigContext';
 import { LayoutProvider, useLayout } from '@/context/LayoutContext';
 
 function LayoutContent({ children }) {
@@ -36,12 +35,10 @@ function LayoutContent({ children }) {
 
 export default function MainLayout({ children }) {
   return (
-    <ThemeConfigProvider>
-      <LayoutProvider>
-        <LayoutContent>
-          {children}
-        </LayoutContent>
-      </LayoutProvider>
-    </ThemeConfigProvider>
+    <LayoutProvider>
+      <LayoutContent>
+        {children}
+      </LayoutContent>
+    </LayoutProvider>
   );
 }

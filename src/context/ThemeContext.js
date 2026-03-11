@@ -4,7 +4,7 @@ import React, { createContext, useState, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 
 // Define the shape of our context
-export const ThemeConfigContext = createContext({
+export const ThemeContext = createContext({
   mode: 'light',
   skin: 'default',
   layout: 'vertical',
@@ -19,32 +19,45 @@ export const ThemeConfigContext = createContext({
   setSemiDark: () => { },
 });
 
-export const ThemeConfigProvider = ({ children }) => {
-  const [mode, setMode] = useState('light');
+export const ThemeContextProvider = ({ children, initialConfig = {} }) => {
+  const [mode, setMode] = useState(initialConfig.mode || 'light');
   const [skin, setSkin] = useState('default');
   const [layout, setLayout] = useState('vertical');
-  const [menu, setMenu] = useState('vertical');
-  const [primaryColor, setPrimaryColor] = useState('#6366f1');
-  const [semiDark, setSemiDark] = useState(false);
-
-  // Optional: load from localStorage if needed later.
-  useEffect(() => {
-    const savedMode = localStorage.getItem('theme-mode');
-    if (savedMode) setMode(savedMode);
-
-    const savedColor = localStorage.getItem('theme-primaryColor');
-    if (savedColor) setPrimaryColor(savedColor);
-
-    const savedMenu = localStorage.getItem('theme-menu');
-    if (savedMenu) setMenu(savedMenu);
-
-    const savedSemiDark = localStorage.getItem('theme-semiDark');
-    if (savedSemiDark) setSemiDark(savedSemiDark === 'true');
-  }, []);
+  const [menu, setMenu] = useState(initialConfig.menu || 'vertical');
+  const [primaryColor, setPrimaryColor] = useState(initialConfig.primaryColor || '#6366f1');
+  const [semiDark, setSemiDark] = useState(initialConfig.semiDark || false);
 
   const saveToStorage = (key, value) => {
     localStorage.setItem(`theme-${key}`, value);
+    document.cookie = `theme-${key}=${value}; path=/; max-age=31536000`; // 1 year
   };
+
+  // Sync existing localStorage preferences to cookies if missing in cookies
+  useEffect(() => {
+    const savedMode = localStorage.getItem('theme-mode');
+    if (savedMode && document.cookie.indexOf('theme-mode=') === -1) {
+      setMode(savedMode);
+      saveToStorage('mode', savedMode);
+    }
+
+    const savedColor = localStorage.getItem('theme-primaryColor');
+    if (savedColor && document.cookie.indexOf('theme-primaryColor=') === -1) {
+      setPrimaryColor(savedColor);
+      saveToStorage('primaryColor', savedColor);
+    }
+
+    const savedMenu = localStorage.getItem('theme-menu');
+    if (savedMenu && document.cookie.indexOf('theme-menu=') === -1) {
+      setMenu(savedMenu);
+      saveToStorage('menu', savedMenu);
+    }
+
+    const savedSemiDark = localStorage.getItem('theme-semiDark');
+    if (savedSemiDark && document.cookie.indexOf('theme-semiDark=') === -1) {
+      setSemiDark(savedSemiDark === 'true');
+      saveToStorage('semiDark', savedSemiDark);
+    }
+  }, []);
 
   const handleSetMode = (newMode) => {
     setMode(newMode);
@@ -112,11 +125,11 @@ export const ThemeConfigProvider = ({ children }) => {
   };
 
   return (
-    <ThemeConfigContext.Provider value={value}>
+    <ThemeContext.Provider value={value}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
       </ThemeProvider>
-    </ThemeConfigContext.Provider>
+    </ThemeContext.Provider>
   );
 };

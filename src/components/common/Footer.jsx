@@ -9,6 +9,7 @@ export const Footer = ({
   page = 1, 
   rowsPerPage = 50, 
   total = 0,
+  selectedCount = 0,
   onPageChange,
   onRowsPerPageChange 
 }) => {
@@ -20,16 +21,26 @@ export const Footer = ({
   return (
     <Box sx={{
       display: 'flex',
-      justifyContent: { xs: 'center', sm: 'flex-end' },
+      justifyContent: 'space-between',
       alignItems: 'center',
       gap: { xs: 1, sm: 2 },
-      p: 1.5,
+      py: 1.5,
+      px: { xs: 2, md: 3 },
       backgroundColor: 'background.paper',
       borderTop: '1px solid',
       borderColor: 'divider',
       flexWrap: 'wrap'
     }}>
-      <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        {selectedCount > 0 && (
+          <Typography variant="body2" color="primary.main" fontWeight={600}>
+            {selectedCount} selecionado{selectedCount > 1 ? 's' : ''}
+          </Typography>
+        )}
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flexWrap: 'wrap', justifyContent: { xs: 'center', sm: 'flex-end' } }}>
+        <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
         <Typography variant="caption" color="text.secondary">Registros por página:</Typography>
         <Select
           value={rowsPerPage}
@@ -59,7 +70,8 @@ export const Footer = ({
           display: 'flex',
           justifyContent: 'center'
         }}
-      />
+        />
+      </Box>
     </Box>
   );
 };

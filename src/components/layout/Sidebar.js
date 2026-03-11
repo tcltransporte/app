@@ -35,7 +35,7 @@ import {
   ExpandMore,
   ChevronRight
 } from '@mui/icons-material';
-import { ThemeConfigContext } from '@/components/ThemeConfigContext';
+import { ThemeContext } from '@/context/ThemeContext';
 import { useRouter, usePathname } from 'next/navigation';
 
 // Added subMenus based on the user's reference image
@@ -66,12 +66,16 @@ const menuItems = [
 export default function Sidebar({ mobileOpen, onMobileClose }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { menu, setMenu, primaryColor, mode, semiDark } = useContext(ThemeConfigContext);
+  const { menu, setMenu, primaryColor, mode, semiDark } = useContext(ThemeContext);
   const [isHovered, setIsHovered] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null); // Tracks which menu item's submenu is open
 
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
+  
+  const [mounted, setMounted] = useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const isMobileMediaQuery = useMediaQuery(theme.breakpoints.down('lg'));
+  const isMobile = mounted ? isMobileMediaQuery : false;
 
   // Logic for Semi-Dark theme
   const isDarkMenu = mode === 'dark' || semiDark;

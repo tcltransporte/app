@@ -25,14 +25,14 @@ import {
 } from "@mui/icons-material"
 import * as loginService from "@/app/services/login.service"
 import { ServiceStatus } from "@/libs/service"
-import { ThemeConfigContext } from "@/components/ThemeConfigContext"
+import { ThemeContext } from "@/context/ThemeContext"
 import Image from "next/image"
 import { MenuItem, Select, FormControl, InputLabel } from "@mui/material"
 
 export function LoginView() {
-  const { primaryColor } = useContext(ThemeConfigContext)
+  const { primaryColor } = useContext(ThemeContext)
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true })
   const router = useRouter()
 
   const [form, setForm] = useState({

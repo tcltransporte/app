@@ -12,8 +12,16 @@ import {
   Paper,
   Box,
   Typography,
-  Divider
+  Divider,
+  Fade,
+  Slide
 } from '@mui/material';
+import { keyframes } from '@mui/system';
+
+const slideUp = keyframes`
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+`;
 import { useLayout } from '@/context/LayoutContext';
 
 export const Table = ({ 
@@ -28,7 +36,14 @@ export const Table = ({
 
   if (isMobile) {
     return (
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ 
+          flexGrow: 1, 
+          overflowY: 'auto', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 2,
+          animation: `${slideUp} 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards`
+        }}>
         {/* Mobile Select All Header */}
         {items.length > 0 && (
           <Paper 
@@ -115,24 +130,25 @@ export const Table = ({
             </Paper>
           );
         })}
-      </Box>
+        </Box>
     );
   }
 
   return (
-    <TableContainer
-      component={Paper}
-      elevation={0}
-      sx={{
-        flexGrow: 1,
-        overflow: 'auto',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        '&::-webkit-scrollbar': { width: 6, height: 6 },
-        '&::-webkit-scrollbar-thumb': { backgroundColor: 'divider', borderRadius: 3 }
-      }}
-    >
+      <TableContainer
+        component={Paper}
+        elevation={0}
+        sx={{
+          flexGrow: 1,
+          overflow: 'auto',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          '&::-webkit-scrollbar': { width: 6, height: 6 },
+          '&::-webkit-scrollbar-thumb': { backgroundColor: 'divider', borderRadius: 3 },
+          animation: `${slideUp} 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards`
+        }}
+      >
       <MuiTable stickyHeader size="small">
         <TableHead>
           <TableRow>
@@ -190,7 +206,7 @@ export const Table = ({
             );
           })}
         </TableBody>
-      </MuiTable>
-    </TableContainer>
+        </MuiTable>
+      </TableContainer>
   );
 };

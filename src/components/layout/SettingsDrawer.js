@@ -25,7 +25,7 @@ import {
   ViewSidebar,
   TableRows
 } from '@mui/icons-material';
-import { ThemeConfigContext } from '@/components/ThemeConfigContext';
+import { ThemeContext } from '@/context/ThemeContext';
 
 const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#64748b'];
 
@@ -37,7 +37,7 @@ export default function SettingsDrawer({ open, onClose }) {
     menu, setMenu,
     primaryColor, setPrimaryColor,
     semiDark, setSemiDark
-  } = useContext(ThemeConfigContext);
+  } = useContext(ThemeContext);
 
   return (
     <Drawer
@@ -78,7 +78,7 @@ export default function SettingsDrawer({ open, onClose }) {
               {primaryColor === color && <Palette fontSize="small" />}
             </IconButton>
           ))}
-          
+
           {/* Custom Color Picker Button */}
           <Box sx={{ position: 'relative', width: 38, height: 38 }}>
             <Tooltip title="Paleta de Cores">
@@ -96,12 +96,12 @@ export default function SettingsDrawer({ open, onClose }) {
                 <Palette fontSize="small" />
               </IconButton>
             </Tooltip>
-            <input 
+            <input
               id="custom-color-picker"
-              type="color" 
+              type="color"
               value={primaryColor}
               onChange={(e) => setPrimaryColor(e.target.value)}
-              style={{ 
+              style={{
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
@@ -165,7 +165,7 @@ export default function SettingsDrawer({ open, onClose }) {
         <Divider sx={{ mb: 3 }} />
 
         {/* Layout */}
-        <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Layout</Typography>
+        <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Menu</Typography>
         <RadioGroup
           row
           value={layout}
@@ -177,9 +177,8 @@ export default function SettingsDrawer({ open, onClose }) {
         </RadioGroup>
 
         {/* Menu */}
-        <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Menu</Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Tooltip title="Vertical Menu">
+          <Tooltip title="Expandido">
             <IconButton
               color={menu === 'vertical' ? 'primary' : 'default'}
               onClick={() => setMenu('vertical')}
@@ -188,22 +187,13 @@ export default function SettingsDrawer({ open, onClose }) {
               <Dashboard />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Menu Recolhido">
+          <Tooltip title="Recolhido">
             <IconButton
               color={menu === 'recolhido' ? 'primary' : 'default'}
               onClick={() => setMenu('recolhido')}
               sx={{ border: '1px solid', borderColor: menu === 'recolhido' ? 'primary.main' : 'divider', borderRadius: 2, p: 2 }}
             >
               <ViewSidebar />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Menu Horizontal">
-            <IconButton
-              color={menu === 'horizontal' ? 'primary' : 'default'}
-              onClick={() => setMenu('horizontal')}
-              sx={{ border: '1px solid', borderColor: menu === 'horizontal' ? 'primary.main' : 'divider', borderRadius: 2, p: 2 }}
-            >
-              <TableRows />
             </IconButton>
           </Tooltip>
         </Box>

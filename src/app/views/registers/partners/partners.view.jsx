@@ -10,11 +10,7 @@ import {
 } from '@mui/icons-material';
 
 import { useRouter } from 'next/navigation';
-import {
-  Box,
-  Divider,
-  Button
-} from '@mui/material';
+
 import { PartnerDetail } from './partners.detail';
 import { useTable } from '@/hooks/useTable';
 import { Title } from '@/components/common/Title';
@@ -64,36 +60,38 @@ const mockClientes = [
   { id: 38, doc: '52740', beneficiario: 'Bruno Gagliasso', categoria: '1.06 - Vendas Mercado Livre Full', tipo: '-', vencimento: '08/03/2026', agendamento: '-', valor: '82,30', conta: '-' },
   { id: 39, doc: '52741', beneficiario: 'Caio Castro', categoria: '1.01 - Venda no Mercado Livre', tipo: '-', vencimento: '09/03/2026', agendamento: '-', valor: '44,00', conta: '-' },
   { id: 40, doc: '52742', beneficiario: 'Deborah Secco', categoria: '1.06 - Vendas Mercado Livre Full', tipo: '-', vencimento: '09/03/2026', agendamento: '-', valor: '91,10', conta: '-' },
-];
+]
 
-export function ViewPartners({ initialId }) {
-  const router = useRouter();
-  const { selecteds, onSelect, onSelectAll } = useTable(mockClientes);
+export function ViewPartners({ partnerId }) {
 
-  // Local state for immediate modal feedback
-  const [selectedId, setSelectedId] = React.useState(initialId);
+  const router = useRouter()
 
-  // Sync local state when initialId changes (e.g., F5 or back/forward)
+  const { selecteds, onSelect, onSelectAll } = useTable(mockClientes)
+
+  const [selectedId, setSelectedId] = React.useState(partnerId);
+
+  // Sync URL correctly on initial mount if partnerId is passed
   React.useEffect(() => {
-    setSelectedId(initialId);
-  }, [initialId]);
+    setSelectedId(partnerId);
+    if (partnerId) {
+      window.history.replaceState(null, '', `/registers/partners/${partnerId}`)
+    }
+  }, [partnerId]);
 
   const handleRowDoubleClick = (row) => {
-    // Immediate state update for responsiveness
-    setSelectedId(row.id);
-    // URL sync for persistence
-    router.push(`/registers/partners/${row.id}`);
-  };
+    setSelectedId(row.id)
+    window.history.pushState(null, '', `/registers/partners/${row.id}`)
+  }
 
   const handleCloseModal = () => {
-    setSelectedId(undefined);
-    router.push('/registers/partners');
-  };
+    setSelectedId(undefined)
+    window.history.pushState(null, '', '/registers/partners')
+  }
 
   const handleSave = () => {
-    alert('Alterações salvas com sucesso!');
-    handleCloseModal();
-  };
+    alert('Alterações salvas com sucesso!')
+    handleCloseModal()
+  }
 
   const columns = [
     { field: 'doc', headerName: 'Nº Doc.' },
@@ -108,28 +106,28 @@ export function ViewPartners({ initialId }) {
     { field: 'agendamento', headerName: 'Agendamento', align: 'center' },
     { field: 'valor', headerName: 'Valor', sx: { fontWeight: 600 } },
     { field: 'conta', headerName: 'Agência / Conta' },
-  ];
+  ]
 
   const primaryActions = [
     { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => setSelectedId(null) },
     { label: 'Importar', icon: <CloudUploadIcon />, variant: 'inherit', color: 'text', onClick: () => { } },
-  ];
+  ]
 
   const secondaryActions = [
     { label: 'Mês atual', icon: <CalendarIcon />, color: 'inherit', variant: 'text', onClick: () => { } },
     { label: 'Filtros', icon: <FilterIcon />, color: 'inherit', variant: 'text', onClick: () => { } },
     { label: 'Pesquisar', icon: <SearchIcon />, color: 'primary', variant: 'outlined', onClick: () => { } },
-  ];
+  ]
 
   return (
-    <ViewContainer
-      title={<Title items={[{ label: 'Cadastros' }, { label: 'Clientes' }]} />}
-      footer={<Footer total={40} />}
-    >
+    <ViewContainer>
+
+      <Title items={[{ label: 'Cadastros' }, { label: 'Clientes' }]} />
 
       <Toolbar
         primary={primaryActions}
         secondary={secondaryActions}
+        selectedCount={selecteds.length}
       />
 
       <Table
@@ -141,12 +139,14 @@ export function ViewPartners({ initialId }) {
         onRowDoubleClick={handleRowDoubleClick}
       />
 
-      <PartnerDetail 
+      <PartnerDetail
         partnerId={selectedId}
         onClose={handleCloseModal}
         onSave={handleSave}
       />
 
+      <Footer total={40} selectedCount={selecteds.length} />
+
     </ViewContainer>
-  );
+  )
 }
