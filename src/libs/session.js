@@ -2,7 +2,7 @@
 import { cookies, headers } from "next/headers"
 import { AppContext } from "@/database"
 import * as sessionRepository from "@/app/repositories/session.repository"
-import { ServiceStatus } from "./service"
+import { ServiceResponse, ServiceStatus } from "./service"
 
 export async function getSession() {
 
@@ -21,11 +21,7 @@ export async function getSession() {
     }
 
     if (!token) {
-      throw {
-        status: ServiceStatus.UNAUTHORIZED,
-        code: "TOKEN_REQUIRED",
-        message: "Informe o token!"
-      }
+      throw ServiceResponse.unauthorized('TOKEN_REQUIRED', 'Informe o token!')
     }
 
     const session = await sessionRepository.findOne({ db, transaction }, {
@@ -38,11 +34,7 @@ export async function getSession() {
     })
 
     if (!session) {
-      throw {
-        status: ServiceStatus.UNAUTHORIZED,
-        code: "UNAUTHORIZED_TOKEN",
-        message: 'Token não encontrado!'
-      }
+      throw ServiceResponse.unauthorized('UNAUTHORIZED_TOKEN', 'Token não encontrado!')
     }
 
     return session

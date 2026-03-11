@@ -1,5 +1,6 @@
 import * as loginService from "@/app/services/login.service";
 import { ServiceResponse } from "@/libs/service";
+import { NextResponse } from "next/server";
 
 /**
  * @swagger
@@ -39,8 +40,10 @@ export async function POST(request) {
 
   const { username, password, companyBusinessId, companyId } = await request.json()
 
-  const loginResponse = await loginService.signIn({ username, password, companyBusinessId, companyId })
+  const loginResult = await loginService.signIn({ username, password, companyBusinessId, companyId })
 
-  return ServiceResponse.json(loginResponse)
+  const { status, ...body } = loginResult
+
+  return NextResponse.json(body, { status })
 
 }

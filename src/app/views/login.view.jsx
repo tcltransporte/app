@@ -3,7 +3,7 @@
 import { useState } from "react"
 import * as loginService from "@/app/services/login.service"
 import { useRouter } from "next/navigation"
-import { ServiceRequest } from "@/libs/service"
+import { ServiceRequest, ServiceStatus } from "@/libs/service"
 
 export function LoginView() {
 
@@ -26,7 +26,11 @@ export function LoginView() {
 
       e.preventDefault()
 
-      const loginResult = await ServiceRequest.run(loginService.signIn(form))
+      const loginResult = await loginService.signIn(form)
+
+      if (loginResult.status !== ServiceStatus.SUCCESS) {
+        throw loginResult
+      }
 
       if (loginResult.token) {
 

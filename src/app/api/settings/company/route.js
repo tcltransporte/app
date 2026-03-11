@@ -23,8 +23,10 @@ import { ServiceResponse } from "@/libs/service"
  */
 export async function GET() {
 
-  const companyResponse = await companyService.findOne()
+  const companyResult = await companyService.findOne()
 
-  return ServiceResponse.json(companyResponse)
+  const { status, ...body } = companyResult
+
+  return NextResponse.json(body, { status })
 
 }

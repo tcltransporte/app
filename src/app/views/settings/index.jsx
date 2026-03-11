@@ -5,7 +5,7 @@ import { useState } from "react"
 //services
 import * as loginService from "@/app/services/login.service"
 import * as companyService from "@/app/services/settings/company.service"
-import { ServiceRequest } from "@/libs/service"
+import { ServiceStatus } from "@/libs/service"
 import { useRouter } from "next/navigation"
 
 export function SettingsView({ initialCompany, initialUser }) {
@@ -19,7 +19,11 @@ export function SettingsView({ initialCompany, initialUser }) {
         const handleRefresh = async () => {
             try {
 
-                const companyResult = await ServiceRequest.run(companyService.findOne())
+                const companyResult = await companyService.findOne()
+
+                if (companyResult.status !== ServiceStatus.SUCCESS) {
+                    throw companyResult
+                }
     
                 setCompany(companyResult.company)
                 setUser(companyResult.user)

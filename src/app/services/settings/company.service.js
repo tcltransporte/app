@@ -2,10 +2,10 @@
 
 import * as companyRepository from "@/app/repositories/company.repository"
 import * as userRepository from "@/app/repositories/user.repository"
+
 import { AppContext } from "@/database"
 import { ServiceResponse } from "@/libs/service"
 import { getSession } from "@/libs/session"
-import { NextResponse } from "next/server"
 
 export async function findOne() {
     try {
@@ -30,7 +30,7 @@ export async function findOne() {
 
         })
 
-        return ServiceResponse.ok(result)
+        return ServiceResponse.success(result)
     
     } catch (error) {
 

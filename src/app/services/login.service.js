@@ -1,8 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-
 import { AppContext } from "@/database";
 
 import * as userRepository from "@/app/repositories/user.repository"
@@ -13,7 +10,6 @@ import { getSession } from "@/libs/session";
 import { ServiceResponse } from "@/libs/service";
 
 export async function signIn({ username, password, companyBusinessId, companyId }) {
-
   try {
 
     const db = new AppContext();
@@ -26,7 +22,7 @@ export async function signIn({ username, password, companyBusinessId, companyId 
       );
 
       if (!user)
-        throw { code: "USER_NOT_FOUND", message: "Usuário não encontrado!" };
+        throw ServiceResponse.badRequest("USER_NOT_FOUND", "Usuário não encontrado!")
 
       const validate = await fetch(process.env.VALIDATE_USER, {
         method: "POST",
@@ -37,7 +33,7 @@ export async function signIn({ username, password, companyBusinessId, companyId 
       const validateResult = await validate.json();
 
       if (!validateResult.d)
-        throw { code: "UNAUTHORIZED_PASSWORD", message: "Senha incorreta!" };
+        throw ServiceResponse.badRequest("UNAUTHORIZED_PASSWORD", "Senha incorreta!")
 
       const companyUsers = await companyUserRepository.findAll(
         { db, transaction },
@@ -45,14 +41,10 @@ export async function signIn({ username, password, companyBusinessId, companyId 
           attributes: ["companyId"],
           include: [
             {
-              model: db.Company,
-              as: "company",
-              attributes: ["surname"],
+              model: db.Company, as: "company", attributes: ["surname"],
               include: [
                 {
-                  model: db.CompanyBusiness,
-                  as: "companyBusiness",
-                  attributes: ["id", "name"]
+                  model: db.CompanyBusiness, as: "companyBusiness", attributes: ["id", "name"]
                 }
               ]
             }
@@ -62,7 +54,7 @@ export async function signIn({ username, password, companyBusinessId, companyId 
       );
 
       if (!companyUsers.length)
-        throw { code: "NO_COMPANY_ACCESS" };
+        throw ServiceResponse.badRequest("NO_COMPANY_ACCESS")
 
       const companyBusinesses = [
         ...new Map(
@@ -80,12 +72,9 @@ export async function signIn({ username, password, companyBusinessId, companyId 
           : null;
 
       if (!companyBusinessId)
-        throw {
-          code: "SELECT_COMPANY_BUSINESS",
-          message: "Selecione a empresa!",
-          data: { companyBusinesses }
-        };
+        throw ServiceResponse.badRequest("SELECT_COMPANY_BUSINESS", "Selecione a empresa!", { companyBusinesses })
 
+      
       const companies = companyUsers
         .filter(x => x.company.companyBusiness.id === companyBusinessId)
         .map(x => ({
@@ -94,7 +83,8 @@ export async function signIn({ username, password, companyBusinessId, companyId 
         }));
 
       if (!companies.length)
-        throw { code: "COMPANY_NOT_FOUND" };
+        throw ServiceResponse.badRequest("COMPANY_NOT_FOUND")
+
 
       companyId = companyId
         ? Number(companyId)
@@ -103,11 +93,7 @@ export async function signIn({ username, password, companyBusinessId, companyId 
           : null;
 
       if (!companyId)
-        throw {
-          code: "SELECT_COMPANY",
-          message: "Selecione a filial!",
-          data: { companies }
-        };
+        throw ServiceResponse.badRequest("SELECT_COMPANY", "Selecione a filial!", { companies })
 
       const session = await sessionRepository.create(
         { db, transaction },
@@ -123,17 +109,13 @@ export async function signIn({ username, password, companyBusinessId, companyId 
 
     });
 
-    return ServiceResponse.ok(result);
+    return ServiceResponse.success(result);
 
   } catch (error) {
-
-    if (error.code)
-      return ServiceResponse.badRequest(error.code, error.message, error.data);
 
     return ServiceResponse.error(error);
 
   }
-
 }
 
 export async function signOut() {
@@ -149,7 +131,7 @@ export async function signOut() {
   
     })
     
-    return ServiceResponse.ok()
+    return ServiceResponse.success()
     
   } catch (error) {
 

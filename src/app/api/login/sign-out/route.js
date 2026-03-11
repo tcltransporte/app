@@ -18,6 +18,8 @@ export async function POST() {
 
   const loginResult = await loginService.signOut()
 
-  return ServiceResponse.json(loginResult)
+  const { status, ...body } = loginResult
+
+  return NextResponse.json(body, { status })
 
 }
