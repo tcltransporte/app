@@ -59,7 +59,7 @@ const mockClientes = [
   { id: 40, doc: '52742', beneficiario: 'Deborah Secco', categoria: '1.06 - Vendas Mercado Livre Full', tipo: '-', vencimento: '09/03/2026', agendamento: '-', valor: '91,10', conta: '-' },
 ];
 
-export function PartnersView() {
+export function ViewPartners() {
 
   const { selecteds, onSelect, onSelectAll } = useTable(mockClientes);
 

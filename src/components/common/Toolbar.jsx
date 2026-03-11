@@ -61,14 +61,13 @@ export const Toolbar = ({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: 2,
-        minHeight: 64
       }}
     >
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
         {renderPrimary()}
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' }, justifyContent: 'flex-end' }}>
+      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {renderSecondary()}
       </Box>
     </Box>

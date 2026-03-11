@@ -17,7 +17,7 @@ export const SecondaryActions = ({ actions = [], icon = <MoreIcon /> }) => {
 
   if (!isMobile) {
     return (
-      <Box sx={{ display: 'flex', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
         {actions.map((action) => (
           <Button
             key={action.label}
