@@ -9,6 +9,13 @@ import {
   CloudUpload as CloudUploadIcon
 } from '@mui/icons-material';
 
+import { useRouter } from 'next/navigation';
+import {
+  Box,
+  Divider,
+  Button
+} from '@mui/material';
+import { PartnerDetail } from './partners.detail';
 import { useTable } from '@/hooks/useTable';
 import { Title } from '@/components/common/Title';
 import { ViewContainer } from '@/components/common/ViewContainer';
@@ -59,9 +66,34 @@ const mockClientes = [
   { id: 40, doc: '52742', beneficiario: 'Deborah Secco', categoria: '1.06 - Vendas Mercado Livre Full', tipo: '-', vencimento: '09/03/2026', agendamento: '-', valor: '91,10', conta: '-' },
 ];
 
-export function ViewPartners() {
-
+export function ViewPartners({ initialId }) {
+  const router = useRouter();
   const { selecteds, onSelect, onSelectAll } = useTable(mockClientes);
+
+  // Local state for immediate modal feedback
+  const [selectedId, setSelectedId] = React.useState(initialId);
+
+  // Sync local state when initialId changes (e.g., F5 or back/forward)
+  React.useEffect(() => {
+    setSelectedId(initialId);
+  }, [initialId]);
+
+  const handleRowDoubleClick = (row) => {
+    // Immediate state update for responsiveness
+    setSelectedId(row.id);
+    // URL sync for persistence
+    router.push(`/registers/partners/${row.id}`);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedId(undefined);
+    router.push('/registers/partners');
+  };
+
+  const handleSave = () => {
+    alert('Alterações salvas com sucesso!');
+    handleCloseModal();
+  };
 
   const columns = [
     { field: 'doc', headerName: 'Nº Doc.' },
@@ -79,7 +111,7 @@ export function ViewPartners() {
   ];
 
   const primaryActions = [
-    { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => { } },
+    { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => setSelectedId(null) },
     { label: 'Importar', icon: <CloudUploadIcon />, variant: 'inherit', color: 'text', onClick: () => { } },
   ];
 
@@ -106,6 +138,13 @@ export function ViewPartners() {
         selecteds={selecteds}
         onSelect={onSelect}
         onSelectAll={onSelectAll}
+        onRowDoubleClick={handleRowDoubleClick}
+      />
+
+      <PartnerDetail 
+        partnerId={selectedId}
+        onClose={handleCloseModal}
+        onSave={handleSave}
       />
 
     </ViewContainer>

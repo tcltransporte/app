@@ -44,7 +44,7 @@ export default function SettingsDrawer({ open, onClose }) {
       anchor="right"
       open={open}
       onClose={onClose}
-      sx={{ '& .MuiDrawer-paper': { width: { xs: '100%', sm: 340 } } }}
+      sx={{ '& .MuiDrawer-paper': { width: { xs: '100%', sm: 400 } } }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
         <Box>
@@ -66,17 +66,54 @@ export default function SettingsDrawer({ open, onClose }) {
               key={color}
               onClick={() => setPrimaryColor(color)}
               sx={{
-                width: 40,
-                height: 40,
+                width: 38,
+                height: 38,
                 backgroundColor: color,
                 color: 'white',
-                border: primaryColor === color ? '2px solid black' : '2px solid transparent',
-                '&:hover': { backgroundColor: color }
+                border: primaryColor === color ? '2px solid' : '2px solid transparent',
+                borderColor: primaryColor === color ? 'text.primary' : 'transparent',
+                '&:hover': { backgroundColor: color, opacity: 0.8 }
               }}
             >
               {primaryColor === color && <Palette fontSize="small" />}
             </IconButton>
           ))}
+          
+          {/* Custom Color Picker Button */}
+          <Box sx={{ position: 'relative', width: 38, height: 38 }}>
+            <Tooltip title="Paleta de Cores">
+              <IconButton
+                onClick={() => document.getElementById('custom-color-picker').click()}
+                sx={{
+                  width: 38,
+                  height: 38,
+                  background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                  color: 'white',
+                  border: !colors.includes(primaryColor) ? '2px solid' : '2px solid transparent',
+                  borderColor: !colors.includes(primaryColor) ? 'text.primary' : 'transparent',
+                }}
+              >
+                <Palette fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <input 
+              id="custom-color-picker"
+              type="color" 
+              value={primaryColor}
+              onChange={(e) => setPrimaryColor(e.target.value)}
+              style={{ 
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: 0,
+                height: 0,
+                padding: 0,
+                border: 'none',
+                opacity: 0,
+                pointerEvents: 'none'
+              }}
+            />
+          </Box>
         </Box>
 
         {/* Mode */}

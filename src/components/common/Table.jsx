@@ -21,7 +21,8 @@ export const Table = ({
   items, 
   selecteds = [], 
   onSelect, 
-  onSelectAll 
+  onSelectAll,
+  onRowDoubleClick
 }) => {
   const { isMobile } = useLayout();
 
@@ -63,6 +64,7 @@ export const Table = ({
               key={row.id}
               elevation={0}
               onClick={() => onSelect(row.id)}
+              onDoubleClick={() => onRowDoubleClick && onRowDoubleClick(row)}
               sx={{
                 p: 2,
                 border: '1px solid',
@@ -166,6 +168,7 @@ export const Table = ({
                 hover
                 selected={isItemSelected}
                 onClick={() => onSelect(row.id)}
+                onDoubleClick={() => onRowDoubleClick && onRowDoubleClick(row)}
                 sx={{ cursor: 'pointer', '&.Mui-selected': { backgroundColor: 'primary.lighter' } }}
               >
                 <TableCell padding="checkbox">
