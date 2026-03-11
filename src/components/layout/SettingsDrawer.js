@@ -35,7 +35,8 @@ export default function SettingsDrawer({ open, onClose }) {
     skin, setSkin,
     layout, setLayout,
     menu, setMenu,
-    primaryColor, setPrimaryColor
+    primaryColor, setPrimaryColor,
+    semiDark, setSemiDark
   } = useContext(ThemeConfigContext);
 
   return (
@@ -119,7 +120,7 @@ export default function SettingsDrawer({ open, onClose }) {
         </RadioGroup>
 
         <FormControlLabel
-          control={<Switch defaultChecked />}
+          control={<Switch checked={semiDark} onChange={(e) => setSemiDark(e.target.checked)} />}
           label="Semi Escuro"
           sx={{ mb: 3, width: '100%' }}
         />

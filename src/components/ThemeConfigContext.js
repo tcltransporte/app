@@ -10,11 +10,13 @@ export const ThemeConfigContext = createContext({
   layout: 'vertical',
   menu: 'vertical', // vertical, recolhido, horizontal
   primaryColor: '#6366f1',
-  setMode: () => {},
-  setSkin: () => {},
-  setLayout: () => {},
-  setMenu: () => {},
-  setPrimaryColor: () => {},
+  semiDark: true,
+  setMode: () => { },
+  setSkin: () => { },
+  setLayout: () => { },
+  setMenu: () => { },
+  setPrimaryColor: () => { },
+  setSemiDark: () => { },
 });
 
 export const ThemeConfigProvider = ({ children }) => {
@@ -23,17 +25,21 @@ export const ThemeConfigProvider = ({ children }) => {
   const [layout, setLayout] = useState('vertical');
   const [menu, setMenu] = useState('vertical');
   const [primaryColor, setPrimaryColor] = useState('#6366f1');
+  const [semiDark, setSemiDark] = useState(false);
 
   // Optional: load from localStorage if needed later.
   useEffect(() => {
     const savedMode = localStorage.getItem('theme-mode');
     if (savedMode) setMode(savedMode);
-    
+
     const savedColor = localStorage.getItem('theme-primaryColor');
     if (savedColor) setPrimaryColor(savedColor);
 
     const savedMenu = localStorage.getItem('theme-menu');
     if (savedMenu) setMenu(savedMenu);
+
+    const savedSemiDark = localStorage.getItem('theme-semiDark');
+    if (savedSemiDark) setSemiDark(savedSemiDark === 'true');
   }, []);
 
   const saveToStorage = (key, value) => {
@@ -54,6 +60,11 @@ export const ThemeConfigProvider = ({ children }) => {
     setMenu(newMenu);
     saveToStorage('menu', newMenu);
   }
+
+  const handleSetSemiDark = (val) => {
+    setSemiDark(val);
+    saveToStorage('semiDark', val);
+  };
 
   // Create the MUI theme based on the current context state
   const theme = useMemo(() => createTheme({
@@ -96,7 +107,8 @@ export const ThemeConfigProvider = ({ children }) => {
     skin, setSkin,
     layout, setLayout,
     menu, setMenu: handleSetMenu,
-    primaryColor, setPrimaryColor: handleSetPrimaryColor
+    primaryColor, setPrimaryColor: handleSetPrimaryColor,
+    semiDark, setSemiDark: handleSetSemiDark
   };
 
   return (

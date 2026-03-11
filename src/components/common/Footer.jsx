@@ -1,0 +1,65 @@
+'use client';
+
+import React from 'react';
+import { Box, Typography, Select, MenuItem, Pagination } from '@mui/material';
+import { useLayout } from '@/context/LayoutContext';
+
+export const Footer = ({ 
+  count, // Number of pages
+  page = 1, 
+  rowsPerPage = 50, 
+  total = 0,
+  onPageChange,
+  onRowsPerPageChange 
+}) => {
+  const { isMobile } = useLayout();
+
+  // Calculate pages if count is not provided
+  const derivedCount = count ?? Math.max(1, Math.ceil(total / rowsPerPage));
+
+  return (
+    <Box sx={{
+      display: 'flex',
+      justifyContent: { xs: 'center', sm: 'flex-end' },
+      alignItems: 'center',
+      gap: { xs: 1, sm: 2 },
+      p: 1.5,
+      backgroundColor: 'background.paper',
+      borderTop: '1px solid',
+      borderColor: 'divider',
+      flexWrap: 'wrap'
+    }}>
+      <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
+        <Typography variant="caption" color="text.secondary">Registros por página:</Typography>
+        <Select
+          value={rowsPerPage}
+          size="small"
+          variant="standard"
+          onChange={onRowsPerPageChange}
+          sx={{ fontSize: '0.75rem', '&:before, &:after': { display: 'none' } }}
+        >
+          <MenuItem value={10}>10</MenuItem>
+          <MenuItem value={25}>25</MenuItem>
+          <MenuItem value={50}>50</MenuItem>
+          <MenuItem value={100}>100</MenuItem>
+        </Select>
+      </Box>
+      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+        1-{rowsPerPage} of {total}
+      </Typography>
+      <Pagination
+        count={derivedCount}
+        page={page}
+        onChange={onPageChange}
+        size={isMobile ? "small" : "medium"}
+        shape="rounded"
+        color="primary"
+        sx={{
+          '& .MuiPagination-ul': { gap: 0.5 },
+          display: 'flex',
+          justifyContent: 'center'
+        }}
+      />
+    </Box>
+  );
+};

@@ -1,40 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Box } from '@mui/material';
 import Sidebar from './Sidebar';
-import Header from './Header';
 import SettingsDrawer from './SettingsDrawer';
 import { ThemeConfigProvider } from '@/components/ThemeConfigContext';
+import { LayoutProvider, useLayout } from '@/context/LayoutContext';
 
 function LayoutContent({ children }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  const handleSettingsToggle = () => {
-    setSettingsOpen(!settingsOpen);
-  };
+  const { mobileOpen, toggleDrawer, settingsOpen, toggleSettings } = useLayout();
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%vw' }}>
-      <Sidebar mobileOpen={mobileOpen} onMobileClose={handleDrawerToggle} />
+    <Box sx={{ display: 'flex', minHeight: '100vh', width: '100vw' }}>
+      <Sidebar mobileOpen={mobileOpen} onMobileClose={toggleDrawer} />
 
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Header
-          onToggleDrawer={handleDrawerToggle}
-          onToggleSettings={handleSettingsToggle}
-        />
-
-        <Box component="main" sx={{ flexGrow: 1, p: 3, overflowY: 'auto', backgroundColor: 'background.default' }}>
+        <Box 
+          component="main" 
+          sx={{ 
+            flexGrow: 1, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            overflow: 'hidden', 
+            backgroundColor: 'background.default' 
+          }}
+        >
           {children}
         </Box>
       </Box>
 
-      <SettingsDrawer open={settingsOpen} onClose={handleSettingsToggle} />
+      <SettingsDrawer open={settingsOpen} onClose={toggleSettings} />
     </Box>
   );
 }
@@ -42,9 +37,11 @@ function LayoutContent({ children }) {
 export default function MainLayout({ children }) {
   return (
     <ThemeConfigProvider>
-      <LayoutContent>
-        {children}
-      </LayoutContent>
+      <LayoutProvider>
+        <LayoutContent>
+          {children}
+        </LayoutContent>
+      </LayoutProvider>
     </ThemeConfigProvider>
   );
 }
