@@ -465,7 +465,13 @@ export const Table = ({
                       }
                       onRowDoubleClick && onRowDoubleClick(row);
                     }}
-                    sx={{ cursor: 'pointer', '&.Mui-selected': { backgroundColor: 'primary.lighter' } }}
+                    onMouseDown={(e) => {
+                      if (e.detail > 1) e.preventDefault();
+                    }}
+                    sx={{ 
+                      cursor: 'pointer', 
+                      '&.Mui-selected': { backgroundColor: 'primary.lighter' } 
+                    }}
                   >
                     <TableCell padding="checkbox">
                       <Checkbox checked={isItemSelected} />
@@ -550,7 +556,13 @@ export const Table = ({
                   key={row[rowKey]}
                   hover
                   selected={isItemSelected}
-                  sx={{ cursor: 'pointer', '&.Mui-selected': { backgroundColor: 'primary.lighter' } }}
+                  onMouseDown={(e) => {
+                    if (e.detail > 1) e.preventDefault();
+                  }}
+                  sx={{ 
+                    cursor: 'pointer', 
+                    '&.Mui-selected': { backgroundColor: 'primary.lighter' } 
+                  }}
                 >
                   <TableCell padding="checkbox">
                     <Checkbox checked={isItemSelected} />

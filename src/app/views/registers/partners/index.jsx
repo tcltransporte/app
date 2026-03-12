@@ -7,6 +7,7 @@ import {
   FilterList as FilterIcon,
   Search as SearchIcon,
   Event as EventIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { Badge } from '@mui/material';
 
@@ -126,6 +127,9 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
 
   const primaryActions = [
     { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => navigation.setSelectedId(null) },
+    ...(table.selecteds.length === 1 ? [
+      { label: 'Editar', icon: <EditIcon />, variant: 'outlined', color: 'primary', onClick: () => navigation.setSelectedId(table.selecteds[0].id) },
+    ] : []),
     ...(table.selecteds.length > 0 ? [
       { label: 'Excluir', icon: <DeleteIcon />, variant: 'outlined', color: 'error', onClick: handleDelete },
     ] : []),
