@@ -9,9 +9,10 @@ export function middleware(request) {
     const loginUrl = new URL('/login', request.url)
 
     const pathname = request.nextUrl.pathname
+    const fullPath = pathname + (request.nextUrl.search || '')
 
-    if (pathname !== '/') {
-      loginUrl.searchParams.set('redirect', pathname)
+    if (fullPath !== '/') {
+      loginUrl.searchParams.set('redirect', fullPath)
     }
 
     return NextResponse.redirect(loginUrl)
@@ -30,6 +31,6 @@ export const config = {
      * - /assets (static assets)
      * - favicon.ico, sitemap.xml, robots.txt
      */
-    '/((?!login|_next|api|assets|favicon.ico|sitemap.xml|robots.txt).*)'
+    '/((?!login|redirect|_next|api|assets|favicon.ico|sitemap.xml|robots.txt).*)'
   ]
 }
