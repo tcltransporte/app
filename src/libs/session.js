@@ -13,9 +13,9 @@ export async function getSession() {
     const header = await headers()
 
     const cookie = await cookies()
-  
+
     let token = header.get("authorization")?.replace(/^Bearer\s+/i, "")
-  
+
     if (!token) {
       token = cookie.get("authorization")?.value
     }
@@ -28,7 +28,10 @@ export async function getSession() {
       attributes: ['id', 'lastAcess', 'expireIn'],
       include: [
         { model: db.User, as: 'user', attributes: ['id', 'userName'] },
-        { model: db.Company, as: 'company', attributes: ['id', 'name', 'surname'] }
+        {
+          model: db.Company, as: 'company', attributes: ['id', 'name', 'surname'], include: [
+            { model: db.CompanyBusiness, as: 'companyBusiness', attributes: ['id', 'name'] }]
+        }
       ],
       where: [{ id: token }]
     })

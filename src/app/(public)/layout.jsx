@@ -16,9 +16,6 @@ export default async function PublicLayout({ children }) {
     session = await getSession();
 
   } catch (error) {
-    if (error.message === 'NEXT_REDIRECT') {
-      throw error;
-    }
 
     if (currentPath === '/') {
       redirect('/login');
