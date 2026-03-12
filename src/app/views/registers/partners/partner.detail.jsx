@@ -6,19 +6,32 @@ import { Grid, Button } from '@mui/material';
 import { Dialog } from '@/components/common';
 import { TextField, CheckField, SelectField } from '@/components/controls';
 import * as partnerService from '@/app/services/partner.service';
-import { useNotification } from '@/context/NotificationContext';
+import { alert } from '@/libs/alert';
 
 export function PartnerDetail({ partnerId, onClose, onSave }) {
 
-  const { notify } = useNotification();
+  const formikRef = React.useRef(null);
   const [data, setData] = React.useState({});
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (!partnerId) { setData({}); return; }
+    if (partnerId === undefined) {
+      setData({});
+      formikRef.current?.resetForm();
+      return;
+    }
+    
+    if (partnerId === null) {
+      setData({});
+      formikRef.current?.resetForm();
+      return;
+    }
+
     setLoading(true)
     partnerService.findOne(partnerId)
-      .then(d => setData(d ?? {}))
+      .then(d => {
+        setData(d ?? {});
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [partnerId])
@@ -31,11 +44,11 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
       } else {
         await partnerService.create(values)
       }
-      notify('Salvo com sucesso!');
+      alert.success('Salvo com sucesso!');
       onSave?.()
     } catch (error) {
       console.error('Erro ao salvar:', error)
-      notify('Erro ao salvar!', 'error');
+      alert.error('Erro ao salvar', 'Ocorreu um problema ao tentar salvar o registro.');
     } finally {
       setLoading(false)
     }
@@ -43,6 +56,7 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
 
   return (
     <Formik
+      innerRef={formikRef}
       enableReinitialize
       initialValues={{
         cpfCnpj: data.cpfCnpj ?? '',

@@ -16,65 +16,74 @@ import { useTable, useNavigation, useRangeFilter, useFilter } from '@/hooks';
 import { Container, Table, Toolbar, RangeModal } from '@/components/common';
 import * as partnerService from '@/app/services/partner.service';
 import { ServiceStatus } from '@/libs/service';
+import { alert } from '@/libs/alert';
 
 export function RegistersPartners({ partnerId, initialTable, initialFilters, initialRange, dateFieldOptions = [] }) {
 
-  const navigation = useNavigation('/registers/partners', partnerId);
-  const table = useTable({
-    initialTable
-  });
+  const navigation = useNavigation('/registers/partners', partnerId)
 
-  const filter = useFilter(initialFilters);
-  const rangeFilter = useRangeFilter(initialRange, dateFieldOptions);
+  const table = useTable({ initialTable })
 
-  const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id);
-  const handleCloseModal = () => navigation.setSelectedId(undefined);
+  const filter = useFilter(initialFilters)
+  const rangeFilter = useRangeFilter(initialRange, dateFieldOptions)
 
+  const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id)
+  const handleCloseModal = () => navigation.setSelectedId(undefined)
 
   const handleSave = () => {
-    fetchTable();
-    handleCloseModal();
-  };
+    fetchTable()
+    handleCloseModal()
+  }
 
   const fetchTable = React.useCallback(async () => {
-    table.setLoading(true);
+    table.setLoading(true)
     try {
       const result = await partnerService.findAll({
         page: table.page,
         limit: table.rowsPerPage,
         filters: filter.filters,
         range: rangeFilter.range
-      });
+      })
 
       if (result.status !== ServiceStatus.SUCCESS)
-        throw result;
+        throw result
 
-      table.setItems(result.items || []);
-      table.setTotal(result.total || 0);
-      table.setSelecteds([]);
+      table.setItems(result.items || [])
+      table.setTotal(result.total || 0)
+      table.setSelecteds([])
 
     } catch (error) {
-      console.error('Erro ao buscar parceiros:', error);
+      console.error('Erro ao buscar parceiros:', error)
     } finally {
-      table.setLoading(false);
+      table.setLoading(false)
     }
-  }, [table.page, table.rowsPerPage, filter.filters, rangeFilter.range]);
+  }, [table.page, table.rowsPerPage, filter.filters, rangeFilter.range])
 
   const handleDelete = async () => {
-    if (!table.selecteds.length) return;
-    table.setLoading(true);
+    if (!table.selecteds.length) return
+
+    const confirmed = await alert.confirm(
+      'Tem certeza?',
+      `Deseja realmente excluir ${table.selecteds.length} parceiro(s)?`,
+      'warning'
+    )
+
+    if (!confirmed) return
+
+    table.setLoading(true)
     try {
       for (const item of table.selecteds) {
-        await partnerService.destroy(item.id);
+        await partnerService.destroy(item.id)
       }
-      await fetchTable();
+      await fetchTable()
+      alert.success('Parceiro(s) excluído(s) com sucesso!')
     } catch (error) {
-      console.error('Erro ao excluir:', error);
+      console.error('Erro ao excluir:', error)
+      alert.error('Erro ao excluir', 'Ocorreu um problema ao tentar excluir os registros.')
     } finally {
-      table.setLoading(false);
+      table.setLoading(false)
     }
-  };
-
+  }
 
   const columns = [
     { field: 'id', headerName: 'Código', width: 90 },
@@ -153,7 +162,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
           filters={filter.filters}
           onClose={filter.handleClose}
           onApply={(vals) => {
-            filter.handleApply(vals, () => table.setPage(1));
+            filter.handleApply(vals, () => table.setPage(1))
           }}
         />
 
@@ -166,7 +175,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
           initialField={rangeFilter.range.field}
           fieldOptions={dateFieldOptions}
           onApply={(vals) => {
-            rangeFilter.handleApply(vals, () => table.setPage(1));
+            rangeFilter.handleApply(vals, () => table.setPage(1))
           }}
         />
 

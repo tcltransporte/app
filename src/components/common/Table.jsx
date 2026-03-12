@@ -38,6 +38,7 @@ export const Table = ({
   const { isMobile } = useLayout();
   const longPressTimer = React.useRef(null);
   const isLongPress = React.useRef(false);
+  const clickTimer = React.useRef(null);
 
   if (isMobile) {
     const handleCardTouchStart = (id) => {
@@ -263,8 +264,20 @@ export const Table = ({
                 key={row[rowKey]}
                 hover
                 selected={isItemSelected}
-                onClick={() => onSelect(row)}
-                onDoubleClick={() => onRowDoubleClick && onRowDoubleClick(row)}
+                onClick={(e) => {
+                  if (e.detail === 1) {
+                    clickTimer.current = setTimeout(() => {
+                      onSelect(row);
+                    }, 250);
+                  }
+                }}
+                onDoubleClick={() => {
+                  if (clickTimer.current) {
+                    clearTimeout(clickTimer.current);
+                    clickTimer.current = null;
+                  }
+                  onRowDoubleClick && onRowDoubleClick(row);
+                }}
                 sx={{ cursor: 'pointer', '&.Mui-selected': { backgroundColor: 'primary.lighter' } }}
               >
                 <TableCell padding="checkbox">

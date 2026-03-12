@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 
-export function middleware(request) {
+export function proxy(request) {
 
   const token = request.cookies.get('authorization')
 
   if (!token) {
 
-    const loginUrl = new URL('/login', request.url)
+    const loginUrl = new URL('/sign-in', request.url)
 
     const pathname = request.nextUrl.pathname
     const fullPath = pathname + (request.nextUrl.search || '')
@@ -25,12 +25,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths EXCEPT:
-     * - /login (public auth page)
+     * - /sign-in (public auth page)
      * - /_next (Next.js internals)
      * - /api (API routes)
      * - /assets (static assets)
      * - favicon.ico, sitemap.xml, robots.txt
      */
-    '/((?!login|redirect|_next|api|assets|favicon.ico|sitemap.xml|robots.txt).*)'
+    '/((?!sign-in|redirect|_next|api|assets|favicon.ico|sitemap.xml|robots.txt).*)'
   ]
 }

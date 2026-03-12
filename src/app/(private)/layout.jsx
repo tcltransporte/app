@@ -18,9 +18,9 @@ export default async function PublicLayout({ children }) {
   } catch (error) {
 
     if (currentPath === '/') {
-      redirect('/login');
+      redirect('/sign-in');
     } else {
-      redirect(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      redirect(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
     }
   }
 

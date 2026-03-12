@@ -25,6 +25,7 @@
     "sequelize": "^6.37.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-react": "^5.31.2",
+    "sweetalert2": "^11.26.22",
     "tedious": "^19.2.1"
   },
   "devDependencies": {

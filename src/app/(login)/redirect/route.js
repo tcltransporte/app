@@ -9,7 +9,7 @@ export async function GET(request) {
   const url = searchParams.get('url') || '/'
 
   if (!token) {
-    const loginUrl = url !== '/' ? `/login?redirect=${encodeURIComponent(url)}` : '/login'
+    const loginUrl = url !== '/' ? `/sign-in?redirect=${encodeURIComponent(url)}` : '/sign-in'
     redirect(loginUrl)
   }
 

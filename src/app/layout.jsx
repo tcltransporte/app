@@ -5,6 +5,7 @@ import * as companyService from "@/app/services/settings/company.service";
 import { ServiceStatus } from "@/libs/service";
 import { Suspense } from 'react';
 import RouteProgressBar from '@/components/RouteProgressBar';
+import '@/styles/swal-custom.css';
 
 const inter = Inter({ subsets: ['latin'] });
 

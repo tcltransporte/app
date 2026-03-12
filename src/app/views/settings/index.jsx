@@ -40,7 +40,7 @@ export function SettingsView({ initialCompany, initialUser }) {
 
                 await loginService.signOut()
 
-                router.push("/login")
+                router.push("/sign-in")
                 router.refresh()
 
             } catch (error) {
