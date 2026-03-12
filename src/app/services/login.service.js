@@ -11,7 +11,7 @@ import { ServiceResponse } from "@/libs/service";
 
 import { cookies } from 'next/headers';
 
-export async function signIn({ username, password, companyBusinessId, companyId }) {
+export async function signIn({ username, password, companyBusinessId, companyId, forceCloseSession = false }) {
   try {
 
     const db = new AppContext();
@@ -96,6 +96,23 @@ export async function signIn({ username, password, companyBusinessId, companyId 
 
       if (!companyId)
         throw ServiceResponse.badRequest("SELECT_COMPANY", "Selecione a filial!", { companies })
+
+      const existingSessions = await sessionRepository.findAll(
+        { db, transaction },
+        { where: { userId: user.userId } }
+      );
+
+      if (existingSessions.length > 0) {
+        if (!forceCloseSession) {
+          throw ServiceResponse.badRequest("ACTIVE_SESSION_EXISTS", "Existe uma sessão aberta para o seu usuário.");
+        } else {
+          // User opted to force close old sessions
+          await sessionRepository.destroy(
+            { db, transaction },
+            { where: [{ userId: user.userId }] }
+          );
+        }
+      }
 
       const session = await sessionRepository.create(
         { db, transaction },

@@ -10,9 +10,11 @@ import {
   FormControlLabel,
   Link,
   IconButton,
+  Drawer,
   InputAdornment,
   Divider,
   Paper,
+  Avatar,
   useTheme,
   useMediaQuery,
   MenuItem,
@@ -24,6 +26,7 @@ import {
   Visibility,
   VisibilityOff,
   Google as GoogleIcon,
+  AccountCircle,
   ArrowBack
 } from "@mui/icons-material"
 import * as loginService from "@/app/services/login.service"
@@ -52,6 +55,10 @@ export function LoginView() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
+  // Variables for session conflict Drawer
+  const [sessionConflict, setSessionConflict] = useState(false)
+  const [currentValues, setCurrentValues] = useState(null)
+
   const handleLogin = async (values, setFieldValue, setFieldError) => {
     setLoading(true)
     setError("")
@@ -63,10 +70,9 @@ export function LoginView() {
         throw loginResult
       }
 
-      if (loginResult.data?.token) {
-        const redirectUrl = redirectParam || "/settings"
-        router.push(redirectUrl)
-        router.refresh()
+      if (loginResult.token) {
+        const redirectUrl = redirectParam || "/"
+        window.location.href = redirectUrl
       }
     } catch (err) {
       if (err.code === "SELECT_COMPANY_BUSINESS") {
@@ -75,6 +81,9 @@ export function LoginView() {
       } else if (err.code === "SELECT_COMPANY") {
         setCompanies(err.companies || [])
         setStep('selection')
+      } else if (err.code === "ACTIVE_SESSION_EXISTS") {
+        setSessionConflict(true)
+        setCurrentValues(values)
       } else {
         setError(err.message || "Erro ao realizar login")
       }
@@ -305,7 +314,7 @@ export function LoginView() {
           fullWidth
           variant="contained"
           onClick={() => handleLogin(values, setFieldValue)}
-          disabled={loading || !values.companyId}
+          disabled={loading}
           sx={{
             py: 1.5,
             mt: 2,
@@ -420,6 +429,67 @@ export function LoginView() {
             </>
           )}
         </Formik>
+
+        {/* Session Conflict Drawer */}
+        <Drawer
+          anchor="bottom"
+          open={sessionConflict}
+          onClose={() => setSessionConflict(false)}
+          PaperProps={{
+            sx: {
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              p: 4,
+              backgroundColor: isDark ? '#1e1e1e' : '#fff'
+            }
+          }}
+        >
+          <Box sx={{ textAlign: 'center' }}>
+            <Avatar sx={{ bgcolor: '#ef444415', color: '#ef4444', width: 64, height: 64, mx: 'auto', mb: 2 }}>
+              <AccountCircle sx={{ fontSize: 32 }} />
+            </Avatar>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
+              Este usuário já está logado em outro dispositivo
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+              Parece que o seu usuário já está conectado em outro dispositivo. Deseja encerrar a outra sessão e continuar o login aqui?
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'center' }}>
+              <Button
+                variant="text"
+                onClick={() => {
+                  setSessionConflict(false)
+                  setLoading(false)
+                }}
+                disabled={loading}
+                sx={{ py: 1.2, px: 4, borderRadius: 2, fontWeight: 'bold', minWidth: 160 }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  setSessionConflict(false)
+                  // Call handleLogin forcing the session replacement
+                  handleLogin({ ...currentValues, forceCloseSession: true }, null, null)
+                }}
+                disabled={loading}
+                sx={{
+                  py: 1.2,
+                  px: 4,
+                  backgroundColor: primaryColor,
+                  '&:hover': { backgroundColor: primaryColor },
+                  borderRadius: 2,
+                  fontWeight: 'bold',
+                  minWidth: 160
+                }}
+              >
+                {loading ? 'Carregando...' : 'Continuar'}
+              </Button>
+            </Box>
+          </Box>
+        </Drawer>
       </Box>
     </Box>
   )
