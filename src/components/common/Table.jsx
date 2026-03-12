@@ -33,8 +33,33 @@ export const Table = ({
   onRowDoubleClick
 }) => {
   const { isMobile } = useLayout();
+  const longPressTimer = React.useRef(null);
+  const isLongPress = React.useRef(false);
 
   if (isMobile) {
+    const handleCardTouchStart = (id) => {
+      isLongPress.current = false;
+      longPressTimer.current = setTimeout(() => {
+        isLongPress.current = true;
+        onSelect(id); // Select on long press
+      }, 500);
+    };
+
+    const handleCardTouchEnd = (e, row) => {
+      clearTimeout(longPressTimer.current);
+      
+      // If it wasn't a long press, handle the click logic
+      if (!isLongPress.current) {
+        if (selecteds.length > 0) {
+          // If already in selection mode, any click toggles selection
+          onSelect(row.id);
+        } else {
+          // If no selection, click opens the record
+          onRowDoubleClick && onRowDoubleClick(row);
+        }
+      }
+    };
+
     return (
         <Box sx={{ 
           flexGrow: 1, 
@@ -78,8 +103,10 @@ export const Table = ({
             <Paper
               key={row.id}
               elevation={0}
-              onClick={() => onSelect(row.id)}
-              onDoubleClick={() => onRowDoubleClick && onRowDoubleClick(row)}
+              onMouseDown={() => handleCardTouchStart(row.id)}
+              onMouseUp={(e) => handleCardTouchEnd(e, row)}
+              onTouchStart={() => handleCardTouchStart(row.id)}
+              onTouchEnd={(e) => handleCardTouchEnd(e, row)}
               sx={{
                 p: 2,
                 border: '1px solid',
@@ -88,6 +115,7 @@ export const Table = ({
                 backgroundColor: isItemSelected ? 'primary.lighter' : 'background.paper',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
+                userSelect: 'none', // Prevent text selection on long press
                 '&:active': { transform: 'scale(0.98)' }
               }}
             >
@@ -96,6 +124,10 @@ export const Table = ({
                   checked={isItemSelected} 
                   size="small" 
                   sx={{ p: 0, mr: 1.5, mt: 0.3 }} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect(row.id);
+                  }}
                 />
                 <Box sx={{ flexGrow: 1 }}>
                   <Typography variant="subtitle2" color="primary.main" fontWeight={700}>
@@ -106,8 +138,6 @@ export const Table = ({
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {columns.map((col, index) => {
-                  // Skip the "ID" equivalent or already shown primary field if needed, 
-                  // but here we show all for completeness as requested "caiba todos os dados"
                   return (
                     <Box key={col.field} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="caption" color="text.secondary" fontWeight={500}>

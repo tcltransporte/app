@@ -12,9 +12,7 @@ import {
 import { PartnerDetail } from './partners.detail';
 import { useTable } from '@/hooks/useTable';
 import { useViewNavigation } from '@/hooks/useViewNavigation';
-import { Container } from '@/components/common/Container';
-import { Table } from '@/components/common/Table';
-import { Toolbar } from '@/components/common/Toolbar';
+import { Container, Table, Toolbar } from '@/components/common';
 
 const mockClientes = [
   { id: 1, doc: '52692', beneficiario: 'Edson Dos Santos', categoria: '1.06 - Vendas Mercado Livre Full', tipo: '-', vencimento: '01/03/2026', agendamento: '-', valor: '39,95', conta: '-' },
@@ -89,13 +87,7 @@ export function ViewPartners({ partnerId }) {
   ]
 
   const primaryActions = [
-    {
-      label: 'Adicionar',
-      icon: <AddIcon />,
-      variant: 'contained',
-      color: 'primary',
-      onClick: () => setSelectedId(null)
-    },
+    { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => setSelectedId(null) },
     { label: 'Importar', icon: <CloudUploadIcon />, variant: 'inherit', color: 'text', onClick: () => { } },
   ]
 

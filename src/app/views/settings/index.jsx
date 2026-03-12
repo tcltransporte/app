@@ -7,7 +7,7 @@ import * as loginService from "@/app/services/login.service"
 import * as companyService from "@/app/services/settings/company.service"
 import { ServiceStatus } from "@/libs/service"
 import { useRouter } from "next/navigation"
-import { Container } from "@/components/common/Container"
+import { Container } from "@/components/common"
 import { Typography, Breadcrumbs, Box } from "@mui/material"
 
 export function SettingsView({ initialCompany, initialUser }) {

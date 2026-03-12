@@ -2,7 +2,7 @@
 
 import React from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Dialog as MuiDialog, DialogTitle, DialogContent, DialogActions,
   Divider, CircularProgress, Backdrop, IconButton,
   useMediaQuery, useTheme
 } from '@mui/material';
@@ -16,7 +16,7 @@ function Actions({ children }) {
   return <DialogActions sx={{ p: 2.5, pt: 1.5 }}>{children}</DialogActions>;
 }
 
-export function DetailModal({ open, loading, title, onClose, children, maxWidth = 'sm' }) {
+export function Dialog({ open, loading, title, onClose, children, maxWidth = 'sm' }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -29,7 +29,7 @@ export function DetailModal({ open, loading, title, onClose, children, maxWidth 
   );
 
   return (
-    <Dialog 
+    <MuiDialog 
       open 
       onClose={onClose} 
       fullWidth 
@@ -49,9 +49,9 @@ export function DetailModal({ open, loading, title, onClose, children, maxWidth 
       </DialogTitle>
       <Divider />
       {children}
-    </Dialog>
+    </MuiDialog>
   );
 }
 
-DetailModal.Content = Content;
-DetailModal.Actions = Actions;
+Dialog.Content = Content;
+Dialog.Actions = Actions;

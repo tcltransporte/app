@@ -3,7 +3,7 @@
 import React from 'react';
 import { Formik, Form, Field } from 'formik';
 import { Grid, TextField, Button } from '@mui/material';
-import { DetailModal } from '@/components/common/DetailModal';
+import { Dialog } from '@/components/common';
 import { getPartner } from '@/app/actions/partners.actions';
 
 export function PartnerDetail({ partnerId, onClose, onSave }) {
@@ -34,13 +34,13 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
       onSubmit={onSave}
     >
       {({ submitForm }) => (
-        <DetailModal
+        <Dialog
           open={partnerId !== undefined}
           loading={loading}
           title={partnerId === null ? 'Novo Cliente' : `Editar Cliente: ${data?.beneficiario || ''}`}
           onClose={onClose}
         >
-          <DetailModal.Content>
+          <Dialog.Content>
             <Form>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}><Field as={TextField} name="doc" label="Nº Doc." fullWidth size="small" /></Grid>
@@ -51,14 +51,15 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
                 <Grid item xs={12} sm={6}><Field as={TextField} name="tipo" label="Tipo" fullWidth size="small" /></Grid>
               </Grid>
             </Form>
-          </DetailModal.Content>
+          </Dialog.Content>
 
-          <DetailModal.Actions>
+          <Dialog.Actions>
             <Button onClick={onClose} color="inherit" sx={{ textTransform: 'none', fontWeight: 600 }}>Cancelar</Button>
             <Button onClick={submitForm} variant="contained" sx={{ textTransform: 'none', fontWeight: 600, px: 3 }}>Salvar</Button>
-          </DetailModal.Actions>
-        </DetailModal>
+          </Dialog.Actions>
+        </Dialog>
       )}
     </Formik>
   );
 }
+
