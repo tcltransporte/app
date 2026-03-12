@@ -6,6 +6,8 @@ import { ServiceStatus } from "@/libs/service";
 
 const inter = Inter({ subsets: ['latin'] });
 
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
+
 export const metadata = {
   title: 'Sistema de Gestão de Grupos',
   description: 'Gestão de filiais e grupos de empresas',
@@ -29,10 +31,12 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="pt-br">
-      <body className={inter.className} style={{ margin: 0, backgroundColor: '#fafafa' }}>
-        <ThemeContextProvider initialConfig={themeConfig} initialMobile={isMobile}>
-          {children}
-        </ThemeContextProvider>
+      <body className={inter.className} style={{ margin: 0, backgroundColor: '#fafafa' }} suppressHydrationWarning>
+        <AppRouterCacheProvider>
+          <ThemeContextProvider initialConfig={themeConfig} initialMobile={isMobile}>
+            {children}
+          </ThemeContextProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   )

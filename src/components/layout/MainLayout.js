@@ -10,10 +10,7 @@ function LayoutContent({ children }) {
   const { mobileOpen, toggleDrawer } = useLayout();
 
   return (
-    <div 
-      suppressHydrationWarning
-      style={{ display: 'flex', minHeight: '100vh', width: '100%' }}
-    >
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <Sidebar mobileOpen={mobileOpen} onMobileClose={toggleDrawer} />
 
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

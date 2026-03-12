@@ -35,14 +35,6 @@ import Image from "next/image"
 
 
 export function LoginView() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <LoginContent />
-    </Suspense>
-  )
-}
-
-function LoginContent() {
   const { primaryColor, mode } = useContext(ThemeContext)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true })
@@ -280,32 +272,34 @@ function LoginContent() {
           }}
         />
 
-        <Field
-          component={SelectField}
-          name="companyId"
-          label="Filial"
-          fullWidth
-          variant="filled"
-          disabled={!companies.length}
-          options={companies.map(c => ({ value: c.companyId, label: c.surname }))}
-          onChange={(val) => handleBranchChange(val, values, setFieldValue)}
-          sx={{
-            '& .MuiFilledInput-root': {
-              borderRadius: 2,
-              border: '1px solid transparent',
-              transition: 'all 0.2s ease',
-              '&.Mui-focused': {
-                borderColor: primaryColor,
-                backgroundColor: `${primaryColor}11`,
+        {companies.length > 0 && (
+          <Field
+            component={SelectField}
+            name="companyId"
+            label="Filial"
+            fullWidth
+            variant="filled"
+            disabled={!companies.length}
+            options={companies.map(c => ({ value: c.companyId, label: c.surname }))}
+            onChange={(val) => handleBranchChange(val, values, setFieldValue)}
+            sx={{
+              '& .MuiFilledInput-root': {
+                borderRadius: 2,
+                border: '1px solid transparent',
+                transition: 'all 0.2s ease',
+                '&.Mui-focused': {
+                  borderColor: primaryColor,
+                  backgroundColor: `${primaryColor}11`,
+                }
               }
-            }
-          }}
-          slotProps={{
-            input: {
-              disableUnderline: true,
-            }
-          }}
-        />
+            }}
+            slotProps={{
+              input: {
+                disableUnderline: true,
+              }
+            }}
+          />
+        )}
 
         <Button
           fullWidth

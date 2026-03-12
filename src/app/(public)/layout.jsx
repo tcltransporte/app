@@ -6,8 +6,6 @@ import { headers } from 'next/headers';
 
 export default async function PublicLayout({ children }) {
 
-  console.log('public layout')
-
   let session = null;
   let currentPath = '/';
 
@@ -17,22 +15,11 @@ export default async function PublicLayout({ children }) {
     currentPath = headersList.get('x-invoke-path') || '/';
     session = await getSession();
 
-    console.log('session', session)
-
-    if (!session?.id) {
-      if (currentPath === '/') {
-        redirect('/login');
-      } else {
-        redirect(`/login?redirect=${encodeURIComponent(currentPath)}`);
-      }
-    }
-
   } catch (error) {
     if (error.message === 'NEXT_REDIRECT') {
       throw error;
     }
 
-    console.log(error);
     if (currentPath === '/') {
       redirect('/login');
     } else {
