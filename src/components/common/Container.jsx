@@ -6,28 +6,33 @@ import Header from '@/components/layout/Header';
 import { Title } from '@/components/common/Title';
 import { Footer } from '@/components/common/Footer';
 
-export const ViewContainer = ({ children }) => {
+const ContainerTitle = (props) => <Title {...props} />;
+const ContainerFooter = (props) => <Footer {...props} />;
+const ContainerContent = ({ children }) => <>{children}</>;
+
+export const Container = ({ children }) => {
   let title = null;
   let footer = null;
-  const content = [];
-
-  const getComponentType = (child) => {
-    if (!isValidElement(child)) return null;
-    const type = child.type;
-    return type?.displayName || type?.name || type;
-  };
+  let mainContent = null;
+  const otherContent = [];
 
   React.Children.forEach(children, (child) => {
-    const typeIdentifier = getComponentType(child);
-    
-    if (typeIdentifier === Title || typeIdentifier === 'Title') {
+    if (!isValidElement(child)) {
+      otherContent.push(child);
+      return;
+    }
+
+    if (child.type === ContainerTitle) {
       title = child;
-    } else if (typeIdentifier === Footer || typeIdentifier === 'Footer') {
+    } else if (child.type === ContainerFooter) {
       footer = child;
+    } else if (child.type === ContainerContent) {
+      mainContent = child.props.children;
     } else {
-      content.push(child);
+      otherContent.push(child);
     }
   });
+
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header>
@@ -39,12 +44,12 @@ export const ViewContainer = ({ children }) => {
         display: 'flex',
         flexDirection: 'column',
         p: { xs: 2, md: 3 },
-        pb: footer ? 0 : { xs: 2, md: 3 }, // No bottom padding if footer exists
+        pb: footer ? 0 : { xs: 2, md: 3 },
         overflow: 'hidden',
         backgroundColor: 'background.default',
         gap: 2
       }}>
-        {content}
+        {mainContent || otherContent}
       </Box>
 
       {footer && (
@@ -55,3 +60,10 @@ export const ViewContainer = ({ children }) => {
     </Box>
   );
 };
+
+Container.Title = ContainerTitle;
+Container.Footer = ContainerFooter;
+Container.Content = ContainerContent;
+
+
+

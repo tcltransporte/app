@@ -9,15 +9,12 @@ import {
   CloudUpload as CloudUploadIcon
 } from '@mui/icons-material';
 
-import { useRouter } from 'next/navigation';
-
 import { PartnerDetail } from './partners.detail';
 import { useTable } from '@/hooks/useTable';
-import { Title } from '@/components/common/Title';
-import { ViewContainer } from '@/components/common/ViewContainer';
+import { useViewNavigation } from '@/hooks/useViewNavigation';
+import { Container } from '@/components/common/Container';
 import { Table } from '@/components/common/Table';
 import { Toolbar } from '@/components/common/Toolbar';
-import { Footer } from '@/components/common/Footer';
 
 const mockClientes = [
   { id: 1, doc: '52692', beneficiario: 'Edson Dos Santos', categoria: '1.06 - Vendas Mercado Livre Full', tipo: '-', vencimento: '01/03/2026', agendamento: '-', valor: '39,95', conta: '-' },
@@ -64,29 +61,12 @@ const mockClientes = [
 
 export function ViewPartners({ partnerId }) {
 
-  const router = useRouter()
-
   const { selecteds, onSelect, onSelectAll } = useTable(mockClientes)
 
-  const [selectedId, setSelectedId] = React.useState(partnerId);
+  const { selectedId, setSelectedId } = useViewNavigation('/registers/partners', partnerId);
 
-  // Sync URL correctly on initial mount if partnerId is passed
-  React.useEffect(() => {
-    setSelectedId(partnerId);
-    if (partnerId) {
-      window.history.replaceState(null, '', `/registers/partners/${partnerId}`)
-    }
-  }, [partnerId]);
-
-  const handleRowDoubleClick = (row) => {
-    setSelectedId(row.id)
-    window.history.pushState(null, '', `/registers/partners/${row.id}`)
-  }
-
-  const handleCloseModal = () => {
-    setSelectedId(undefined)
-    window.history.pushState(null, '', '/registers/partners')
-  }
+  const handleRowDoubleClick = (row) => setSelectedId(row.id);
+  const handleCloseModal = () => setSelectedId(undefined);
 
   const handleSave = () => {
     alert('Alterações salvas com sucesso!')
@@ -109,7 +89,13 @@ export function ViewPartners({ partnerId }) {
   ]
 
   const primaryActions = [
-    { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => setSelectedId(null) },
+    {
+      label: 'Adicionar',
+      icon: <AddIcon />,
+      variant: 'contained',
+      color: 'primary',
+      onClick: () => setSelectedId(null)
+    },
     { label: 'Importar', icon: <CloudUploadIcon />, variant: 'inherit', color: 'text', onClick: () => { } },
   ]
 
@@ -120,33 +106,36 @@ export function ViewPartners({ partnerId }) {
   ]
 
   return (
-    <ViewContainer>
+    <Container>
 
-      <Title items={[{ label: 'Cadastros' }, { label: 'Clientes' }]} />
+      <Container.Title items={[{ label: 'Cadastros' }, { label: 'Clientes' }]} />
 
-      <Toolbar
-        primary={primaryActions}
-        secondary={secondaryActions}
-        selectedCount={selecteds.length}
-      />
+      <Container.Content>
 
-      <Table
-        columns={columns}
-        items={mockClientes}
-        selecteds={selecteds}
-        onSelect={onSelect}
-        onSelectAll={onSelectAll}
-        onRowDoubleClick={handleRowDoubleClick}
-      />
+        <Toolbar
+          primary={primaryActions}
+          secondary={secondaryActions}
+        />
 
-      <PartnerDetail
-        partnerId={selectedId}
-        onClose={handleCloseModal}
-        onSave={handleSave}
-      />
+        <Table
+          columns={columns}
+          items={mockClientes}
+          selecteds={selecteds}
+          onSelect={onSelect}
+          onSelectAll={onSelectAll}
+          onRowDoubleClick={handleRowDoubleClick}
+        />
 
-      <Footer total={40} selectedCount={selecteds.length} />
+        <PartnerDetail
+          partnerId={selectedId}
+          onClose={handleCloseModal}
+          onSave={handleSave}
+        />
 
-    </ViewContainer>
+      </Container.Content>
+
+      <Container.Footer total={40} selectedCount={selecteds.length} />
+
+    </Container>
   )
 }
