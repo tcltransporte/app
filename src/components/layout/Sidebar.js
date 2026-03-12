@@ -41,6 +41,7 @@ import {
   Dashboard
 } from '@mui/icons-material';
 import { ThemeContext } from '@/context/ThemeContext';
+import { SessionContext } from '@/context/SessionContext';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -80,12 +81,16 @@ const menuItems = [
   },
 ];
 
-export default function Sidebar({ mobileOpen, onMobileClose }) {
+export default function Sidebar({ mobileOpen, onMobileClose, session: propSession }) {
   const router = useRouter();
   const pathname = usePathname();
   const { menu, setMenu, primaryColor, mode, semiDark } = useContext(ThemeContext);
+  const { session: contextSession } = useContext(SessionContext);
   const [isHovered, setIsHovered] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null); // Tracks which menu item's submenu is open
+  
+  // propSession is available when drilling down; otherwise use context
+  const activeSession = propSession || contextSession;
 
   const { isMobile } = useLayout();
   const theme = useTheme();
@@ -182,9 +187,9 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
               fontWeight: 'bold',
               fontSize: '12px',
               boxShadow: `0 4px 8px ${primaryColor}44`
-            }}>PP</Box>
+            }}>{activeSession?.company?.surname?.substring(0, 2).toUpperCase() || 'EMP'}</Box>
             <Typography variant="h6" sx={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.02em', color: sidebarText }}>
-              Paraíso Piscinas
+              {activeSession?.company?.surname || 'Empresa'}
             </Typography>
           </Box>
         )}
@@ -201,7 +206,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
             fontWeight: 'bold',
             fontSize: '14px',
             boxShadow: `0 4px 12px ${primaryColor}66`
-          }}>PP</Box>
+          }}>{activeSession?.company?.surname?.substring(0, 2).toUpperCase() || 'EMP'}</Box>
         )}
       </Box>
 

@@ -12,10 +12,11 @@ export const metadata = {
 }
 
 export default async function RootLayout({ children }) {
+
   const cookieStore = await cookies();
   const headerList = await headers();
   const userAgent = headerList.get('user-agent') || '';
-  
+
   // Basic server-side mobile detection
   const isMobile = /mobile|android|iphone|ipad|phone/i.test(userAgent);
 
@@ -26,18 +27,6 @@ export default async function RootLayout({ children }) {
     semiDark: cookieStore.get('theme-semiDark')?.value === 'true',
   };
 
-  let session = { user: null, company: null };
-  try {
-    const sessionResult = await companyService.findOne();
-    if (sessionResult.status === ServiceStatus.SUCCESS) {
-      session = { user: sessionResult.user, company: sessionResult.company };
-    }
-  } catch (e) {
-    // Session not found or error, likely a public page
-  }
-
-  themeConfig.session = session;
-
   return (
     <html lang="pt-br">
       <body className={inter.className} style={{ margin: 0, backgroundColor: '#fafafa' }}>
@@ -47,4 +36,4 @@ export default async function RootLayout({ children }) {
       </body>
     </html>
   )
-}
+}

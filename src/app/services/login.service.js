@@ -9,6 +9,8 @@ import * as companyUserRepository from '@/app/repositories/companyUser.repositor
 import { getSession } from "@/libs/session";
 import { ServiceResponse } from "@/libs/service";
 
+import { cookies } from 'next/headers';
+
 export async function signIn({ username, password, companyBusinessId, companyId }) {
   try {
 
@@ -109,6 +111,9 @@ export async function signIn({ username, password, companyBusinessId, companyId 
 
     });
 
+    const cookieStore = await cookies();
+    cookieStore.set('authorization', result.token, { path: '/', maxAge: 60 * 60 * 8 });
+
     return ServiceResponse.success(result);
 
   } catch (error) {
@@ -130,6 +135,9 @@ export async function signOut() {
       await sessionRepository.destroy({ db, transaction }, { where: [{ id: session.id }] })
   
     })
+
+    const cookieStore = await cookies();
+    cookieStore.delete('authorization');
     
     return ServiceResponse.success()
     

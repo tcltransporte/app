@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useContext } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useContext, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Box,
   Typography,
@@ -35,10 +35,20 @@ import Image from "next/image"
 
 
 export function LoginView() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const { primaryColor, mode } = useContext(ThemeContext)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true })
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectParam = searchParams.get('redirect')
 
   const isDark = mode === 'dark'
 
@@ -61,9 +71,9 @@ export function LoginView() {
         throw loginResult
       }
 
-      if (loginResult.token) {
-        document.cookie = `authorization=${loginResult.token}; path=/; max-age=${60 * 60 * 8}`
-        router.push("/settings")
+      if (loginResult.data?.token) {
+        const redirectUrl = redirectParam || "/settings"
+        router.push(redirectUrl)
         router.refresh()
       }
     } catch (err) {

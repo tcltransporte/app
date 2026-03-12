@@ -5,13 +5,15 @@ import { AppBar, Toolbar, IconButton, Typography, Box, Breadcrumbs, Link, Avatar
 import { Menu as MenuIcon, Settings as SettingsIcon, Logout, Person, Settings } from '@mui/icons-material';
 import { useLayout } from '@/context/LayoutContext';
 import { ThemeContext } from "@/context/ThemeContext";
+import { SessionContext } from '@/context/SessionContext';
 import { useContext, useState } from 'react';
 import * as loginService from "@/app/services/login.service";
 import { useRouter } from "next/navigation";
 
 export default function Header({ children }) {
   const { toggleDrawer, toggleSettings } = useLayout();
-  const { session, primaryColor } = useContext(ThemeContext);
+  const { primaryColor } = useContext(ThemeContext);
+  const { session } = useContext(SessionContext);
   const router = useRouter();
   
   const [anchorEl, setAnchorEl] = useState(null);
@@ -31,7 +33,7 @@ export default function Header({ children }) {
     }
   };
 
-  const name = session.user?.userName || '';
+  const name = session?.user?.userName || '';
   const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
   return (
