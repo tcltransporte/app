@@ -20,6 +20,16 @@ export const useTable = ({
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [loading, setLoading] = useState(false);
   const [selecteds, setSelecteds] = useState([]);
+  const [sortBy, setSortBy] = useState(null);
+  const [sortOrder, setSortOrder] = useState('ASC');
+  const [orderedColumns, setOrderedColumns] = useState([]);
+
+  const handleSort = useCallback((property) => {
+    const isAsc = sortBy === property && sortOrder === 'ASC';
+    setSortOrder(isAsc ? 'DESC' : 'ASC');
+    setSortBy(property);
+    setPage(1);
+  }, [sortBy, sortOrder]);
 
   const onSelectAll = useCallback((event) => {
     if (event.target.checked) {
@@ -79,10 +89,18 @@ export const useTable = ({
     selecteds,
     setSelecteds,
     
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
+    orderedColumns,
+    setOrderedColumns,
+    
     // Handlers
     onSelect,
     onSelectAll,
     handlePageChange,
     handleRowsPerPageChange,
+    handleSort,
   };
 };

@@ -7,7 +7,7 @@ import { AppContext } from "@/database"
 import { ServiceResponse } from "@/libs/service"
 import { getSession } from "@/libs/session"
 
-export async function findAll({ page = 1, limit = 50, filters = {}, range = {} } = {}) {
+export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'surname', sortOrder = 'ASC' } = {}) {
   try {
 
     const session = await getSession()
@@ -53,7 +53,7 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {} }
         where,
         limit,
         offset,
-        order: [['surname', 'ASC']]
+        order: [[sortBy || 'surname', sortOrder || 'ASC']]
       })
 
     })

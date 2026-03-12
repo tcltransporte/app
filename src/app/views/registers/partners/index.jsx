@@ -42,7 +42,9 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
         page: table.page,
         limit: table.rowsPerPage,
         filters: filter.filters,
-        range: rangeFilter.range
+        range: rangeFilter.range,
+        sortBy: table.sortBy,
+        sortOrder: table.sortOrder
       })
 
       if (result.status !== ServiceStatus.SUCCESS)
@@ -57,7 +59,16 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
     } finally {
       table.setLoading(false)
     }
-  }, [table.page, table.rowsPerPage, filter.filters, rangeFilter.range])
+  }, [table.page, table.rowsPerPage, filter.filters, rangeFilter.range, table.sortBy, table.sortOrder])
+
+  const isFirstMount = React.useRef(true)
+  React.useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false
+      return
+    }
+    fetchTable()
+  }, [fetchTable])
 
   const handleDelete = async () => {
     if (!table.selecteds.length) return
@@ -104,6 +115,15 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
     },
   ]
 
+  // Initialize columns in hook if not already done
+  React.useEffect(() => {
+    if (table.orderedColumns.length === 0 && columns.length > 0) {
+      table.setOrderedColumns(columns)
+    }
+  }, [columns, table.orderedColumns.length, table.setOrderedColumns])
+
+  const displayColumns = table.orderedColumns.length > 0 ? table.orderedColumns : columns
+
   const primaryActions = [
     { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => navigation.setSelectedId(null) },
     ...(table.selecteds.length > 0 ? [
@@ -142,12 +162,16 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
         />
 
         <Table
-          columns={columns}
+          columns={displayColumns}
           items={table.items}
           selecteds={table.selecteds}
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}
           onRowDoubleClick={handleRowDoubleClick}
+          onSort={table.handleSort}
+          sortBy={table.sortBy}
+          sortOrder={table.sortOrder}
+          onColumnsReorder={table.setOrderedColumns}
           loading={table.loading}
         />
 

@@ -15,9 +15,76 @@ import {
   Divider,
   Fade,
   Slide,
-  Skeleton
+  Skeleton,
+  TableSortLabel
 } from '@mui/material';
 import { keyframes } from '@mui/system';
+
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+const SortableHeader = ({ col, sortBy, sortOrder, onSort }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: col.field });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 2 : 1,
+    position: 'relative',
+    backgroundColor: 'inherit',
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
+    cursor: 'grab',
+    opacity: isDragging ? 0.5 : 1,
+    ...col.headerSx
+  };
+
+  return (
+    <TableCell
+      ref={setNodeRef}
+      style={style}
+      align={col.align || 'left'}
+      {...attributes}
+      {...listeners}
+    >
+      {col.sortable !== false ? (
+        <TableSortLabel
+          active={sortBy === col.field}
+          direction={sortBy === col.field ? sortOrder.toLowerCase() : 'asc'}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSort && onSort(col.field);
+          }}
+        >
+          {col.headerName}
+        </TableSortLabel>
+      ) : (
+        col.headerName
+      )}
+    </TableCell>
+  );
+};
 
 const slideUp = keyframes`
   0% { opacity: 0; transform: translateY(30px); }
@@ -32,9 +99,39 @@ export const Table = ({
   onSelect, 
   onSelectAll,
   onRowDoubleClick,
+  onSort,
+  sortBy,
+  sortOrder,
+  onColumnsReorder,
   rowKey = 'id',
   loading = false
 }) => {
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      const oldIndex = columns.findIndex((col) => col.field === active.id);
+      const newIndex = columns.findIndex((col) => col.field === over.id);
+      onColumnsReorder && onColumnsReorder(arrayMove(columns, oldIndex, newIndex));
+    }
+  };
   const { isMobile } = useLayout();
   const longPressTimer = React.useRef(null);
   const isLongPress = React.useRef(false);
@@ -206,100 +303,190 @@ export const Table = ({
           animation: `${slideUp} 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards`
         }}
       >
-      <MuiTable stickyHeader size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell padding="checkbox" sx={{ backgroundColor: 'background.paper' }}>
-              <Checkbox
-                indeterminate={selecteds.length > 0 && selecteds.length < items.length}
-                checked={items.length > 0 && selecteds.length === items.length}
-                onChange={onSelectAll}
-              />
-            </TableCell>
-            {columns.map((col) => (
-              <TableCell 
-                key={col.field} 
-                align={col.align || 'left'}
-                sx={{ 
-                  fontWeight: 700, 
-                  backgroundColor: 'background.paper', 
-                  whiteSpace: 'nowrap',
-                  ...col.headerSx
-                }}
-              >
-                {col.headerName}
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {loading ? (
-             Array.from(new Array(15)).map((_, rowIndex) => (
-              <TableRow key={`skeleton-row-${rowIndex}`}>
-                <TableCell padding="checkbox">
-                  <Skeleton variant="rectangular" width={20} height={20} />
+      {isMounted ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <MuiTable stickyHeader size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell padding="checkbox" sx={{ backgroundColor: 'background.paper', zIndex: 3 }}>
+                  <Checkbox
+                    indeterminate={selecteds.length > 0 && selecteds.length < items.length}
+                    checked={items.length > 0 && selecteds.length === items.length}
+                    onChange={onSelectAll}
+                  />
                 </TableCell>
-                {columns.map((col, colIndex) => (
-                  <TableCell key={`skeleton-cell-${col.field}-${colIndex}`}>
-                    <Skeleton 
-                      variant="text" 
-                      width={`${20 + Math.floor(Math.random() * 60)}%`} 
+                <SortableContext
+                  items={columns.map(c => c.field)}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  {columns.map((col) => (
+                    <SortableHeader 
+                      key={col.field} 
+                      col={col} 
+                      sortBy={sortBy} 
+                      sortOrder={sortOrder} 
+                      onSort={onSort} 
                     />
-                  </TableCell>
-                ))}
+                  ))}
+                </SortableContext>
               </TableRow>
-            ))
-          ) : items.length === 0 && !loading ? (
-            <TableRow>
-              <TableCell colSpan={columns.length + 1} sx={{ py: 2, borderBottom: 'none' }}>
-                <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                  Nenhum resultado encontrado
-                </Typography>
-              </TableCell>
-            </TableRow>
-          ) : items.map((row) => {
-            const isItemSelected = selecteds.some(item => item[rowKey] === row[rowKey]);
-            return (
-              <TableRow
-                key={row[rowKey]}
-                hover
-                selected={isItemSelected}
-                onClick={(e) => {
-                  if (e.detail === 1) {
-                    clickTimer.current = setTimeout(() => {
-                      onSelect(row);
-                    }, 250);
-                  }
-                }}
-                onDoubleClick={() => {
-                  if (clickTimer.current) {
-                    clearTimeout(clickTimer.current);
-                    clickTimer.current = null;
-                  }
-                  onRowDoubleClick && onRowDoubleClick(row);
-                }}
-                sx={{ cursor: 'pointer', '&.Mui-selected': { backgroundColor: 'primary.lighter' } }}
-              >
-                <TableCell padding="checkbox">
-                  <Checkbox checked={isItemSelected} />
-                </TableCell>
-                {columns.map((col) => (
-                  <TableCell 
-                    key={col.field} 
-                    align={col.align || 'left'}
-                    sx={{ 
-                      fontSize: '0.8125rem',
-                      ...(typeof col.sx === 'function' ? col.sx(row) : col.sx)
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                Array.from(new Array(15)).map((_, rowIndex) => (
+                  <TableRow key={`skeleton-row-${rowIndex}`}>
+                    <TableCell padding="checkbox">
+                      <Skeleton variant="rectangular" width={20} height={20} />
+                    </TableCell>
+                    {columns.map((col, colIndex) => (
+                      <TableCell key={`skeleton-cell-${col.field}-${colIndex}`}>
+                        <Skeleton 
+                          variant="text" 
+                          width={`${20 + Math.floor(Math.random() * 60)}%`} 
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : items.length === 0 && !loading ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length + 1} sx={{ py: 2, borderBottom: 'none' }}>
+                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                      Nenhum resultado encontrado
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : items.map((row) => {
+                const isItemSelected = selecteds.some(item => item[rowKey] === row[rowKey]);
+                return (
+                  <TableRow
+                    key={row[rowKey]}
+                    hover
+                    selected={isItemSelected}
+                    onClick={(e) => {
+                      if (e.detail === 1) {
+                        clickTimer.current = setTimeout(() => {
+                          onSelect(row);
+                        }, 250);
+                      }
                     }}
+                    onDoubleClick={() => {
+                      if (clickTimer.current) {
+                        clearTimeout(clickTimer.current);
+                        clickTimer.current = null;
+                      }
+                      onRowDoubleClick && onRowDoubleClick(row);
+                    }}
+                    sx={{ cursor: 'pointer', '&.Mui-selected': { backgroundColor: 'primary.lighter' } }}
                   >
-                    {col.renderCell ? col.renderCell(row) : row[col.field]}
+                    <TableCell padding="checkbox">
+                      <Checkbox checked={isItemSelected} />
+                    </TableCell>
+                    {columns.map((col) => (
+                      <TableCell 
+                        key={col.field} 
+                        align={col.align || 'left'}
+                        sx={{ 
+                          fontSize: '0.8125rem',
+                          ...(typeof col.sx === 'function' ? col.sx(row) : col.sx)
+                        }}
+                      >
+                        {col.renderCell ? col.renderCell(row) : row[col.field]}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </MuiTable>
+        </DndContext>
+      ) : (
+        <MuiTable stickyHeader size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox" sx={{ backgroundColor: 'background.paper', zIndex: 3 }}>
+                <Checkbox
+                  indeterminate={selecteds.length > 0 && selecteds.length < items.length}
+                  checked={items.length > 0 && selecteds.length === items.length}
+                  onChange={onSelectAll}
+                />
+              </TableCell>
+              {columns.map((col) => (
+                <TableCell 
+                  key={col.field} 
+                  align={col.align || 'left'}
+                  sx={{ 
+                    fontWeight: 700, 
+                    backgroundColor: 'background.paper', 
+                    whiteSpace: 'nowrap',
+                    ...col.headerSx
+                  }}
+                >
+                  {col.headerName}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {/* Same skeleton/data logic for SSR */}
+            {loading ? (
+              Array.from(new Array(15)).map((_, rowIndex) => (
+                <TableRow key={`skeleton-row-${rowIndex}`}>
+                  <TableCell padding="checkbox">
+                    <Skeleton variant="rectangular" width={20} height={20} />
                   </TableCell>
-                ))}
+                  {columns.map((col, colIndex) => (
+                    <TableCell key={`skeleton-cell-${col.field}-${colIndex}`}>
+                      <Skeleton 
+                        variant="text" 
+                        width={`${20 + Math.floor(Math.random() * 60)}%`} 
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : items.length === 0 && !loading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1} sx={{ py: 2, borderBottom: 'none' }}>
+                  <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                    Nenhum resultado encontrado
+                  </Typography>
+                </TableCell>
               </TableRow>
-            );
-          })}
-        </TableBody>
+            ) : items.map((row) => {
+              const isItemSelected = selecteds.some(item => item[rowKey] === row[rowKey]);
+              return (
+                <TableRow
+                  key={row[rowKey]}
+                  hover
+                  selected={isItemSelected}
+                  sx={{ cursor: 'pointer', '&.Mui-selected': { backgroundColor: 'primary.lighter' } }}
+                >
+                  <TableCell padding="checkbox">
+                    <Checkbox checked={isItemSelected} />
+                  </TableCell>
+                  {columns.map((col) => (
+                    <TableCell 
+                      key={col.field} 
+                      align={col.align || 'left'}
+                      sx={{ 
+                        fontSize: '0.8125rem',
+                        ...(typeof col.sx === 'function' ? col.sx(row) : col.sx)
+                      }}
+                    >
+                      {col.renderCell ? col.renderCell(row) : row[col.field]}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })}
+          </TableBody>
         </MuiTable>
+      )}
       </TableContainer>
   );
 };
