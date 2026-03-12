@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
  * @param {string} basePath - The base URL of the list view (e.g., '/registers/partners')
  * @param {string|null|undefined} initialId - The ID passed from the route param
  */
-export const useViewNavigation = (basePath, initialId) => {
+export const useNavigation = (basePath, initialId) => {
   const [selectedId, setSelectedId] = useState(initialId);
 
   const getUrlId = useCallback(() => {

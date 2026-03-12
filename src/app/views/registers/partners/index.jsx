@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -9,101 +9,56 @@ import {
   Event as EventIcon,
 } from '@mui/icons-material';
 import { Badge } from '@mui/material';
-import { format, parseISO } from 'date-fns';
 
-import { PartnerDetail } from './partners.detail';
-import { PartnerFilter } from './partners.filter';
-import { useTable } from '@/hooks/useTable';
-import { useViewNavigation } from '@/hooks/useViewNavigation';
-import { Container, Table, Toolbar, RangeModal, PRESETS } from '@/components/common';
+import { PartnerDetail } from './partner.detail';
+import { PartnerFilter } from './filter';
+import { useTable, useNavigation, useRangeFilter, useFilter } from '@/hooks';
+import { Container, Table, Toolbar, RangeModal } from '@/components/common';
 import * as partnerService from '@/app/services/partner.service';
 import { ServiceStatus } from '@/libs/service';
 
-export function ViewPartners({ partnerId, initialData, initialFilters, initialRange, dateFieldOptions = [] }) {
+export function RegistersPartners({ partnerId, initialTable, initialFilters, initialRange, dateFieldOptions = [] }) {
 
-  const navigation = useViewNavigation('/registers/partners', partnerId);
+  const navigation = useNavigation('/registers/partners', partnerId);
   const table = useTable({
-    initialData
+    initialTable
   });
 
-  const [filters, setFilters] = React.useState(initialFilters || {});
-  const [range, setRange] = React.useState(initialRange || {
-    start: '',
-    end: '',
-    field: dateFieldOptions?.[0]?.value || ''
-  });
-  const [filterOpen, setFilterOpen] = React.useState(false);
-  const [rangeOpen, setRangeOpen] = React.useState(false);
-
-  const activeFilterCount = React.useMemo(() => {
-    return Object.entries(filters).filter(([key, value]) => {
-      if (typeof value === 'boolean') return value === true;
-      return value !== '' && value !== undefined && value !== null;
-    }).length;
-  }, [filters]);
+  const filter = useFilter(initialFilters);
+  const rangeFilter = useRangeFilter(initialRange, dateFieldOptions);
 
   const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id);
   const handleCloseModal = () => navigation.setSelectedId(undefined);
 
-  const rangeLabel = React.useMemo(() => {
-    if (!range.start && !range.end) return 'Hoje';
-
-    const matchingPreset = PRESETS.find(p => {
-      const { start: s, end: e } = p.getValue();
-      return format(s, 'yyyy-MM-dd') === range.start && format(e, 'yyyy-MM-dd') === range.end;
-    });
-
-    if (matchingPreset) return matchingPreset.label;
-
-    if (range.start && range.end) {
-      const s = parseISO(range.start);
-      const e = parseISO(range.end);
-      return `${format(s, 'dd/MM/yyyy')} - ${format(e, 'dd/MM/yyyy')}`;
-    }
-
-    if (range.start) return `>= ${format(parseISO(range.start), 'dd/MM/yyyy')}`;
-    if (range.end) return `<= ${format(parseISO(range.end), 'dd/MM/yyyy')}`;
-
-    return 'Hoje';
-  }, [range]);
 
   const handleSave = () => {
-    loadData();
+    fetchTable();
     handleCloseModal();
   };
 
-  const loadData = React.useCallback(async () => {
+  const fetchTable = React.useCallback(async () => {
     table.setLoading(true);
     try {
       const result = await partnerService.findAll({
         page: table.page,
         limit: table.rowsPerPage,
-        search: table.search,
-        filters,
-        range
+        filters: filter.filters,
+        range: rangeFilter.range
       });
-      if (result.status === ServiceStatus.SUCCESS) {
-        table.setItems(result.items || []);
-        table.setTotal(result.total || 0);
-        table.setSelecteds([]);
-      }
+
+      if (result.status !== ServiceStatus.SUCCESS)
+        throw result;
+
+      table.setItems(result.items || []);
+      table.setTotal(result.total || 0);
+      table.setSelecteds([]);
+
     } catch (error) {
       console.error('Erro ao buscar parceiros:', error);
     } finally {
       table.setLoading(false);
     }
-  }, [table.page, table.rowsPerPage, table.search, filters, range]);
-
-  const firstRender = React.useRef(true);
-
-  // Reload when page or rowsPerPage changes
-  React.useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      if (initialData) return;
-    }
-    loadData();
-  }, [table.page, table.rowsPerPage, table.search, filters, range, initialData, loadData]);
+  }, [table.page, table.rowsPerPage, filter.filters, rangeFilter.range]);
 
   const handleDelete = async () => {
     if (!table.selecteds.length) return;
@@ -112,7 +67,7 @@ export function ViewPartners({ partnerId, initialData, initialFilters, initialRa
       for (const item of table.selecteds) {
         await partnerService.destroy(item.id);
       }
-      await loadData();
+      await fetchTable();
     } catch (error) {
       console.error('Erro ao excluir:', error);
     } finally {
@@ -149,20 +104,20 @@ export function ViewPartners({ partnerId, initialData, initialFilters, initialRa
 
   const secondaryActions = [
     {
-      label: rangeLabel,
+      label: rangeFilter.label,
       icon: <EventIcon fontSize="small" />,
-      onClick: () => setRangeOpen(true)
+      onClick: rangeFilter.handleOpen
     },
     {
       label: 'Filtros',
       icon: (
-        <Badge badgeContent={activeFilterCount} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16, top: 2, right: 2 } }}>
+        <Badge badgeContent={filter.activeCount} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16, top: 2, right: 2 } }}>
           <FilterIcon fontSize="small" />
         </Badge>
       ),
-      onClick: () => setFilterOpen(true)
+      onClick: filter.handleOpen
     },
-    { label: 'Pesquisar', icon: <SearchIcon />, color: 'primary', variant: 'outlined', onClick: () => loadData() },
+    { label: 'Pesquisar', icon: <SearchIcon />, color: 'primary', variant: 'outlined', onClick: () => fetchTable() },
   ];
 
   return (
@@ -194,26 +149,24 @@ export function ViewPartners({ partnerId, initialData, initialFilters, initialRa
         />
 
         <PartnerFilter
-          open={filterOpen}
-          filters={filters}
-          onClose={() => setFilterOpen(false)}
+          open={filter.open}
+          filters={filter.filters}
+          onClose={filter.handleClose}
           onApply={(vals) => {
-            setFilters(vals);
-            table.setPage(1);
+            filter.handleApply(vals, () => table.setPage(1));
           }}
         />
 
         <RangeModal
-          open={rangeOpen}
-          onClose={() => setRangeOpen(false)}
+          open={rangeFilter.open}
+          onClose={rangeFilter.handleClose}
           title="Filtro de Período"
-          initialStart={range.start}
-          initialEnd={range.end}
-          initialField={range.field}
+          initialStart={rangeFilter.range.start}
+          initialEnd={rangeFilter.range.end}
+          initialField={rangeFilter.range.field}
           fieldOptions={dateFieldOptions}
           onApply={(vals) => {
-            setRange(vals);
-            table.setPage(1);
+            rangeFilter.handleApply(vals, () => table.setPage(1));
           }}
         />
 

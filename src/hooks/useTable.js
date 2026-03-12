@@ -7,19 +7,18 @@ import React, { useState, useCallback, useEffect } from 'react';
  * Includes pagination, search, loading, and selection.
  * 
  * @param {object} props
- * @param {object} props.initialData - Data pre-loaded by SSR
+ * @param {object} props.initialTable - Data pre-loaded by SSR
  * @param {string} props.rowKey - Primary key field name (default 'id')
  */
 export const useTable = ({
-  initialData,
+  initialTable,
   rowKey = 'id'
 }) => {
-  const [items, setItems] = useState(initialData?.items || []);
-  const [total, setTotal] = useState(initialData?.total || 0);
+  const [items, setItems] = useState(initialTable?.items || []);
+  const [total, setTotal] = useState(initialTable?.total || 0);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
   const [selecteds, setSelecteds] = useState([]);
 
   const onSelectAll = useCallback((event) => {
@@ -51,13 +50,13 @@ export const useTable = ({
     });
   }, [rowKey]);
 
-  // Sync internal state if initialData changes
+  // Sync internal state if initialTable changes
   useEffect(() => {
-    if (initialData) {
-      setItems(initialData.items || []);
-      setTotal(initialData.total || 0);
+    if (initialTable) {
+      setItems(initialTable.items || []);
+      setTotal(initialTable.total || 0);
     }
-  }, [initialData]);
+  }, [initialTable]);
 
   const handlePageChange = (_, newPage) => setPage(newPage);
   const handleRowsPerPageChange = (e) => {
@@ -77,8 +76,6 @@ export const useTable = ({
     setRowsPerPage,
     loading,
     setLoading,
-    search,
-    setSearch,
     selecteds,
     setSelecteds,
     

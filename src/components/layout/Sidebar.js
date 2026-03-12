@@ -378,7 +378,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       sx={{ display: 'flex', flexShrink: 0, position: 'relative' }}
       onMouseLeave={handleMouseLeaveNav}
     >
-      <Box sx={{ width: { lg: menu === 'recolhido' ? 80 : 280 }, transition: commonTransition }}>
+      <Box sx={{ width: { md: menu === 'recolhido' ? 80 : 280 }, transition: commonTransition }}>
         {/* Mobile Drawer */}
         <Drawer
           variant="temporary"
@@ -386,7 +386,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
           onClose={onMobileClose}
           ModalProps={{ keepMounted: true }}
           sx={{
-            display: { xs: 'block', lg: 'none' },
+            display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: 280,
@@ -403,7 +403,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', lg: 'block' },
+            display: { xs: 'none', md: 'block' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
@@ -427,7 +427,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', lg: 'block' },
+            display: { xs: 'none', md: 'block' },
             pointerEvents: activeMenu ? 'auto' : 'none',
             zIndex: theme.zIndex.drawer - 1,
             '& .MuiDrawer-paper': {

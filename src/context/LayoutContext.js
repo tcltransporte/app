@@ -23,8 +23,8 @@ export const LayoutProvider = ({ children }) => {
     setMounted(true);
     
     const checkMobile = () => {
-      // Use the 'lg' value (1200px) from MUI theme
-      setIsMobile(window.innerWidth < theme.breakpoints.values.lg);
+      // Use the 'md' value (900px) from MUI theme
+      setIsMobile(window.innerWidth < theme.breakpoints.values.md);
     };
 
     // Run on mount

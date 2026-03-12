@@ -23,9 +23,15 @@ import * as partnerService from "@/app/services/partner.service"
  *           type: integer
  *           default: 50
  *       - in: query
- *         name: search
+ *         name: filters
  *         schema:
  *           type: string
+ *         description: Objeto JSON com filtros avançados
+ *       - in: query
+ *         name: range
+ *         schema:
+ *           type: string
+ *         description: Objeto JSON com filtros de período
  *     responses:
  *       200:
  *         description: Lista de parceiros
@@ -38,9 +44,22 @@ export async function GET(request) {
 
   const page = Number(searchParams.get('page')) || 1
   const limit = Number(searchParams.get('limit')) || 50
-  const search = searchParams.get('search') || ''
 
-  const result = await partnerService.findAll({ page, limit, search })
+  // Parse filters and range from JSON strings
+  let filters = {}
+  let range = {}
+
+  try {
+    const filtersParam = searchParams.get('filters')
+    if (filtersParam) filters = JSON.parse(filtersParam)
+
+    const rangeParam = searchParams.get('range')
+    if (rangeParam) range = JSON.parse(rangeParam)
+  } catch (error) {
+    console.error('Erro ao processar parâmetros da API:', error)
+  }
+
+  const result = await partnerService.findAll({ page, limit, filters, range })
 
   const { status, ...body } = result
 

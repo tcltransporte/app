@@ -7,7 +7,7 @@ import { AppContext } from "@/database"
 import { ServiceResponse } from "@/libs/service"
 import { getSession } from "@/libs/session"
 
-export async function findAll({ page = 1, limit = 50, search = '', filters = {}, range = {} } = {}) {
+export async function findAll({ page = 1, limit = 50, filters = {}, range = {} } = {}) {
   try {
 
     const session = await getSession()
@@ -19,15 +19,6 @@ export async function findAll({ page = 1, limit = 50, search = '', filters = {},
 
       const where = {
         companyBusinessId: session.company.companyBusiness.id
-      }
-
-      // Quick Search (General)
-      if (search) {
-        where[Op.or] = [
-          { name: { [Op.like]: `%${search}%` } },
-          { surname: { [Op.like]: `%${search}%` } },
-          { cpfCnpj: { [Op.like]: `%${search}%` } }
-        ]
       }
 
       // Advanced Filters
@@ -48,11 +39,11 @@ export async function findAll({ page = 1, limit = 50, search = '', filters = {},
       if (range.field && (range.start || range.end)) {
         let dateCondition = {}
         if (range.start && range.end) {
-          dateCondition = { [Op.between]: [range.start, range.end] }
+          dateCondition = { [Op.between]: [`${range.start} 00:00:00.000`, `${range.end} 23:59:59.999`] }
         } else if (range.start) {
-          dateCondition = { [Op.gte]: range.start }
+          dateCondition = { [Op.gte]: `${range.start} 00:00:00.000` }
         } else if (range.end) {
-          dateCondition = { [Op.lte]: range.end }
+          dateCondition = { [Op.lte]: `${range.end} 23:59:59.999` }
         }
         where[range.field] = dateCondition
       }

@@ -49,7 +49,7 @@ export default function Header({ children }) {
             aria-label="open drawer"
             edge="start"
             onClick={toggleDrawer}
-            sx={{ mr: 2, display: { lg: 'none' } }}
+            sx={{ mr: 2, display: { md: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
