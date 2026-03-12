@@ -30,7 +30,7 @@ export async function findAll({ page = 1, limit = 50, search = '' } = {}) {
       }
 
       return partnerRepository.findAll({ db, transaction }, {
-        attributes: ['codigo_pessoa', 'cpfCnpj', 'name', 'surname', 'typeId', 'isCustomer', 'isSupplier', 'isEmployee', 'isSeller', 'isActive'],
+        attributes: ['id', 'cpfCnpj', 'name', 'surname', 'typeId', 'isCustomer', 'isSupplier', 'isEmployee', 'isSeller', 'isActive'],
         where,
         limit,
         offset,
@@ -56,7 +56,7 @@ export async function findOne(id) {
 
       const partner = await partnerRepository.findOne({ db, transaction }, {
         where: {
-          codigo_pessoa: id,
+          id: id,
           companyBusinessId: session.company.companyBusiness.id
         }
       })
@@ -108,9 +108,9 @@ export async function update(id, data) {
     await db.transaction(async (transaction) => {
 
       const existing = await partnerRepository.findOne({ db, transaction }, {
-        attributes: ['codigo_pessoa'],
+        attributes: ['id'],
         where: {
-          codigo_pessoa: id,
+          id: id,
           companyBusinessId: session.company.companyBusiness.id
         }
       })
@@ -118,7 +118,7 @@ export async function update(id, data) {
       if (!existing)
         throw ServiceResponse.badRequest("PARTNER_NOT_FOUND", "Parceiro não encontrado!")
 
-      await partnerRepository.update({ db, transaction }, { where: { codigo_pessoa: id } }, data)
+      await partnerRepository.update({ db, transaction }, { where: { id: id } }, data)
 
     })
 
@@ -138,9 +138,9 @@ export async function destroy(id) {
     await db.transaction(async (transaction) => {
 
       const existing = await partnerRepository.findOne({ db, transaction }, {
-        attributes: ['codigo_pessoa'],
+        attributes: ['id'],
         where: {
-          codigo_pessoa: id,
+          id: id,
           companyBusinessId: session.company.companyBusiness.id
         }
       })
@@ -148,7 +148,7 @@ export async function destroy(id) {
       if (!existing)
         throw ServiceResponse.badRequest("PARTNER_NOT_FOUND", "Parceiro não encontrado!")
 
-      await partnerRepository.destroy({ db, transaction }, { where: { codigo_pessoa: id } })
+      await partnerRepository.destroy({ db, transaction }, { where: { id: id } })
 
     })
 

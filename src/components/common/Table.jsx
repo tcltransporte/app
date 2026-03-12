@@ -14,7 +14,8 @@ import {
   Typography,
   Divider,
   Fade,
-  Slide
+  Slide,
+  Skeleton
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 
@@ -31,7 +32,8 @@ export const Table = ({
   onSelect, 
   onSelectAll,
   onRowDoubleClick,
-  rowKey = 'id'
+  rowKey = 'id',
+  loading = false
 }) => {
   const { isMobile } = useLayout();
   const longPressTimer = React.useRef(null);
@@ -53,7 +55,7 @@ export const Table = ({
       if (!isLongPress.current) {
         if (selecteds.length > 0) {
           // If already in selection mode, any click toggles selection
-          onSelect(row[rowKey]);
+          onSelect(row);
         } else {
           // If no selection, click opens the record
           onRowDoubleClick && onRowDoubleClick(row);
@@ -98,8 +100,31 @@ export const Table = ({
         )}
 
         {/* Mobile Data Cards */}
-        {items.map((row) => {
-          const isItemSelected = selecteds.indexOf(row[rowKey]) !== -1;
+        {loading ? (
+          Array.from(new Array(5)).map((_, index) => (
+            <Paper key={`skeleton-${index}`} elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Skeleton variant="circular" width={20} height={20} sx={{ mr: 1.5 }} />
+                <Skeleton variant="text" width={`${40 + Math.floor(Math.random() * 40)}%`} height={24} />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {columns.map((col, colIndex) => (
+                  <Box key={`skeleton-col-${col.field}-${colIndex}`} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Skeleton variant="text" width="30%" />
+                    <Skeleton variant="text" width={`${20 + Math.floor(Math.random() * 50)}%`} />
+                  </Box>
+                ))}
+              </Box>
+            </Paper>
+          ))
+        ) : items.length === 0 && !loading ? (
+          <Box sx={{ py: 2, px: 1 }}>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                Nenhum resultado encontrado
+            </Typography>
+          </Box>
+        ) : items.map((row) => {
+          const isItemSelected = selecteds.some(item => item[rowKey] === row[rowKey]);
           return (
             <Paper
               key={row[rowKey]}
@@ -127,7 +152,7 @@ export const Table = ({
                   sx={{ p: 0, mr: 1.5, mt: 0.3 }} 
                   onClick={(e) => {
                     e.stopPropagation();
-                    onSelect(row[rowKey]);
+                    onSelect(row);
                   }}
                 />
                 <Box sx={{ flexGrow: 1 }}>
@@ -207,14 +232,38 @@ export const Table = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {items.map((row) => {
-            const isItemSelected = selecteds.indexOf(row[rowKey]) !== -1;
+          {loading ? (
+             Array.from(new Array(15)).map((_, rowIndex) => (
+              <TableRow key={`skeleton-row-${rowIndex}`}>
+                <TableCell padding="checkbox">
+                  <Skeleton variant="rectangular" width={20} height={20} />
+                </TableCell>
+                {columns.map((col, colIndex) => (
+                  <TableCell key={`skeleton-cell-${col.field}-${colIndex}`}>
+                    <Skeleton 
+                      variant="text" 
+                      width={`${20 + Math.floor(Math.random() * 60)}%`} 
+                    />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : items.length === 0 && !loading ? (
+            <TableRow>
+              <TableCell colSpan={columns.length + 1} sx={{ py: 2, borderBottom: 'none' }}>
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  Nenhum resultado encontrado
+                </Typography>
+              </TableCell>
+            </TableRow>
+          ) : items.map((row) => {
+            const isItemSelected = selecteds.some(item => item[rowKey] === row[rowKey]);
             return (
               <TableRow
                 key={row[rowKey]}
                 hover
                 selected={isItemSelected}
-                onClick={() => onSelect(row[rowKey])}
+                onClick={() => onSelect(row)}
                 onDoubleClick={() => onRowDoubleClick && onRowDoubleClick(row)}
                 sx={{ cursor: 'pointer', '&.Mui-selected': { backgroundColor: 'primary.lighter' } }}
               >

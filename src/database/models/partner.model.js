@@ -2,7 +2,7 @@ import { DataTypes } from 'sequelize';
 
 export class Partner {
 
-  codigo_pessoa = {
+  id = {
     field: 'codigo_pessoa',
     primaryKey: true,
     autoIncrement: true,

@@ -19,11 +19,10 @@ export function ViewPartners({ partnerId, initialData }) {
 
   const navigation = useViewNavigation('/registers/partners', partnerId);
   const table = useTable({
-    initialData,
-    rowKey: 'codigo_pessoa'
+    initialData
   });
 
-  const handleRowDoubleClick = (row) => navigation.setSelectedId(row.codigo_pessoa);
+  const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id);
   const handleCloseModal = () => navigation.setSelectedId(undefined);
 
   const handleSave = () => {
@@ -51,20 +50,23 @@ export function ViewPartners({ partnerId, initialData }) {
     }
   }, [table.page, table.rowsPerPage, table.search]);
 
+  const firstRender = React.useRef(true);
+
   // Reload when page or rowsPerPage changes
   React.useEffect(() => {
-    const isFirstPageWithInitialData = table.page === 1 && table.rowsPerPage === 50 && initialData;
-    if (!isFirstPageWithInitialData) {
-      loadData();
+    if (firstRender.current) {
+      firstRender.current = false;
+      if (initialData) return;
     }
+    loadData();
   }, [table.page, table.rowsPerPage]);
 
   const handleDelete = async () => {
     if (!table.selecteds.length) return;
     table.setLoading(true);
     try {
-      for (const id of table.selecteds) {
-        await partnerService.destroy(id);
+      for (const item of table.selecteds) {
+        await partnerService.destroy(item.id);
       }
       await loadData();
     } catch (error) {
@@ -76,7 +78,7 @@ export function ViewPartners({ partnerId, initialData }) {
 
 
   const columns = [
-    { field: 'codigo_pessoa', headerName: 'Código', width: 90 },
+    { field: 'id', headerName: 'Código', width: 90 },
     { field: 'cpfCnpj', headerName: 'CPF/CNPJ', width: 150 },
     { field: 'surname', headerName: 'Nome', fontWeight: 500 },
     { field: 'name', headerName: 'Razão Social' },
@@ -113,7 +115,6 @@ export function ViewPartners({ partnerId, initialData }) {
         <Table
           columns={columns}
           items={table.items}
-          rowKey="codigo_pessoa"
           selecteds={table.selecteds}
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}

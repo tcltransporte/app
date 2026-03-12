@@ -3,6 +3,7 @@
 import React, { createContext, useState, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { LayoutProvider } from '@/context/LayoutContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import FloatingSettings from '@/components/layout/FloatingSettings';
 
 // Define the shape of our context
@@ -135,11 +136,13 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
   return (
     <ThemeContext.Provider value={value}>
       <ThemeProvider theme={theme}>
-        <LayoutProvider>
-          <CssBaseline />
-          {children}
-          <FloatingSettings />
-        </LayoutProvider>
+        <NotificationProvider>
+          <LayoutProvider>
+            <CssBaseline />
+            {children}
+            <FloatingSettings />
+          </LayoutProvider>
+        </NotificationProvider>
       </ThemeProvider>
     </ThemeContext.Provider>
   );

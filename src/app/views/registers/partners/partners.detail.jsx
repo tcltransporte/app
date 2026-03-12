@@ -6,9 +6,11 @@ import { Grid, Button } from '@mui/material';
 import { Dialog } from '@/components/common';
 import { TextField, CheckField, SelectField } from '@/components/controls';
 import * as partnerService from '@/app/services/partner.service';
+import { useNotification } from '@/context/NotificationContext';
 
 export function PartnerDetail({ partnerId, onClose, onSave }) {
 
+  const { notify } = useNotification();
   const [data, setData] = React.useState({});
   const [loading, setLoading] = React.useState(false);
 
@@ -29,9 +31,11 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
       } else {
         await partnerService.create(values)
       }
+      notify('Salvo com sucesso!');
       onSave?.()
     } catch (error) {
       console.error('Erro ao salvar:', error)
+      notify('Erro ao salvar!', 'error');
     } finally {
       setLoading(false)
     }
@@ -58,7 +62,7 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
       {({ submitForm }) => (
         <Dialog
           open={partnerId !== undefined}
-          loading={loading}
+          loading={loading && !Object.keys(data).length} // Use dialog loading only for initial fetch
           title={partnerId === null ? 'Novo Cliente' : `Editar Cliente: ${data?.surname || ''}`}
           onClose={onClose}
         >
@@ -96,8 +100,15 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
           </Dialog.Content>
 
           <Dialog.Actions>
-            <Button onClick={onClose} color="inherit" sx={{ textTransform: 'none', fontWeight: 600 }}>Cancelar</Button>
-            <Button onClick={submitForm} variant="contained" sx={{ textTransform: 'none', fontWeight: 600, px: 3 }}>Salvar</Button>
+            <Button onClick={onClose} color="inherit" disabled={loading} sx={{ textTransform: 'none', fontWeight: 600 }}>Cancelar</Button>
+            <Button 
+              onClick={submitForm} 
+              variant="contained" 
+              disabled={loading}
+              sx={{ textTransform: 'none', fontWeight: 600, px: 3 }}
+            >
+              {loading && Object.keys(data).length ? 'Salvando...' : 'Salvar'}
+            </Button>
           </Dialog.Actions>
         </Dialog>
       )}

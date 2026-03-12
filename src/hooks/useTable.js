@@ -24,19 +24,19 @@ export const useTable = ({
 
   const onSelectAll = useCallback((event) => {
     if (event.target.checked) {
-      setSelecteds(items.map((n) => n[rowKey]));
+      setSelecteds([...items]);
       return;
     }
     setSelecteds([]);
-  }, [items, rowKey]);
+  }, [items]);
 
-  const onSelect = useCallback((id) => {
+  const onSelect = useCallback((row) => {
     setSelecteds((prev) => {
-      const selectedIndex = prev.indexOf(id);
+      const selectedIndex = prev.findIndex(item => item[rowKey] === row[rowKey]);
       let newSelected = [];
 
       if (selectedIndex === -1) {
-        newSelected = newSelected.concat(prev, id);
+        newSelected = newSelected.concat(prev, row);
       } else if (selectedIndex === 0) {
         newSelected = newSelected.concat(prev.slice(1));
       } else if (selectedIndex === prev.length - 1) {
@@ -49,7 +49,7 @@ export const useTable = ({
       }
       return newSelected;
     });
-  }, []);
+  }, [rowKey]);
 
   // Sync internal state if initialData changes
   useEffect(() => {
