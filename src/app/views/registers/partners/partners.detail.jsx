@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { Formik, Form, Field } from 'formik';
-import { Grid, TextField, Button } from '@mui/material';
+import { Grid, Button } from '@mui/material';
 import { Dialog } from '@/components/common';
+import { TextField, NumericField, CheckField, DateField, SelectField } from '@/components/controls';
 import { getPartner } from '@/app/actions/partners.actions';
 
 export function PartnerDetail({ partnerId, onClose, onSave }) {
@@ -28,8 +29,9 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
         vencimento: data.vencimento ?? '',
         beneficiario: data.beneficiario ?? '',
         categoria: data.categoria ?? '',
-        valor: data.valor ?? '',
+        valor: data.valor ?? 0,
         tipo: data.tipo ?? '',
+        ativo: data.ativo ?? true,
       }}
       onSubmit={onSave}
     >
@@ -43,15 +45,20 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
           <Dialog.Content>
             <Form>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}><Field as={TextField} name="doc" label="Nº Doc." fullWidth size="small" /></Grid>
-                <Grid item xs={12} sm={6}><Field as={TextField} name="vencimento" label="Vencimento" fullWidth size="small" /></Grid>
-                <Grid item xs={12}>       <Field as={TextField} name="beneficiario" label="Beneficiário" fullWidth size="small" /></Grid>
-                <Grid item xs={12}>       <Field as={TextField} name="categoria" label="Categoria" fullWidth size="small" /></Grid>
-                <Grid item xs={12} sm={6}><Field as={TextField} name="valor" label="Valor" fullWidth size="small" /></Grid>
-                <Grid item xs={12} sm={6}><Field as={TextField} name="tipo" label="Tipo" fullWidth size="small" /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><Field component={TextField} name="doc" label="Nº Doc." fullWidth size="small" transform="uppercase" /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><Field component={DateField} name="vencimento" label="Vencimento" fullWidth size="small" /></Grid>
+                <Grid size={12}><Field component={TextField} name="beneficiario" label="Beneficiário" fullWidth size="small" transform="uppercase" /></Grid>
+                <Grid size={12}><Field component={TextField} name="categoria" label="Categoria" fullWidth size="small" /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><Field component={NumericField} name="valor" label="Valor" fullWidth size="small" /></Grid>
+                <Grid size={{ xs: 12, sm: 6 }}><Field component={SelectField} name="tipo" label="Tipo" fullWidth size="small" options={[
+                  { value: 'entrada', label: 'Entrada' },
+                  { value: 'saida', label: 'Saída' },
+                ]} /></Grid>
+                <Grid size={12}><Field component={CheckField} name="ativo" label="Ativo" /></Grid>
               </Grid>
             </Form>
           </Dialog.Content>
+
 
           <Dialog.Actions>
             <Button onClick={onClose} color="inherit" sx={{ textTransform: 'none', fontWeight: 600 }}>Cancelar</Button>

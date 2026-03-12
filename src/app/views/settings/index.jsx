@@ -26,7 +26,7 @@ export function SettingsView({ initialCompany, initialUser }) {
                 if (companyResult.status !== ServiceStatus.SUCCESS) {
                     throw companyResult
                 }
-    
+
                 setCompany(companyResult.company)
                 setUser(companyResult.user)
 
@@ -38,20 +38,23 @@ export function SettingsView({ initialCompany, initialUser }) {
         const handleSignOut = async () => {
             try {
 
-                const logoutResult = await loginService.signOut()
+                await loginService.signOut()
 
                 router.push("/login")
                 router.refresh()
-    
+
             } catch (error) {
                 alert(error.message)
             }
         }
-    
+
         return (
             <Container>
+
                 <Container.Title items={[{ label: 'Ajustes' }]} />
+
                 <Container.Content>
+
                     <Box sx={{ p: 1, flexGrow: 1, overflowY: 'auto' }}>
                         <h1>Olá, {user?.userName}</h1>
                         <p>Filial: {company?.surname}</p>
@@ -61,10 +64,12 @@ export function SettingsView({ initialCompany, initialUser }) {
                             <button type="button" onClick={handleSignOut}>Sair</button>
                         </div>
                     </Box>
+
                 </Container.Content>
+
             </Container>
         )
-    
+
     } catch (error) {
         return <h1>Erro: {error.message}</h1>
     }

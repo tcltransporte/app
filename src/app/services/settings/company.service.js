@@ -13,11 +13,16 @@ export async function findOne() {
         const session = await getSession()
 
         const db = new AppContext()
-    
+
         const result = await db.transaction(async (transaction) => {
-    
+
             const company = await companyRepository.findOne({ db, transaction }, {
                 attributes: ['id', 'name', 'surname'],
+                include: [
+                    {
+                        model: db.CompanyBusiness, as: 'companyBusiness', attributes: ['id', 'name'],
+                    }
+                ],
                 where: { codigo_empresa_filial: session.company.id }
             })
 
@@ -31,7 +36,7 @@ export async function findOne() {
         })
 
         return ServiceResponse.success(result)
-    
+
     } catch (error) {
 
         return ServiceResponse.error(error)

@@ -10,7 +10,7 @@ function LayoutContent({ children }) {
   const { mobileOpen, toggleDrawer, settingsOpen, toggleSettings } = useLayout();
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', width: '100vw' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <Sidebar mobileOpen={mobileOpen} onMobileClose={toggleDrawer} />
 
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -29,7 +29,7 @@ function LayoutContent({ children }) {
       </Box>
 
       <SettingsDrawer open={settingsOpen} onClose={toggleSettings} />
-    </Box>
+    </div>
   );
 }
 

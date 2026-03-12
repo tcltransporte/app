@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { 
   Box, 
   Typography, 
-  TextField, 
   Button, 
   Checkbox, 
   FormControlLabel, 
@@ -15,7 +14,11 @@ import {
   Divider,
   Paper,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  MenuItem, 
+  Select, 
+  FormControl, 
+  InputLabel
 } from "@mui/material"
 import { 
   Visibility, 
@@ -26,8 +29,10 @@ import {
 import * as loginService from "@/app/services/login.service"
 import { ServiceStatus } from "@/libs/service"
 import { ThemeContext } from "@/context/ThemeContext"
+import { TextField, SelectField } from '@/components/controls'
+import { Formik, Form, Field } from 'formik'
 import Image from "next/image"
-import { MenuItem, Select, FormControl, InputLabel } from "@mui/material"
+
 
 export function LoginView() {
   const { primaryColor } = useContext(ThemeContext)
@@ -35,12 +40,6 @@ export function LoginView() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true })
   const router = useRouter()
 
-  const [form, setForm] = useState({
-    username: "",
-    password: "",
-    companyBusinessId: "",
-    companyId: ""
-  })
 
   const [step, setStep] = useState('credentials') // 'credentials' or 'selection'
   const [companyBusinesses, setCompanyBusinesses] = useState([])
@@ -49,13 +48,12 @@ export function LoginView() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const handleLogin = async (e, currentForm = form) => {
-    if (e) e.preventDefault()
+  const handleLogin = async (values, setFieldValue, setFieldError) => {
     setLoading(true)
     setError("")
 
     try {
-      const loginResult = await loginService.signIn(currentForm)
+      const loginResult = await loginService.signIn(values)
 
       if (loginResult.status !== ServiceStatus.SUCCESS) {
         throw loginResult
@@ -81,20 +79,19 @@ export function LoginView() {
     }
   }
 
-  const handleCompanyChange = (id) => {
-    const newForm = { ...form, companyBusinessId: id, companyId: "" }
-    setForm(newForm)
-    setCompanies([]) // Clear branches while loading new ones
-    handleLogin(null, newForm)
+  const handleCompanyChange = (id, values, setFieldValue) => {
+    setFieldValue('companyBusinessId', id)
+    setFieldValue('companyId', '')
+    setCompanies([])
+    handleLogin({ ...values, companyBusinessId: id, companyId: "" }, setFieldValue)
   }
 
-  const handleBranchChange = (id) => {
-    const newForm = { ...form, companyId: id }
-    setForm(newForm)
-    handleLogin(null, newForm)
+  const handleBranchChange = (id, values, setFieldValue) => {
+    setFieldValue('companyId', id)
+    handleLogin({ ...values, companyId: id }, setFieldValue)
   }
 
-  const renderCredentialsStep = () => (
+  const renderCredentialsStep = (values) => (
     <>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center' }}>
@@ -105,40 +102,46 @@ export function LoginView() {
         </Typography>
       </Box>
 
-      <form onSubmit={handleLogin}>
-        <TextField
+      <Form>
+        <Field
+          component={TextField}
+          name="username"
           fullWidth
           label="Usuário"
           placeholder="Digite seu usuário"
-          value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
           sx={{ mb: 3 }}
           variant="filled"
-          InputProps={{ disableUnderline: true, sx: { borderRadius: 2 } }}
+          slotProps={{
+            input: {
+              disableUnderline: true,
+              sx: { borderRadius: 2 }
+            }
+          }}
         />
 
-        <TextField
+        <Field
+          component={TextField}
+          name="password"
           fullWidth
           type={showPassword ? 'text' : 'password'}
           label="Senha"
           placeholder="••••••••"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
           sx={{ mb: 2 }}
           variant="filled"
-          InputProps={{ 
-            disableUnderline: true, 
-            sx: { borderRadius: 2 },
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                  {showPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            )
+          slotProps={{
+            input: {
+              disableUnderline: true,
+              sx: { borderRadius: 2 },
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }
           }}
         />
-
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <FormControlLabel
             control={<Checkbox size="small" />}
@@ -197,11 +200,11 @@ export function LoginView() {
         >
           Entrar com Google
         </Button>
-      </form>
+      </Form>
     </>
   )
 
-  const renderSelectionStep = () => (
+  const renderSelectionStep = (values, setFieldValue) => (
     <>
       <Box sx={{ mb: 4, position: 'relative' }}>
         <IconButton 
@@ -219,42 +222,44 @@ export function LoginView() {
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <FormControl fullWidth variant="filled">
-          <InputLabel id="company-label">Empresa</InputLabel>
-          <Select
-            labelId="company-label"
-            value={form.companyBusinessId}
-            onChange={(e) => handleCompanyChange(e.target.value)}
-            disableUnderline
-            sx={{ borderRadius: 2 }}
-          >
-            {companyBusinesses.map((cb) => (
-              <MenuItem key={cb.id} value={cb.id}>{cb.name}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Field
+          component={SelectField}
+          name="companyBusinessId"
+          label="Empresa"
+          fullWidth
+          variant="filled"
+          options={companyBusinesses.map(cb => ({ value: cb.id, label: cb.name }))}
+          onChange={(val) => handleCompanyChange(val, values, setFieldValue)}
+          slotProps={{
+            input: {
+              disableUnderline: true,
+              sx: { borderRadius: 2 }
+            }
+          }}
+        />
 
-        <FormControl fullWidth variant="filled">
-          <InputLabel id="branch-label">Filial</InputLabel>
-          <Select
-            labelId="branch-label"
-            value={form.companyId}
-            onChange={(e) => handleBranchChange(e.target.value)}
-            disableUnderline
-            sx={{ borderRadius: 2 }}
-            disabled={!companies.length}
-          >
-            {companies.map((c) => (
-              <MenuItem key={c.companyId} value={c.companyId}>{c.surname}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Field
+          component={SelectField}
+          name="companyId"
+          label="Filial"
+          fullWidth
+          variant="filled"
+          disabled={!companies.length}
+          options={companies.map(c => ({ value: c.companyId, label: c.surname }))}
+          onChange={(val) => handleBranchChange(val, values, setFieldValue)}
+          slotProps={{
+            input: {
+              disableUnderline: true,
+              sx: { borderRadius: 2 }
+            }
+          }}
+        />
 
         <Button
           fullWidth
           variant="contained"
-          onClick={() => handleLogin()}
-          disabled={loading || !form.companyId}
+          onClick={() => handleLogin(values, setFieldValue)}
+          disabled={loading || !values.companyId}
           sx={{ 
             py: 1.5, 
             mt: 2,
@@ -350,7 +355,21 @@ export function LoginView() {
         zIndex: 2,
         boxShadow: isMobile ? 'none' : '-10px 0 30px rgba(0,0,0,0.02)'
       }}>
-        {step === 'credentials' ? renderCredentialsStep() : renderSelectionStep()}
+        <Formik
+          initialValues={{
+            username: "",
+            password: "",
+            companyBusinessId: "",
+            companyId: ""
+          }}
+          onSubmit={(values, { setFieldValue, setFieldError }) => handleLogin(values, setFieldValue, setFieldError)}
+        >
+          {({ values, setFieldValue }) => (
+            <>
+              {step === 'credentials' ? renderCredentialsStep(values) : renderSelectionStep(values, setFieldValue)}
+            </>
+          )}
+        </Formik>
       </Box>
     </Box>
   )
