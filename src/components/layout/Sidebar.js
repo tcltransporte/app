@@ -52,7 +52,7 @@ const menuItems = [
       { text: 'Shopping de Serviços', icon: <Storefront /> },
     ]
   },
-  { 
+  {
     text: 'Cadastros', icon: <Verified />, subMenu: [
       { text: 'Clientes', icon: <Group />, path: '/registers/partners' },
       { text: 'Fornecedores', icon: <Badge /> },
@@ -131,7 +131,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                 <ListItemIcon>
                   {React.cloneElement(subItem.icon, { sx: { fontSize: 20 } })}
                 </ListItemIcon>
-                <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 13, fontWeight: 500 }} />
+                <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 15, fontWeight: 500 }} />
               </ListItemButton>
             </ListItem>
             {subItem.text === 'Ferramentas' && !isMobile && (
@@ -212,8 +212,8 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                     '&.Mui-selected': {
                       backgroundColor: subMenuBg,
                       color: primaryColor,
-                      boxShadow: isDarkMenu 
-                        ? 'none' 
+                      boxShadow: isDarkMenu
+                        ? 'none'
                         : (isMobile ? 'none' : '0 8px 16px -4px rgba(0,0,0,0.1)'),
                       zIndex: isMobile ? 1 : 2,
                       // The "pop out" and "connection" effect
@@ -223,15 +223,30 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                         width: 'calc(100% + 16px)', // Extend to reach the drawer edge (List has px: 2)
                         mr: -2, // Pull to the right edge
                         backgroundColor: subMenuBg,
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          top: -40,
+                          right: 0,
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          backgroundColor: 'transparent',
+                          boxShadow: `20px 20px 0 0 ${subMenuBg}`,
+                          pointerEvents: 'none'
+                        },
                         '&::after': {
                           content: '""',
                           position: 'absolute',
-                          right: -16, // Bridge the gap between main and sub drawer
-                          top: 0,
-                          width: 16,
-                          height: '100%',
-                          backgroundColor: subMenuBg,
-                          zIndex: 3
+                          bottom: -40,
+                          right: 0,
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          backgroundColor: 'transparent',
+                          boxShadow: `20px -20px 0 0 ${subMenuBg}`,
+                          zIndex: 3,
+                          pointerEvents: 'none'
                         }
                       }),
                       '& .MuiListItemText-root .MuiTypography-root': {
@@ -316,6 +331,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
           variant="subtitle1"
           sx={{
             fontWeight: 'bold',
+            fontSize: '1.2rem',
             color: primaryColor,
             textTransform: 'lowercase',
             letterSpacing: '0.02em'
@@ -350,8 +366,8 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', lg: 'none' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
               width: 280,
               backgroundColor: sidebarBg,
               color: sidebarText,
@@ -369,7 +385,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
             display: { xs: 'none', lg: 'block' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
-              width: drawerWidth, 
+              width: drawerWidth,
               transition: commonTransition,
               overflowX: 'visible', // Allows the selected item to pop out
               borderRight: 'none', // Remove the dividing line to create a seamless connection
@@ -396,7 +412,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: subMenuWidth,
-              left: drawerWidth, 
+              left: drawerWidth,
               transition: commonTransition,
               transform: activeMenu ? 'translateX(0)' : 'translateX(-100%)', // Slide out from behind
               visibility: activeMenu ? 'visible' : 'hidden',

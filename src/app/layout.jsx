@@ -1,6 +1,9 @@
+import { Inter } from 'next/font/google';
 import { cookies, headers } from 'next/headers';
 import MainLayout from '../components/layout/MainLayout';
 import { ThemeContextProvider } from '@/context/ThemeContext';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
   title: 'Sistema de Gestão de Grupos',
@@ -24,7 +27,7 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="pt-br">
-      <body style={{ margin: 0, fontFamily: 'sans-serif', backgroundColor: '#fafafa' }}>
+      <body className={inter.className} style={{ margin: 0, backgroundColor: '#fafafa' }}>
         <ThemeContextProvider initialConfig={themeConfig} initialMobile={isMobile}>
           {children}
         </ThemeContextProvider>

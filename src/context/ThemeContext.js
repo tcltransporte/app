@@ -96,6 +96,9 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
     shape: {
       borderRadius: skin === 'border' ? 0 : 8,
     },
+    typography: {
+      fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    },
     components: {
       MuiDrawer: {
         styleOverrides: {
