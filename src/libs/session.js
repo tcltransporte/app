@@ -40,6 +40,28 @@ export async function getSession() {
       throw ServiceResponse.unauthorized('UNAUTHORIZED_TOKEN', 'Token não encontrado!')
     }
 
+    // Check if session has expired
+    if (session.expireIn && session.lastAcess) {
+
+      const lastAcessDate = new Date(session.lastAcess)
+      const now = new Date()
+      const elapsedMinutes = (now.getTime() - lastAcessDate.getTime()) / (1000 * 60)
+
+      /*
+      console.log(lastAcessDate, now)
+
+      if (elapsedMinutes > session.expireIn) {
+        await sessionRepository.destroy({ db, transaction }, { where: [{ id: session.id }] })
+        cookie.delete('authorization')
+        throw ServiceResponse.unauthorized('SESSION_EXPIRED', 'Sessão expirada!')
+      }
+      */
+
+      // Renew session: update lastAcess on each valid access
+      await sessionRepository.update({ db, transaction }, { where: [{ id: session.id }] }, { lastAcess: now })
+
+    }
+
     return session
 
   })

@@ -61,6 +61,21 @@ export async function create({ db, transaction }, { userId, companyId, lastAcess
 *   transaction: import('sequelize').Transaction
 * }} context
 *
+* @param {{ where?: object }} params
+* @param {object} data
+*/
+export async function update({ db, transaction }, { where }, data) {
+
+  await db.Session.update(data, { where, transaction })
+
+}
+
+/**
+* @param {{
+*   db: import('@/database').AppContext,
+*   transaction: import('sequelize').Transaction
+* }} context
+*
  * @param {{
 *   where?: object
 * }} params

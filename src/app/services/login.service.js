@@ -76,7 +76,7 @@ export async function signIn({ username, password, companyBusinessId, companyId,
       if (!companyBusinessId)
         throw ServiceResponse.badRequest("SELECT_COMPANY_BUSINESS", "Selecione a empresa!", { companyBusinesses })
 
-      
+
       const companies = companyUsers
         .filter(x => x.company.companyBusiness.id === companyBusinessId)
         .map(x => ({
@@ -120,7 +120,7 @@ export async function signIn({ username, password, companyBusinessId, companyId,
           userId: user.userId,
           companyId,
           lastAcess: new Date(),
-          expireIn: 5
+          expireIn: 1
         }
       );
 
@@ -146,21 +146,21 @@ export async function signOut() {
     const session = await getSession()
 
     const db = new AppContext()
-  
+
     await db.transaction(async (transaction) => {
-  
+
       await sessionRepository.destroy({ db, transaction }, { where: [{ id: session.id }] })
-  
+
     })
 
     const cookieStore = await cookies();
     cookieStore.delete('authorization');
-    
+
     return ServiceResponse.success()
-    
+
   } catch (error) {
 
     return ServiceResponse.error(error)
-    
+
   }
 }
