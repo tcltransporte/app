@@ -7,3 +7,4 @@ export * from './Table';
 export * from './Title';
 export * from './Toolbar';
 export * from './FilterDrawer';
+export * from './RangeModal';

@@ -7,7 +7,7 @@ import { AppContext } from "@/database"
 import { ServiceResponse } from "@/libs/service"
 import { getSession } from "@/libs/session"
 
-export async function findAll({ page = 1, limit = 50, search = '', filters = {} } = {}) {
+export async function findAll({ page = 1, limit = 50, search = '', filters = {}, range = {} } = {}) {
   try {
 
     const session = await getSession()
@@ -43,6 +43,19 @@ export async function findAll({ page = 1, limit = 50, search = '', filters = {} 
       if (filters.isSupplier) where.isSupplier = true
       if (filters.isEmployee) where.isEmployee = true
       if (filters.isSeller) where.isSeller = true
+
+      // Range Filter
+      if (range.field && (range.start || range.end)) {
+        let dateCondition = {}
+        if (range.start && range.end) {
+          dateCondition = { [Op.between]: [range.start, range.end] }
+        } else if (range.start) {
+          dateCondition = { [Op.gte]: range.start }
+        } else if (range.end) {
+          dateCondition = { [Op.lte]: range.end }
+        }
+        where[range.field] = dateCondition
+      }
 
       return partnerRepository.findAll({ db, transaction }, {
         attributes: ['id', 'cpfCnpj', 'name', 'surname', 'typeId', 'isCustomer', 'isSupplier', 'isEmployee', 'isSeller', 'isActive', 'birthDate'],

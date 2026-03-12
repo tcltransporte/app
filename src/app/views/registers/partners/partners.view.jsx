@@ -6,18 +6,20 @@ import {
   Delete as DeleteIcon,
   FilterList as FilterIcon,
   Search as SearchIcon,
+  Event as EventIcon,
 } from '@mui/icons-material';
 import { Badge } from '@mui/material';
+import { format, parseISO } from 'date-fns';
 
 import { PartnerDetail } from './partners.detail';
 import { PartnerFilter } from './partners.filter';
 import { useTable } from '@/hooks/useTable';
 import { useViewNavigation } from '@/hooks/useViewNavigation';
-import { Container, Table, Toolbar } from '@/components/common';
+import { Container, Table, Toolbar, RangeModal, PRESETS } from '@/components/common';
 import * as partnerService from '@/app/services/partner.service';
 import { ServiceStatus } from '@/libs/service';
 
-export function ViewPartners({ partnerId, initialData, initialFilters }) {
+export function ViewPartners({ partnerId, initialData, initialFilters, initialRange, dateFieldOptions = [] }) {
 
   const navigation = useViewNavigation('/registers/partners', partnerId);
   const table = useTable({
@@ -25,7 +27,13 @@ export function ViewPartners({ partnerId, initialData, initialFilters }) {
   });
 
   const [filters, setFilters] = React.useState(initialFilters || {});
+  const [range, setRange] = React.useState(initialRange || {
+    start: '',
+    end: '',
+    field: dateFieldOptions?.[0]?.value || ''
+  });
   const [filterOpen, setFilterOpen] = React.useState(false);
+  const [rangeOpen, setRangeOpen] = React.useState(false);
 
   const activeFilterCount = React.useMemo(() => {
     return Object.entries(filters).filter(([key, value]) => {
@@ -36,6 +44,28 @@ export function ViewPartners({ partnerId, initialData, initialFilters }) {
 
   const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id);
   const handleCloseModal = () => navigation.setSelectedId(undefined);
+
+  const rangeLabel = React.useMemo(() => {
+    if (!range.start && !range.end) return 'Hoje';
+
+    const matchingPreset = PRESETS.find(p => {
+      const { start: s, end: e } = p.getValue();
+      return format(s, 'yyyy-MM-dd') === range.start && format(e, 'yyyy-MM-dd') === range.end;
+    });
+
+    if (matchingPreset) return matchingPreset.label;
+
+    if (range.start && range.end) {
+      const s = parseISO(range.start);
+      const e = parseISO(range.end);
+      return `${format(s, 'dd/MM/yyyy')} - ${format(e, 'dd/MM/yyyy')}`;
+    }
+
+    if (range.start) return `>= ${format(parseISO(range.start), 'dd/MM/yyyy')}`;
+    if (range.end) return `<= ${format(parseISO(range.end), 'dd/MM/yyyy')}`;
+
+    return 'Hoje';
+  }, [range]);
 
   const handleSave = () => {
     loadData();
@@ -49,7 +79,8 @@ export function ViewPartners({ partnerId, initialData, initialFilters }) {
         page: table.page,
         limit: table.rowsPerPage,
         search: table.search,
-        filters
+        filters,
+        range
       });
       if (result.status === ServiceStatus.SUCCESS) {
         table.setItems(result.items || []);
@@ -61,7 +92,7 @@ export function ViewPartners({ partnerId, initialData, initialFilters }) {
     } finally {
       table.setLoading(false);
     }
-  }, [table.page, table.rowsPerPage, table.search, filters]);
+  }, [table.page, table.rowsPerPage, table.search, filters, range]);
 
   const firstRender = React.useRef(true);
 
@@ -72,7 +103,7 @@ export function ViewPartners({ partnerId, initialData, initialFilters }) {
       if (initialData) return;
     }
     loadData();
-  }, [table.page, table.rowsPerPage, table.search, filters, initialData, loadData]);
+  }, [table.page, table.rowsPerPage, table.search, filters, range, initialData, loadData]);
 
   const handleDelete = async () => {
     if (!table.selecteds.length) return;
@@ -117,6 +148,11 @@ export function ViewPartners({ partnerId, initialData, initialFilters }) {
   ]
 
   const secondaryActions = [
+    {
+      label: rangeLabel,
+      icon: <EventIcon fontSize="small" />,
+      onClick: () => setRangeOpen(true)
+    },
     {
       label: 'Filtros',
       icon: (
@@ -163,6 +199,20 @@ export function ViewPartners({ partnerId, initialData, initialFilters }) {
           onClose={() => setFilterOpen(false)}
           onApply={(vals) => {
             setFilters(vals);
+            table.setPage(1);
+          }}
+        />
+
+        <RangeModal
+          open={rangeOpen}
+          onClose={() => setRangeOpen(false)}
+          title="Filtro de Período"
+          initialStart={range.start}
+          initialEnd={range.end}
+          initialField={range.field}
+          fieldOptions={dateFieldOptions}
+          onApply={(vals) => {
+            setRange(vals);
             table.setPage(1);
           }}
         />
