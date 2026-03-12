@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
-import { useTheme, useMediaQuery } from '@mui/material';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useTheme } from '@mui/material';
+import { ThemeContext } from './ThemeContext';
 
 const LayoutContext = createContext({
   mobileOpen: false,
@@ -12,16 +13,27 @@ const LayoutContext = createContext({
 
 export const LayoutProvider = ({ children }) => {
   const theme = useTheme();
-  const isMobileMediaQuery = useMediaQuery(theme.breakpoints.down('sm'));
+  const { initialMobile } = useContext(ThemeContext);
+  const [isMobile, setIsMobile] = useState(initialMobile);
   const [mounted, setMounted] = React.useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    const checkMobile = () => {
+      // Use the 'lg' value (1200px) from MUI theme
+      setIsMobile(window.innerWidth < theme.breakpoints.values.lg);
+    };
 
-  const isMobile = mounted ? isMobileMediaQuery : false;
+    // Run on mount
+    checkMobile();
+
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [theme]);
+
 
   const toggleDrawer = () => setMobileOpen((prev) => !prev);
   const toggleSettings = () => setSettingsOpen((prev) => !prev);

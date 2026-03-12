@@ -8,9 +8,10 @@ export const ThemeContext = createContext({
   mode: 'light',
   skin: 'default',
   layout: 'vertical',
-  menu: 'vertical', // vertical, recolhido, horizontal
+  menu: 'vertical',
   primaryColor: '#6366f1',
   semiDark: true,
+  initialMobile: false,
   setMode: () => { },
   setSkin: () => { },
   setLayout: () => { },
@@ -19,13 +20,14 @@ export const ThemeContext = createContext({
   setSemiDark: () => { },
 });
 
-export const ThemeContextProvider = ({ children, initialConfig = {} }) => {
+export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobile = false }) => {
   const [mode, setMode] = useState(initialConfig.mode || 'light');
   const [skin, setSkin] = useState('default');
   const [layout, setLayout] = useState('vertical');
   const [menu, setMenu] = useState(initialConfig.menu || 'vertical');
   const [primaryColor, setPrimaryColor] = useState(initialConfig.primaryColor || '#6366f1');
   const [semiDark, setSemiDark] = useState(initialConfig.semiDark || false);
+
 
   const saveToStorage = (key, value) => {
     localStorage.setItem(`theme-${key}`, value);
@@ -121,7 +123,8 @@ export const ThemeContextProvider = ({ children, initialConfig = {} }) => {
     layout, setLayout,
     menu, setMenu: handleSetMenu,
     primaryColor, setPrimaryColor: handleSetPrimaryColor,
-    semiDark, setSemiDark: handleSetSemiDark
+    semiDark, setSemiDark: handleSetSemiDark,
+    initialMobile
   };
 
   return (
