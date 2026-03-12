@@ -13,10 +13,18 @@
 .swal2-toast-custom {
   border-radius: 12px !important;
   font-family: inherit !important;
-  padding: 0.5rem 1rem !important;
+  padding: 0.25rem 1rem !important;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
   display: flex !important;
   align-items: center !important;
+  min-height: 48px !important;
+}
+
+.swal2-toast-custom .swal2-icon {
+  margin: 0 10px 0 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .swal2-toast-custom.swal2-icon-success {

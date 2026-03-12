@@ -92,23 +92,46 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize }) => 
       style={style}
       align={col.align || 'left'}
       {...attributes}
-      {...listeners}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%' }}>
-        {col.sortable !== false ? (
-          <TableSortLabel
-            active={sortBy === col.field}
-            direction={sortBy === col.field ? sortOrder.toLowerCase() : 'asc'}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSort && onSort(col.field);
-            }}
-          >
-            {col.headerName}
-          </TableSortLabel>
-        ) : (
-          col.headerName
-        )}
+      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%', position: 'relative' }}>
+        <Box 
+          {...listeners}
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            flexGrow: 1, 
+            height: '100%',
+            cursor: 'grab',
+            minWidth: 0,
+            overflow: 'hidden'
+          }}
+        >
+          {col.sortable !== false ? (
+            <TableSortLabel
+              active={sortBy === col.field}
+              direction={sortBy === col.field ? sortOrder.toLowerCase() : 'asc'}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSort && onSort(col.field);
+              }}
+              sx={{
+                '& .MuiTableSortLabel-icon': {
+                  opacity: sortBy === col.field ? 1 : 0,
+                  transition: 'opacity 0.2s ease-in-out',
+                },
+                '&:hover .MuiTableSortLabel-icon': {
+                  opacity: 1,
+                }
+              }}
+            >
+              {col.headerName}
+            </TableSortLabel>
+          ) : (
+            <Typography variant="subtitle2" fontWeight={700} noWrap>
+              {col.headerName}
+            </Typography>
+          )}
+        </Box>
         
         <Box
           onMouseDown={handleResize}
@@ -117,14 +140,15 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize }) => 
             right: 0,
             top: '25%',
             bottom: '25%',
-            width: '1px',
+            width: '2px',
             backgroundColor: 'divider',
             cursor: 'col-resize',
             transition: 'all 0.2s',
+            zIndex: 20,
             '&:hover': {
               backgroundColor: 'primary.main',
               width: '4px',
-              right: '-1.5px',
+              right: '-1px',
               top: 0,
               bottom: 0,
               borderRadius: '2px'
