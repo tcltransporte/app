@@ -7,7 +7,7 @@ import { AppContext } from "@/database"
 import { ServiceResponse } from "@/libs/service"
 import { getSession } from "@/libs/session"
 
-export async function findAll({ page = 1, limit = 50, search = '' } = {}) {
+export async function findAll({ page = 1, limit = 50, search = '', filters = {} } = {}) {
   try {
 
     const session = await getSession()
@@ -21,6 +21,7 @@ export async function findAll({ page = 1, limit = 50, search = '' } = {}) {
         companyBusinessId: session.company.companyBusiness.id
       }
 
+      // Quick Search (General)
       if (search) {
         where[Op.or] = [
           { name: { [Op.like]: `%${search}%` } },
@@ -29,8 +30,22 @@ export async function findAll({ page = 1, limit = 50, search = '' } = {}) {
         ]
       }
 
+      // Advanced Filters
+      if (filters.id) where.id = filters.id
+      if (filters.cpfCnpj) where.cpfCnpj = { [Op.like]: `%${filters.cpfCnpj}%` }
+      if (filters.name) where.name = { [Op.like]: `%${filters.name}%` }
+      if (filters.surname) where.surname = { [Op.like]: `%${filters.surname}%` }
+      if (filters.typeId) where.typeId = filters.typeId
+      if (filters.isActive !== undefined && filters.isActive !== '') {
+        where.isActive = filters.isActive === 'true' || filters.isActive === true
+      }
+      if (filters.isCustomer) where.isCustomer = true
+      if (filters.isSupplier) where.isSupplier = true
+      if (filters.isEmployee) where.isEmployee = true
+      if (filters.isSeller) where.isSeller = true
+
       return partnerRepository.findAll({ db, transaction }, {
-        attributes: ['id', 'cpfCnpj', 'name', 'surname', 'typeId', 'isCustomer', 'isSupplier', 'isEmployee', 'isSeller', 'isActive'],
+        attributes: ['id', 'cpfCnpj', 'name', 'surname', 'typeId', 'isCustomer', 'isSupplier', 'isEmployee', 'isSeller', 'isActive', 'birthDate'],
         where,
         limit,
         offset,

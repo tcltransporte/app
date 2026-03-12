@@ -85,4 +85,9 @@ export class Partner {
     type: DataTypes.BOOLEAN
   }
 
+  birthDate = {
+    field: 'DataNascimento',
+    type: DataTypes.DATE
+  }
+
 }

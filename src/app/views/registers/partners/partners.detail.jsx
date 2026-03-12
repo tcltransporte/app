@@ -56,6 +56,7 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
         isActive: data.isActive ?? true,
         daysDeadlinePayment: data.daysDeadlinePayment ?? '',
         externalId: data.externalId ?? '',
+        birthDate: data.birthDate ? String(data.birthDate).substring(0, 10) : '',
       }}
       onSubmit={handleSubmit}
     >
@@ -83,6 +84,9 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
                 </Grid>
                 <Grid size={12}>
                   <Field component={TextField} name="surname" label="Nome Fantasia" fullWidth size="small" transform="uppercase" />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Field component={TextField} name="birthDate" label="Data de Nascimento" type="date" fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Field component={TextField} name="daysDeadlinePayment" label="Prazo Pagamento (dias)" fullWidth size="small" />
