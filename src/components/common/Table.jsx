@@ -37,7 +37,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const SortableHeader = ({ col, sortBy, sortOrder, onSort }) => {
+const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize }) => {
   const {
     attributes,
     listeners,
@@ -47,16 +47,42 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort }) => {
     isDragging
   } = useSortable({ id: col.field });
 
+  const handleResize = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const startX = e.pageX;
+    const startWidth = e.currentTarget.parentElement.offsetWidth;
+
+    const onMouseMove = (moveEvent) => {
+      const newWidth = Math.max(50, startWidth + (moveEvent.pageX - startX));
+      onResize(col.field, newWidth);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = 'default';
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.body.style.cursor = 'col-resize';
+  };
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 2 : 1,
-    position: 'relative',
-    backgroundColor: 'inherit',
+    zIndex: isDragging ? 10 : 2,
+    position: 'sticky',
+    top: 0,
+    backgroundColor: 'background.paper',
     fontWeight: 700,
     whiteSpace: 'nowrap',
     cursor: 'grab',
     opacity: isDragging ? 0.5 : 1,
+    width: width || col.width || 'auto',
+    minWidth: width || col.width || 'auto',
     ...col.headerSx
   };
 
@@ -68,20 +94,44 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort }) => {
       {...attributes}
       {...listeners}
     >
-      {col.sortable !== false ? (
-        <TableSortLabel
-          active={sortBy === col.field}
-          direction={sortBy === col.field ? sortOrder.toLowerCase() : 'asc'}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSort && onSort(col.field);
+      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%' }}>
+        {col.sortable !== false ? (
+          <TableSortLabel
+            active={sortBy === col.field}
+            direction={sortBy === col.field ? sortOrder.toLowerCase() : 'asc'}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSort && onSort(col.field);
+            }}
+          >
+            {col.headerName}
+          </TableSortLabel>
+        ) : (
+          col.headerName
+        )}
+        
+        <Box
+          onMouseDown={handleResize}
+          sx={{
+            position: 'absolute',
+            right: 0,
+            top: '25%',
+            bottom: '25%',
+            width: '1px',
+            backgroundColor: 'divider',
+            cursor: 'col-resize',
+            transition: 'all 0.2s',
+            '&:hover': {
+              backgroundColor: 'primary.main',
+              width: '4px',
+              right: '-1.5px',
+              top: 0,
+              bottom: 0,
+              borderRadius: '2px'
+            }
           }}
-        >
-          {col.headerName}
-        </TableSortLabel>
-      ) : (
-        col.headerName
-      )}
+        />
+      </Box>
     </TableCell>
   );
 };
@@ -103,6 +153,8 @@ export const Table = ({
   sortBy,
   sortOrder,
   onColumnsReorder,
+  widths = {},
+  onResize,
   rowKey = 'id',
   loading = false
 }) => {
@@ -329,7 +381,9 @@ export const Table = ({
                       col={col} 
                       sortBy={sortBy} 
                       sortOrder={sortOrder} 
-                      onSort={onSort} 
+                      onSort={onSort}
+                      width={widths[col.field]}
+                      onResize={onResize}
                     />
                   ))}
                 </SortableContext>
@@ -343,7 +397,13 @@ export const Table = ({
                       <Skeleton variant="rectangular" width={20} height={20} />
                     </TableCell>
                     {columns.map((col, colIndex) => (
-                      <TableCell key={`skeleton-cell-${col.field}-${colIndex}`}>
+                      <TableCell 
+                        key={`skeleton-cell-${col.field}-${colIndex}`}
+                        sx={{ 
+                          width: widths[col.field] || col.width || 'auto',
+                          minWidth: widths[col.field] || col.width || 'auto'
+                        }}
+                      >
                         <Skeleton 
                           variant="text" 
                           width={`${20 + Math.floor(Math.random() * 60)}%`} 
@@ -392,7 +452,9 @@ export const Table = ({
                         align={col.align || 'left'}
                         sx={{ 
                           fontSize: '0.8125rem',
-                          ...(typeof col.sx === 'function' ? col.sx(row) : col.sx)
+                          width: widths[col.field] || col.width || 'auto',
+                          minWidth: widths[col.field] || col.width || 'auto',
+                          ...((typeof col.sx === 'function' ? col.sx(row) : col.sx) || {})
                         }}
                       >
                         {col.renderCell ? col.renderCell(row) : row[col.field]}

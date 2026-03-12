@@ -172,6 +172,8 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
           sortBy={table.sortBy}
           sortOrder={table.sortOrder}
           onColumnsReorder={table.setOrderedColumns}
+          widths={table.columnWidths}
+          onResize={table.handleColumnResize}
           loading={table.loading}
         />
 

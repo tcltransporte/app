@@ -23,6 +23,14 @@ export const useTable = ({
   const [sortBy, setSortBy] = useState(null);
   const [sortOrder, setSortOrder] = useState('ASC');
   const [orderedColumns, setOrderedColumns] = useState([]);
+  const [columnWidths, setColumnWidths] = useState({});
+
+  const handleColumnResize = useCallback((field, width) => {
+    setColumnWidths(prev => ({
+      ...prev,
+      [field]: width
+    }));
+  }, []);
 
   const handleSort = useCallback((property) => {
     const isAsc = sortBy === property && sortOrder === 'ASC';
@@ -95,6 +103,8 @@ export const useTable = ({
     setSortOrder,
     orderedColumns,
     setOrderedColumns,
+    columnWidths,
+    setColumnWidths,
     
     // Handlers
     onSelect,
@@ -102,5 +112,6 @@ export const useTable = ({
     handlePageChange,
     handleRowsPerPageChange,
     handleSort,
+    handleColumnResize,
   };
 };
