@@ -18,7 +18,7 @@ const ContainerContent = ({ children }) => (
     display: 'flex',
     flexDirection: 'column',
     p: { xs: 2, md: 3 },
-    overflow: 'hidden',
+    overflowY: 'auto',
     backgroundColor: 'background.default',
     gap: 2
   }}>

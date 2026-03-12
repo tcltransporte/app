@@ -1,7 +1,8 @@
 import { Inter } from 'next/font/google';
 import { cookies, headers } from 'next/headers';
-import MainLayout from '../components/layout/MainLayout';
 import { ThemeContextProvider } from '@/context/ThemeContext';
+import * as companyService from "@/app/services/settings/company.service";
+import { ServiceStatus } from "@/libs/service";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -24,6 +25,18 @@ export default async function RootLayout({ children }) {
     menu: cookieStore.get('theme-menu')?.value || 'vertical',
     semiDark: cookieStore.get('theme-semiDark')?.value === 'true',
   };
+
+  let session = { user: null, company: null };
+  try {
+    const sessionResult = await companyService.findOne();
+    if (sessionResult.status === ServiceStatus.SUCCESS) {
+      session = { user: sessionResult.user, company: sessionResult.company };
+    }
+  } catch (e) {
+    // Session not found or error, likely a public page
+  }
+
+  themeConfig.session = session;
 
   return (
     <html lang="pt-br">

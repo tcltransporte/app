@@ -2,26 +2,26 @@
 
 import { useState, useContext } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Checkbox, 
-  FormControlLabel, 
-  Link, 
-  IconButton, 
+import {
+  Box,
+  Typography,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  Link,
+  IconButton,
   InputAdornment,
   Divider,
   Paper,
   useTheme,
   useMediaQuery,
-  MenuItem, 
-  Select, 
-  FormControl, 
+  MenuItem,
+  Select,
+  FormControl,
   InputLabel
 } from "@mui/material"
-import { 
-  Visibility, 
+import {
+  Visibility,
   VisibilityOff,
   Google as GoogleIcon,
   ArrowBack
@@ -35,10 +35,12 @@ import Image from "next/image"
 
 
 export function LoginView() {
-  const { primaryColor } = useContext(ThemeContext)
+  const { primaryColor, mode } = useContext(ThemeContext)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true })
   const router = useRouter()
+
+  const isDark = mode === 'dark'
 
 
   const [step, setStep] = useState('credentials') // 'credentials' or 'selection'
@@ -109,12 +111,22 @@ export function LoginView() {
           fullWidth
           label="Usuário"
           placeholder="Digite seu usuário"
-          sx={{ mb: 3 }}
+          sx={{
+            mb: 3,
+            '& .MuiFilledInput-root': {
+              borderRadius: 2,
+              border: '1px solid transparent',
+              transition: 'all 0.2s ease',
+              '&.Mui-focused': {
+                borderColor: primaryColor,
+                backgroundColor: `${primaryColor}11`,
+              }
+            }
+          }}
           variant="filled"
           slotProps={{
             input: {
               disableUnderline: true,
-              sx: { borderRadius: 2 }
             }
           }}
         />
@@ -126,12 +138,22 @@ export function LoginView() {
           type={showPassword ? 'text' : 'password'}
           label="Senha"
           placeholder="••••••••"
-          sx={{ mb: 2 }}
+          sx={{
+            mb: 2,
+            '& .MuiFilledInput-root': {
+              borderRadius: 2,
+              border: '1px solid transparent',
+              transition: 'all 0.2s ease',
+              '&.Mui-focused': {
+                borderColor: primaryColor,
+                backgroundColor: `${primaryColor}11`,
+              }
+            }
+          }}
           variant="filled"
           slotProps={{
             input: {
               disableUnderline: true,
-              sx: { borderRadius: 2 },
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
@@ -157,9 +179,9 @@ export function LoginView() {
           type="submit"
           variant="contained"
           disabled={loading}
-          sx={{ 
-            py: 1.5, 
-            backgroundColor: primaryColor, 
+          sx={{
+            py: 1.5,
+            backgroundColor: primaryColor,
             '&:hover': { backgroundColor: primaryColor },
             textTransform: 'none',
             borderRadius: 2,
@@ -189,9 +211,9 @@ export function LoginView() {
           fullWidth
           variant="outlined"
           startIcon={<GoogleIcon sx={{ color: '#ea4335' }} />}
-          sx={{ 
-            py: 1.2, 
-            borderColor: 'rgba(0,0,0,0.12)', 
+          sx={{
+            py: 1.2,
+            borderColor: 'rgba(0,0,0,0.12)',
             color: 'text.primary',
             textTransform: 'none',
             borderRadius: 2,
@@ -207,8 +229,8 @@ export function LoginView() {
   const renderSelectionStep = (values, setFieldValue) => (
     <>
       <Box sx={{ mb: 4, position: 'relative' }}>
-        <IconButton 
-          onClick={() => setStep('credentials')} 
+        <IconButton
+          onClick={() => setStep('credentials')}
           sx={{ position: 'absolute', top: -48, left: -8 }}
         >
           <ArrowBack />
@@ -230,10 +252,20 @@ export function LoginView() {
           variant="filled"
           options={companyBusinesses.map(cb => ({ value: cb.id, label: cb.name }))}
           onChange={(val) => handleCompanyChange(val, values, setFieldValue)}
+          sx={{
+            '& .MuiFilledInput-root': {
+              borderRadius: 2,
+              border: '1px solid transparent',
+              transition: 'all 0.2s ease',
+              '&.Mui-focused': {
+                borderColor: primaryColor,
+                backgroundColor: `${primaryColor}11`,
+              }
+            }
+          }}
           slotProps={{
             input: {
               disableUnderline: true,
-              sx: { borderRadius: 2 }
             }
           }}
         />
@@ -247,10 +279,20 @@ export function LoginView() {
           disabled={!companies.length}
           options={companies.map(c => ({ value: c.companyId, label: c.surname }))}
           onChange={(val) => handleBranchChange(val, values, setFieldValue)}
+          sx={{
+            '& .MuiFilledInput-root': {
+              borderRadius: 2,
+              border: '1px solid transparent',
+              transition: 'all 0.2s ease',
+              '&.Mui-focused': {
+                borderColor: primaryColor,
+                backgroundColor: `${primaryColor}11`,
+              }
+            }
+          }}
           slotProps={{
             input: {
               disableUnderline: true,
-              sx: { borderRadius: 2 }
             }
           }}
         />
@@ -260,10 +302,10 @@ export function LoginView() {
           variant="contained"
           onClick={() => handleLogin(values, setFieldValue)}
           disabled={loading || !values.companyId}
-          sx={{ 
-            py: 1.5, 
+          sx={{
+            py: 1.5,
             mt: 2,
-            backgroundColor: primaryColor, 
+            backgroundColor: primaryColor,
             '&:hover': { backgroundColor: primaryColor },
             textTransform: 'none',
             borderRadius: 2,
@@ -271,7 +313,7 @@ export function LoginView() {
             fontSize: '1rem'
           }}
         >
-          {loading ? 'Processando...' : 'Continuar'}
+          {loading ? 'Carregando...' : 'Continuar'}
         </Button>
 
         {error && step === 'selection' && (
@@ -284,9 +326,9 @@ export function LoginView() {
   )
 
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      minHeight: '100vh', 
+    <Box sx={{
+      display: 'flex',
+      minHeight: '100vh',
       width: '100%',
       backgroundColor: '#f8f9fa',
       overflow: 'hidden',
@@ -294,47 +336,51 @@ export function LoginView() {
     }}>
       {/* Left Decoration Side (Desktop Only) */}
       {!isMobile && (
-        <Box sx={{ 
-          flex: 1, 
-          display: 'flex', 
+        <Box sx={{
+          flex: 1,
+          display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          padding: 4
+          padding: 4,
+          backgroundColor: isDark ? '#1E1E2D' : '#f0f0f5', // Dynamic background
+          color: isDark ? 'white' : 'text.primary',
+          transition: 'all 0.3s ease'
         }}>
           {/* Wave/Curve background effect */}
-          <Box sx={{ 
+          <Box sx={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             width: '150%',
             height: '60%',
-            backgroundColor: 'rgba(99, 102, 241, 0.05)',
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(99, 102, 241, 0.05)',
             borderTopRightRadius: '100%',
-            zIndex: 0
+            zIndex: 0,
+            transition: 'all 0.3s ease'
           }} />
 
           {/* Logo (Placeholder - top left) */}
           <Box sx={{ position: 'absolute', top: 32, left: 32 }}>
-             <Typography variant="h5" sx={{ fontWeight: 'bold', color: primaryColor }}>Logo</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', color: isDark ? 'white' : primaryColor }}>Logo</Typography>
           </Box>
 
           <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
             {/* The Illustration */}
             <Box sx={{ mb: 4 }}>
-               <img 
-                 src="/assets/login-illustration.png" 
-                 alt="Login Illustration" 
-                 style={{ maxWidth: '400px', height: 'auto', borderRadius: '20px' }} 
-               />
+              <img
+                src="/assets/login-illustration.png"
+                alt="Login Illustration"
+                style={{ maxWidth: '400px', height: 'auto', borderRadius: '20px' }}
+              />
             </Box>
-            
+
             {/* The 3D Sphere effect area */}
-            <Box sx={{ 
-              width: 120, 
-              height: 120, 
-              borderRadius: '50%', 
+            <Box sx={{
+              width: 120,
+              height: 120,
+              borderRadius: '50%',
               background: 'radial-gradient(circle at 30% 30%, #555, #111)',
               boxShadow: '0 40px 60px rgba(0,0,0,0.3)',
               margin: '0 auto',
@@ -345,8 +391,8 @@ export function LoginView() {
       )}
 
       {/* Right Login Form Side */}
-      <Box sx={{ 
-        width: isMobile ? '100%' : '580px', 
+      <Box sx={{
+        width: isMobile ? '100%' : '580px',
         backgroundColor: 'background.paper',
         display: 'flex',
         flexDirection: 'column',
@@ -373,4 +419,4 @@ export function LoginView() {
       </Box>
     </Box>
   )
-}
+}

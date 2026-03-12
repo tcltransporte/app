@@ -29,7 +29,7 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
         vencimento: data.vencimento ?? '',
         beneficiario: data.beneficiario ?? '',
         categoria: data.categoria ?? '',
-        valor: data.valor ?? 0,
+        valor: data.valor,
         tipo: data.tipo ?? '',
         ativo: data.ativo ?? true,
       }}

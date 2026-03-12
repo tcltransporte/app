@@ -31,7 +31,10 @@ export async function findOne() {
                 where: { userId: session.user.id }
             })
 
-            return { company, user }
+            return { 
+                company: company ? JSON.parse(JSON.stringify(company)) : null, 
+                user: user ? JSON.parse(JSON.stringify(user)) : null 
+            }
 
         })
 

@@ -21,9 +21,10 @@ export const Footer = ({
   return (
     <Box sx={{
       display: 'flex',
-      justifyContent: 'space-between',
+      flexDirection: { xs: 'column', sm: 'row' },
+      justifyContent: { xs: 'center', sm: 'space-between' },
       alignItems: 'center',
-      gap: { xs: 1, sm: 2 },
+      gap: { xs: 1.5, sm: 2 },
       py: 1.5,
       px: { xs: 2, md: 3 },
       backgroundColor: 'background.paper',
@@ -31,7 +32,12 @@ export const Footer = ({
       borderColor: 'divider',
       flexWrap: 'wrap'
     }}>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: { xs: '100%', sm: 'auto' }
+      }}>
         {selectedCount > 0 && (
           <Typography variant="body2" color="primary.main" fontWeight={600}>
             {selectedCount} selecionado{selectedCount > 1 ? 's' : ''}
@@ -39,7 +45,14 @@ export const Footer = ({
         )}
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flexWrap: 'wrap', justifyContent: { xs: 'center', sm: 'flex-end' } }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: { xs: 1, sm: 2 }, 
+        flexWrap: 'wrap', 
+        width: { xs: '100%', sm: 'auto' },
+        justifyContent: 'center' 
+      }}>
         <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
         <Typography variant="caption" color="text.secondary">Registros por página:</Typography>
         <Select
@@ -67,8 +80,6 @@ export const Footer = ({
         color="primary"
         sx={{
           '& .MuiPagination-ul': { gap: 0.5 },
-          display: 'flex',
-          justifyContent: 'center'
         }}
         />
       </Box>

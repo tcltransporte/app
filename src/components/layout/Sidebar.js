@@ -33,7 +33,12 @@ import {
   Build,
   Storefront,
   ExpandMore,
-  ChevronRight
+  ChevronRight,
+  Settings,
+  VpnKey,
+  Description,
+  Extension,
+  Dashboard
 } from '@mui/icons-material';
 import { ThemeContext } from '@/context/ThemeContext';
 import { useLayout } from '@/context/LayoutContext';
@@ -43,7 +48,7 @@ import { useRouter, usePathname } from 'next/navigation';
 const menuItems = [
   {
     text: 'Início', icon: <Business />, subMenu: [
-      { text: 'Índice', icon: <Map />, path: '/' },
+      { text: 'Dashboard', icon: <Dashboard />, path: '/' },
       { text: 'Agenda', icon: <Event /> },
       { text: 'Integrações', icon: <IntegrationInstructions /> },
       { text: 'Sobre a versão', icon: <Info /> },
@@ -62,6 +67,17 @@ const menuItems = [
   { text: 'Vendas', icon: <AccountBalance /> },
   { text: 'Finanças', icon: <Category /> },
   { text: 'Serviços', icon: <ReceiptLong /> },
+  {
+    text: 'Configurações', icon: <Settings />, subMenu: [
+      { text: 'Empresa', icon: <Business /> },
+      { text: 'Certificado', icon: <VpnKey /> },
+      { text: 'Usuários', icon: <Group /> },
+      { text: 'Bancos', icon: <AccountBalance /> },
+      { text: 'Categorias', icon: <Category /> },
+      { text: 'NFS-e', icon: <Description /> },
+      { text: 'Integrações', icon: <Extension /> },
+    ]
+  },
 ];
 
 export default function Sidebar({ mobileOpen, onMobileClose }) {

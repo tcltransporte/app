@@ -74,11 +74,7 @@ export function ViewPartners({ partnerId }) {
 
   const columns = [
     { field: 'doc', headerName: 'Nº Doc.' },
-    {
-      field: 'beneficiario',
-      headerName: 'Beneficiário',
-      sx: { color: 'primary.main', fontWeight: 500 }
-    },
+    { field: 'beneficiario', headerName: 'Beneficiário', fontWeight: 500 },
     { field: 'categoria', headerName: 'Categoria' },
     { field: 'tipo', headerName: 'Tipo', align: 'center' },
     { field: 'vencimento', headerName: 'Vencimento' },

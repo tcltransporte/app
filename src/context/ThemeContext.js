@@ -2,6 +2,8 @@
 
 import React, { createContext, useState, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { LayoutProvider } from '@/context/LayoutContext';
+import FloatingSettings from '@/components/layout/FloatingSettings';
 
 // Define the shape of our context
 export const ThemeContext = createContext({
@@ -12,6 +14,7 @@ export const ThemeContext = createContext({
   primaryColor: '#6366f1',
   semiDark: true,
   initialMobile: false,
+  session: { user: null, company: null },
   setMode: () => { },
   setSkin: () => { },
   setLayout: () => { },
@@ -27,6 +30,7 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
   const [menu, setMenu] = useState(initialConfig.menu || 'vertical');
   const [primaryColor, setPrimaryColor] = useState(initialConfig.primaryColor || '#6366f1');
   const [semiDark, setSemiDark] = useState(initialConfig.semiDark || false);
+  const [session, setSession] = useState(initialConfig.session || { user: null, company: null });
 
 
   const saveToStorage = (key, value) => {
@@ -127,14 +131,18 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
     menu, setMenu: handleSetMenu,
     primaryColor, setPrimaryColor: handleSetPrimaryColor,
     semiDark, setSemiDark: handleSetSemiDark,
-    initialMobile
+    initialMobile,
+    session
   };
 
   return (
     <ThemeContext.Provider value={value}>
       <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
+        <LayoutProvider>
+          <CssBaseline />
+          {children}
+          <FloatingSettings />
+        </LayoutProvider>
       </ThemeProvider>
     </ThemeContext.Provider>
   );
