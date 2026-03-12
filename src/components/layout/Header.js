@@ -8,13 +8,14 @@ import { ThemeContext } from "@/context/ThemeContext";
 import { SessionContext } from '@/context/SessionContext';
 import { useContext, useState } from 'react';
 import * as loginService from "@/app/services/login.service";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Header({ children }) {
   const { toggleDrawer, toggleSettings } = useLayout();
   const { primaryColor } = useContext(ThemeContext);
   const { session } = useContext(SessionContext);
   const router = useRouter();
+  const pathname = usePathname();
   
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -26,8 +27,8 @@ export default function Header({ children }) {
     handleClose();
     try {
       await loginService.signOut();
-      router.push("/login");
-      router.refresh();
+      const redirectUrl = pathname && pathname !== '/' ? `/login?redirect=${encodeURIComponent(pathname)}` : '/login';
+      window.location.href = redirectUrl;
     } catch (error) {
       console.error("Erro ao sair:", error);
     }
