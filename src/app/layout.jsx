@@ -3,6 +3,8 @@ import { cookies, headers } from 'next/headers';
 import { ThemeContextProvider } from '@/context/ThemeContext';
 import * as companyService from "@/app/services/settings/company.service";
 import { ServiceStatus } from "@/libs/service";
+import { Suspense } from 'react';
+import RouteProgressBar from '@/components/RouteProgressBar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -31,8 +33,19 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="pt-br">
-      <body className={inter.className} style={{ margin: 0, backgroundColor: '#fafafa' }} suppressHydrationWarning>
+      <body
+        className={inter.className}
+        style={{
+          margin: 0,
+          backgroundColor: '#fafafa',
+          '--route-progress-color': themeConfig.primaryColor
+        }}
+        suppressHydrationWarning
+      >
         <AppRouterCacheProvider>
+          <Suspense>
+            <RouteProgressBar />
+          </Suspense>
           <ThemeContextProvider initialConfig={themeConfig} initialMobile={isMobile}>
             {children}
           </ThemeContextProvider>

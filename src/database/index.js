@@ -7,6 +7,7 @@ import { CompanyBusiness } from './models/companyBusiness.model.js'
 import { User } from './models/user.model.js'
 import { UserMember } from './models/userMember.model.js'
 import { Session } from './models/session.model.js'
+import { Partner } from './models/partner.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -25,12 +26,14 @@ const afterFind = (result) => {
 }
 
 export class AppContext extends Sequelize {
-  
+
   Company = this.define('company', new Company(), { tableName: 'empresa_filial' })
 
   CompanyBusiness = this.define('companyBusiness', new CompanyBusiness(), { tableName: 'empresa' })
 
   CompanyUser = this.define('companyUser', new CompanyUser(), { tableName: 'companyUser' })
+
+  Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
 
   Session = this.define('session', new Session(), { tableName: 'Session' })
 
@@ -40,7 +43,8 @@ export class AppContext extends Sequelize {
 
   constructor() {
 
-    super({ host: process.env.DB_HOST, port: process.env.DB_PORT, database: process.env.DB_DATABASE, username: process.env.DB_USER, password: process.env.DB_PASSWORD, dialect: 'mssql', dialectModule: tedious, timezone: "-03:00", dialectOptions: { useUTC: false, options: { requestTimeout: 300000, encrypt: false }}, define: { timestamps: false },
+    super({
+      host: process.env.DB_HOST, port: process.env.DB_PORT, database: process.env.DB_DATABASE, username: process.env.DB_USER, password: process.env.DB_PASSWORD, dialect: 'mssql', dialectModule: tedious, timezone: "-03:00", dialectOptions: { useUTC: false, options: { requestTimeout: 300000, encrypt: false } }, define: { timestamps: false },
       logging: (query, options) => {
         if (options.bind) {
           Object.keys(options.bind).forEach((key) => query = query.replace(`@${key}`, `'${options.bind[key]}'`))
@@ -55,9 +59,9 @@ export class AppContext extends Sequelize {
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
 
     this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId' })
-    
+
     this.CompanyUser.belongsTo(this.User, { as: 'user', foreignKey: 'userId' })
-    this.CompanyUser.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId'})
+    this.CompanyUser.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
 
     this.Session.belongsTo(this.User, { as: 'user', foreignKey: 'userId' })
     this.Session.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })

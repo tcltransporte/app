@@ -30,7 +30,8 @@ export const Table = ({
   selecteds = [], 
   onSelect, 
   onSelectAll,
-  onRowDoubleClick
+  onRowDoubleClick,
+  rowKey = 'id'
 }) => {
   const { isMobile } = useLayout();
   const longPressTimer = React.useRef(null);
@@ -52,7 +53,7 @@ export const Table = ({
       if (!isLongPress.current) {
         if (selecteds.length > 0) {
           // If already in selection mode, any click toggles selection
-          onSelect(row.id);
+          onSelect(row[rowKey]);
         } else {
           // If no selection, click opens the record
           onRowDoubleClick && onRowDoubleClick(row);
@@ -98,14 +99,14 @@ export const Table = ({
 
         {/* Mobile Data Cards */}
         {items.map((row) => {
-          const isItemSelected = selecteds.indexOf(row.id) !== -1;
+          const isItemSelected = selecteds.indexOf(row[rowKey]) !== -1;
           return (
             <Paper
-              key={row.id}
+              key={row[rowKey]}
               elevation={0}
-              onMouseDown={() => handleCardTouchStart(row.id)}
+              onMouseDown={() => handleCardTouchStart(row[rowKey])}
               onMouseUp={(e) => handleCardTouchEnd(e, row)}
-              onTouchStart={() => handleCardTouchStart(row.id)}
+              onTouchStart={() => handleCardTouchStart(row[rowKey])}
               onTouchEnd={(e) => handleCardTouchEnd(e, row)}
               sx={{
                 p: 2,
@@ -126,7 +127,7 @@ export const Table = ({
                   sx={{ p: 0, mr: 1.5, mt: 0.3 }} 
                   onClick={(e) => {
                     e.stopPropagation();
-                    onSelect(row.id);
+                    onSelect(row[rowKey]);
                   }}
                 />
                 <Box sx={{ flexGrow: 1 }}>
@@ -207,13 +208,13 @@ export const Table = ({
         </TableHead>
         <TableBody>
           {items.map((row) => {
-            const isItemSelected = selecteds.indexOf(row.id) !== -1;
+            const isItemSelected = selecteds.indexOf(row[rowKey]) !== -1;
             return (
               <TableRow
-                key={row.id}
+                key={row[rowKey]}
                 hover
                 selected={isItemSelected}
-                onClick={() => onSelect(row.id)}
+                onClick={() => onSelect(row[rowKey])}
                 onDoubleClick={() => onRowDoubleClick && onRowDoubleClick(row)}
                 sx={{ cursor: 'pointer', '&.Mui-selected': { backgroundColor: 'primary.lighter' } }}
               >
