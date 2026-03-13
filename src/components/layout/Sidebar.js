@@ -13,7 +13,8 @@ import {
   IconButton,
   useTheme,
   useMediaQuery,
-  Divider
+  Divider,
+  CircularProgress
 } from '@mui/material';
 import {
   Business,
@@ -32,24 +33,58 @@ import {
   Support,
   Build,
   Storefront,
-  ExpandMore,
-  ChevronRight,
+  Dashboard,
+  ConfirmationNumber,
+  Assignment,
+  AddCircleOutline,
+  Save,
+  Close,
+  CheckCircle,
+  RadioButtonUnchecked,
+  DragHandle,
+  Sort,
   Settings,
   VpnKey,
   Description,
   Extension,
-  Dashboard
+  ExpandMore,
+  ChevronRight,
+  Edit,
+  Check
 } from '@mui/icons-material';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import Swal from 'sweetalert2';
+import { alert } from '@/libs/alert';
 import { ThemeContext } from '@/context/ThemeContext';
 import { SessionContext } from '@/context/SessionContext';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter, usePathname } from 'next/navigation';
+import * as solicitationTypeService from '@/app/services/solicitationType.service';
+import { ServiceStatus } from '@/libs/service';
+
+const EMPTY_ARRAY = [];
 
 // Added subMenus based on the user's reference image
 const menuItems = [
   {
     text: 'Início', icon: <Business />, subMenu: [
       { text: 'Dashboard', icon: <Dashboard />, path: '/' },
+      { text: 'Chamados', icon: <ConfirmationNumber /> },
       { text: 'Agenda', icon: <Event /> },
       { text: 'Integrações', icon: <IntegrationInstructions /> },
       { text: 'Sobre a versão', icon: <Info /> },
@@ -65,9 +100,13 @@ const menuItems = [
     ]
   },
   { text: 'Suprimentos', icon: <People /> },
-  { text: 'Vendas', icon: <AccountBalance /> },
+  {
+    text: 'Solicitações', icon: <Assignment />, subMenu: [
+      { text: 'Tipos', path: '/solicitations/types' }
+    ]
+  },
   { text: 'Finanças', icon: <Category /> },
-  { text: 'Serviços', icon: <ReceiptLong /> },
+  { text: 'Contabilidade', icon: <ReceiptLong /> },
   {
     text: 'Configurações', icon: <Settings />, subMenu: [
       { text: 'Empresa', icon: <Business /> },
@@ -81,16 +120,47 @@ const menuItems = [
   },
 ];
 
-export default function Sidebar({ mobileOpen, onMobileClose, session: propSession }) {
+export default function Sidebar({ mobileOpen, onMobileClose, session: propSession, initialSolicitationTypes = EMPTY_ARRAY }) {
   const router = useRouter();
   const pathname = usePathname();
   const { menu, setMenu, primaryColor, mode, semiDark } = useContext(ThemeContext);
   const { session: contextSession } = useContext(SessionContext);
   const [isHovered, setIsHovered] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null); // Tracks which menu item's submenu is open
-  
+
   // propSession is available when drilling down; otherwise use context
   const activeSession = propSession || contextSession;
+
+  const [solicitationTypes, setSolicitationTypes] = useState(initialSolicitationTypes);
+  const [showQuickAddForm, setShowQuickAddForm] = useState(false);
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [originalSolicitationTypes, setOriginalSolicitationTypes] = useState([]);
+  const [quickAddDesc, setQuickAddDesc] = useState('');
+  const [quickAddHash, setQuickAddHash] = useState('');
+  const [quickAddType, setQuickAddType] = useState('Entrada');
+  const [isSavingTipo, setIsSavingTipo] = useState(false);
+  const [isSavingOrders, setIsSavingOrders] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Update types if initialSolicitationTypes changes (e.g. on navigation or data refresh)
+  React.useEffect(() => {
+    if (initialSolicitationTypes && JSON.stringify(initialSolicitationTypes) !== JSON.stringify(solicitationTypes)) {
+      setSolicitationTypes(initialSolicitationTypes);
+    }
+  }, [initialSolicitationTypes]);
 
   const { isMobile } = useLayout();
   const theme = useTheme();
@@ -101,6 +171,165 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
   const sidebarText = isDarkMenu ? 'rgba(255, 255, 255, 0.85)' : 'text.primary';
   const sidebarIcon = isDarkMenu ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary';
   const subMenuBg = isDarkMenu ? '#32344d' : '#ffffff';
+
+  const handleQuickAddSolicitationType = () => {
+    setShowQuickAddForm(prev => !prev);
+    setQuickAddDesc('');
+    setQuickAddHash('');
+    setQuickAddType('Entrada');
+  };
+
+  const saveQuickAddSolicitationType = async () => {
+    if (!quickAddDesc.trim()) {
+      alert.error('Erro', 'A descrição é obrigatória');
+      return;
+    }
+
+    setIsSavingTipo(true);
+    try {
+      const resp = await solicitationTypeService.create({
+        description: quickAddDesc,
+        hash: quickAddHash || quickAddDesc.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '-'),
+        type: quickAddType
+      });
+
+      if (resp.status === ServiceStatus.SUCCESS) {
+        alert.success('Tipo criado com sucesso!');
+        setShowQuickAddForm(false);
+        setQuickAddDesc('');
+        setQuickAddHash('');
+
+        // Manually refresh local list for immediate feedback
+        const refreshResp = await solicitationTypeService.findAll({ limit: 100 });
+        if (refreshResp.status === ServiceStatus.SUCCESS) {
+          setSolicitationTypes(refreshResp.items || []);
+        }
+
+        router.refresh();
+      } else {
+        alert.error('Erro ao criar tipo', resp.message);
+      }
+    } catch (err) {
+      alert.error('Erro', 'Ocorreu um erro ao salvar');
+    } finally {
+      setIsSavingTipo(false);
+    }
+  };
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      const oldIndex = solicitationTypes.findIndex((t) => t.id === active.id);
+      const newIndex = solicitationTypes.findIndex((t) => t.id === over.id);
+
+      const newOrder = arrayMove(solicitationTypes, oldIndex, newIndex);
+      setSolicitationTypes(newOrder);
+    }
+  };
+
+  const saveReorder = async () => {
+    setIsSavingOrders(true);
+    try {
+      const orderPairs = solicitationTypes.map((tipo, index) => ({
+        id: tipo.id,
+        order: index + 1
+      }));
+
+      const resp = await solicitationTypeService.updateOrders(orderPairs);
+      if (resp.status === ServiceStatus.SUCCESS) {
+        alert.success('Ordem salva com sucesso!');
+        setIsReorderMode(false);
+        router.refresh();
+      } else {
+        alert.error('Erro ao salvar ordem', resp.message);
+      }
+    } catch (error) {
+      alert.error('Erro', 'Ocorreu um erro ao salvar a ordem');
+    } finally {
+      setIsSavingOrders(false);
+    }
+  };
+
+  const handleStartEdit = (item) => {
+    setEditingId(item.id);
+    setEditingValue(item.text || '');
+  };
+
+  const handleSaveEdit = async (id) => {
+    if (!editingValue.trim()) return;
+
+    setIsSavingEdit(true);
+    try {
+      const resp = await solicitationTypeService.update(id, { description: editingValue });
+      if (resp.status === ServiceStatus.SUCCESS) {
+        setSolicitationTypes(prev => prev.map(t => t.id === id ? { ...t, description: editingValue } : t));
+        setEditingId(null);
+        router.refresh();
+      } else {
+        alert.error('Erro ao atualizar', resp.message);
+      }
+    } catch (err) {
+      alert.error('Erro', 'Ocorreu um erro ao salvar');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const enterReorderMode = () => {
+    setOriginalSolicitationTypes(solicitationTypes);
+    setIsReorderMode(true);
+  };
+
+  const cancelReorder = () => {
+    setSolicitationTypes(originalSolicitationTypes);
+    setIsReorderMode(false);
+  };
+
+  // Combine static menu items with dynamic types
+  const dynamicMenuItems = React.useMemo(() => {
+    return menuItems.map(item => {
+      if (item.text === 'Solicitações') {
+        return {
+          ...item,
+          subMenu: [
+            ...solicitationTypes.map(tipo => ({
+              id: tipo.id,
+              text: tipo.description,
+              icon: <Description />,
+              path: `/solicitations/${tipo.hash}`
+            })),
+            solicitationTypes.length === 0 && {
+              text: 'Nenhum tipo cadastrado',
+              icon: <Info />,
+              disabled: true,
+              sx: { opacity: 0.5, fontStyle: 'italic' }
+            },
+            { divider: true },
+            !showQuickAddForm && {
+              text: isReorderMode ? (isSavingOrders ? 'Salvando...' : 'Salvar Reordenação') : 'Reordenar',
+              icon: isSavingOrders ? <CircularProgress size={20} color="inherit" /> : (isReorderMode ? <Save /> : <Sort />),
+              action: isReorderMode ? (isSavingOrders ? null : saveReorder) : enterReorderMode
+            },
+            !showQuickAddForm && isReorderMode && {
+              text: 'Cancelar',
+              icon: <Close />,
+              action: cancelReorder
+            },
+            !showQuickAddForm && !isReorderMode && {
+              text: 'Adicionar Novo',
+              icon: <AddCircleOutline />,
+              action: handleQuickAddSolicitationType,
+              isQuickAddToggle: true
+            },
+            { isQuickAddForm: showQuickAddForm }
+          ].filter(Boolean)
+        };
+      }
+      return item;
+    });
+  }, [solicitationTypes, primaryColor, isDarkMenu, sidebarText, showQuickAddForm, quickAddDesc, quickAddType, isSavingTipo, isReorderMode, isSavingOrders]);
+
+
 
   // Calculate effective drawer state: if mobile, always show full width.
   const isEffectivelyCollapsed = !isMobile && menu === 'recolhido' && !isHovered;
@@ -118,51 +347,401 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
   };
 
   const handleSubItemClick = (subItem) => {
-    if (subItem.path) {
+    if (subItem.action) {
+      subItem.action();
+      if (isMobile) onMobileClose();
+    } else if (subItem.path) {
       router.push(subItem.path);
       if (isMobile) onMobileClose();
     }
   };
 
-  const activeItemData = menuItems.find(item => item.text === activeMenu);
+  const activeItemData = dynamicMenuItems.find(item => item.text === activeMenu);
 
-  const renderSubMenuContent = (items) => (
-    <List component="div" disablePadding>
-      {items.map((subItem, index) => {
-        const isActiveSub = subItem.path === pathname;
-        return (
-          <React.Fragment key={subItem.text}>
-            <ListItem disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => handleSubItemClick(subItem)}
-                sx={{
-                  borderRadius: 1,
-                  minHeight: 40,
-                  pl: isMobile ? 4 : 2, // indent on mobile
-                  color: isActiveSub ? primaryColor : (isDarkMenu ? 'rgba(255, 255, 255, 0.7)' : 'text.primary'),
-                  '& .MuiListItemIcon-root': {
-                    color: isActiveSub ? primaryColor : (isDarkMenu ? 'rgba(255, 255, 255, 0.5)' : 'text.secondary'),
-                    minWidth: 40
-                  },
-                  '&:hover': {
-                    backgroundColor: isDarkMenu ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0,0,0,0.04)'
-                  }
+  function SortableSubItem({ subItem, index, isActiveSub }) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging
+    } = useSortable({ id: subItem.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      zIndex: isDragging ? 2 : 1,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    const isEditing = editingId === subItem.id;
+
+    return (
+      <ListItem
+        ref={setNodeRef}
+        style={style}
+        disablePadding
+        sx={{
+          mb: 0.5,
+          '&:hover .edit-btn': { opacity: 1 }
+        }}
+      >
+        <ListItemButton
+          onClick={() => !isReorderMode && !isEditing && handleSubItemClick(subItem)}
+          sx={{
+            borderRadius: 1,
+            minHeight: 40,
+            pl: isMobile ? 4 : 2,
+            cursor: (isReorderMode || isEditing) ? 'default' : 'pointer',
+            color: subItem.action ? primaryColor : (isActiveSub ? primaryColor : (isDarkMenu ? 'rgba(255, 255, 255, 0.7)' : 'text.primary')),
+            '& .MuiListItemIcon-root': {
+              color: subItem.action ? primaryColor : (isActiveSub ? primaryColor : (isDarkMenu ? 'rgba(255, 255, 255, 0.5)' : 'text.secondary')),
+              minWidth: 40
+            },
+            '&:hover': {
+              backgroundColor: isDarkMenu ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0,0,0,0.04)'
+            },
+            pr: isEditing ? 1 : 2
+          }}
+        >
+          {isReorderMode ? (
+            <ListItemIcon {...attributes} {...listeners} sx={{ cursor: 'grab', minWidth: 32 }}>
+              <DragHandle sx={{ fontSize: 20 }} />
+            </ListItemIcon>
+          ) : (
+            subItem.icon && (
+              <ListItemIcon>
+                {React.cloneElement(subItem.icon, { sx: { fontSize: 20 } })}
+              </ListItemIcon>
+            )
+          )}
+
+          {isEditing ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 0.5, minWidth: 0, overflow: 'hidden' }}>
+              <input
+                autoFocus
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveEdit(subItem.id);
+                  if (e.key === 'Escape') setEditingId(null);
                 }}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  width: '100%',
+                  padding: '4px 8px',
+                  fontSize: '14px',
+                  borderRadius: '4px',
+                  border: '1px solid ' + primaryColor,
+                  backgroundColor: isDarkMenu ? 'rgba(255,255,255,0.05)' : '#fff',
+                  color: isDarkMenu ? '#fff' : '#333',
+                  outline: 'none'
+                }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => !isSavingEdit && handleSaveEdit(subItem.id)}
+                sx={{ color: primaryColor }}
+                disabled={isSavingEdit}
               >
-                <ListItemIcon>
-                  {React.cloneElement(subItem.icon, { sx: { fontSize: 20 } })}
-                </ListItemIcon>
-                <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 15, fontWeight: 500 }} />
-              </ListItemButton>
-            </ListItem>
-            {subItem.text === 'Ferramentas' && !isMobile && (
-              <Divider sx={{ my: 1, borderColor: isDarkMenu ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }} />
-            )}
-          </React.Fragment>
-        );
-      })}
-    </List>
-  );
+                {isSavingEdit ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  <Check sx={{ fontSize: 18 }} />
+                )}
+              </IconButton>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+              <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 15, fontWeight: subItem.action ? 700 : 500 }} />
+              {!isReorderMode && subItem.id && (
+                <IconButton
+                  className="edit-btn"
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartEdit(subItem);
+                  }}
+                  sx={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    p: 0.5,
+                    color: isDarkMenu ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                    '&:hover': { color: primaryColor }
+                  }}
+                >
+                  <Edit sx={{ fontSize: 16 }} />
+                </IconButton>
+              )}
+            </Box>
+          )}
+        </ListItemButton>
+      </ListItem>
+    );
+  }
+
+  const renderSubMenuContent = (items) => {
+    const reorderableItems = items.filter(i => i.id !== undefined);
+    const otherItems = items.filter(i => i.id === undefined);
+
+    return (
+      <List component="div" disablePadding>
+        {isReorderMode ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={reorderableItems.map(i => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {reorderableItems.map((subItem, index) => (
+                <SortableSubItem
+                  key={subItem.id}
+                  subItem={subItem}
+                  index={index}
+                  isActiveSub={subItem.path === pathname}
+                />
+              ))}
+            </SortableContext>
+            {/* Render actions (Reorder Finish, etc) after reorderable list */}
+            {otherItems
+              .filter(i => i.divider || i.text) // Only render dividers or items with text
+              .map((subItem, index) => {
+                if (subItem.divider) return <Divider key={`div-${index}`} sx={{ my: 1, borderColor: isDarkMenu ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }} />;
+                return (
+                  <ListItem key={subItem.text || index} disablePadding sx={{ mb: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => handleSubItemClick(subItem)}
+                      sx={{
+                        borderRadius: 1, minHeight: 40, pl: isMobile ? 4 : 2,
+                        color: primaryColor,
+                        '& .MuiListItemIcon-root': { color: primaryColor, minWidth: 40 }
+                      }}
+                    >
+                      {subItem.icon && (
+                        <ListItemIcon>{React.cloneElement(subItem.icon, { sx: { fontSize: 20 } })}</ListItemIcon>
+                      )}
+                      <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 15, fontWeight: 700 }} />
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+          </DndContext>
+        ) : (
+          items.map((subItem, index) => {
+            if (subItem.divider) {
+              return <Divider key={`div-${index}`} sx={{ my: 1, borderColor: isDarkMenu ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }} />;
+            }
+
+            if (subItem.isQuickAddForm !== undefined) {
+              if (!subItem.isQuickAddForm) return null;
+              return (
+                <Box key="quick-add-form" sx={{ p: 2, mb: 1, borderRadius: '12px', backgroundColor: isDarkMenu ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: '1px dashed', borderColor: primaryColor + '44', position: 'relative' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: primaryColor, textTransform: 'uppercase', fontSize: '10px' }}>
+                      Nova Solicitação
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowQuickAddForm(false)}
+                      sx={{ p: 0.5, color: isDarkMenu ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)', '&:hover': { color: primaryColor } }}
+                    >
+                      <Close sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
+                  <input
+                    placeholder="Descrição"
+                    value={quickAddDesc}
+                    onChange={(e) => setQuickAddDesc(e.target.value)}
+                    autoFocus
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid ' + (isDarkMenu ? 'rgba(255,255,255,0.1)' : '#ddd'),
+                      backgroundColor: isDarkMenu ? 'rgba(255,255,255,0.05)' : '#fff',
+                      color: isDarkMenu ? '#fff' : '#333',
+                      fontSize: '14px',
+                      marginBottom: '12px',
+                      outline: 'none'
+                    }}
+                  />
+                  <input
+                    placeholder="Hash/URL (ex: fretes)..."
+                    value={quickAddHash}
+                    onChange={(e) => setQuickAddHash(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid ' + (isDarkMenu ? 'rgba(255,255,255,0.1)' : '#ddd'),
+                      backgroundColor: isDarkMenu ? 'rgba(255,255,255,0.05)' : '#fff',
+                      color: isDarkMenu ? '#fff' : '#333',
+                      fontSize: '14px',
+                      marginBottom: '12px',
+                      outline: 'none'
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                    <Box
+                      onClick={() => setQuickAddType('Entrada')}
+                      sx={{
+                        flex: 1, p: 1, borderRadius: '8px', cursor: 'pointer', textAlign: 'center',
+                        border: '1px solid', borderColor: quickAddType === 'Entrada' ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.1)' : '#ddd'),
+                        backgroundColor: quickAddType === 'Entrada' ? primaryColor + '11' : 'transparent',
+                        color: quickAddType === 'Entrada' ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.5)' : '#666'),
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, fontSize: '12px', fontWeight: 600
+                      }}
+                    >
+                      {quickAddType === 'Entrada' ? <CheckCircle sx={{ fontSize: 14 }} /> : <RadioButtonUnchecked sx={{ fontSize: 14 }} />}
+                      Entrada
+                    </Box>
+                    <Box
+                      onClick={() => setQuickAddType('Saida')}
+                      sx={{
+                        flex: 1, p: 1, borderRadius: '8px', cursor: 'pointer', textAlign: 'center',
+                        border: '1px solid', borderColor: quickAddType === 'Saida' ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.1)' : '#ddd'),
+                        backgroundColor: quickAddType === 'Saida' ? primaryColor + '11' : 'transparent',
+                        color: quickAddType === 'Saida' ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.5)' : '#666'),
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, fontSize: '12px', fontWeight: 600
+                      }}
+                    >
+                      {quickAddType === 'Saida' ? <CheckCircle sx={{ fontSize: 14 }} /> : <RadioButtonUnchecked sx={{ fontSize: 14 }} />}
+                      Saída
+                    </Box>
+                  </Box>
+                  <Box sx={{ display: 'flex' }}>
+                    <ListItemButton
+                      disabled={isSavingTipo}
+                      onClick={saveQuickAddSolicitationType}
+                      sx={{
+                        flex: 1, borderRadius: '8px', backgroundColor: primaryColor, color: '#fff',
+                        '&:hover': { backgroundColor: primaryColor + 'dd' },
+                        justifyContent: 'center', py: 0.7, minHeight: 'unset'
+                      }}
+                    >
+                      <Save sx={{ fontSize: 16, mr: 1 }} />
+                      <Typography sx={{ fontSize: '13px', fontWeight: 700 }}>{isSavingTipo ? 'Salvando...' : 'Salvar'}</Typography>
+                    </ListItemButton>
+                  </Box>
+                </Box>
+              );
+            }
+
+            const isActiveSub = subItem.path === pathname;
+            const isEditing = editingId === subItem.id;
+
+            return (
+              <React.Fragment key={subItem.text || index}>
+                <ListItem
+                  disablePadding
+                  sx={{
+                    mb: 0.5,
+                    '&:hover .edit-btn': { opacity: 1 }
+                  }}
+                >
+                  <ListItemButton
+                    disabled={subItem.disabled}
+                    onClick={() => !isEditing && !subItem.disabled && handleSubItemClick(subItem)}
+                    sx={{
+                      borderRadius: 1,
+                      minHeight: 40,
+                      pl: isMobile ? 4 : 2, // indent on mobile
+                      cursor: (isEditing || subItem.disabled) ? 'default' : 'pointer',
+                      color: subItem.action ? primaryColor : (isActiveSub ? primaryColor : (isDarkMenu ? 'rgba(255, 255, 255, 0.7)' : 'text.primary')),
+                      '& .MuiListItemIcon-root': {
+                        color: subItem.action ? primaryColor : (isActiveSub ? primaryColor : (isDarkMenu ? 'rgba(255, 255, 255, 0.5)' : 'text.secondary')),
+                        minWidth: 40
+                      },
+                      '&:hover': {
+                        backgroundColor: (isDarkMenu || subItem.disabled) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0,0,0,0.04)'
+                      },
+                      pr: isEditing ? 1 : 2,
+                      ...subItem.sx
+                    }}
+                  >
+                    {subItem.icon && (
+                      <ListItemIcon>
+                        {React.cloneElement(subItem.icon, { sx: { fontSize: 20 } })}
+                      </ListItemIcon>
+                    )}
+
+                    {isEditing ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 0.5, minWidth: 0, overflow: 'hidden' }}>
+                        <input
+                          autoFocus
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveEdit(subItem.id);
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            width: '100%',
+                            padding: '4px 8px',
+                            fontSize: '14px',
+                            borderRadius: '4px',
+                            border: '1px solid ' + primaryColor,
+                            backgroundColor: isDarkMenu ? 'rgba(255,255,255,0.05)' : '#fff',
+                            color: isDarkMenu ? '#fff' : '#333',
+                            outline: 'none'
+                          }}
+                        />
+                        <IconButton
+                          size="small"
+                          onClick={() => !isSavingEdit && handleSaveEdit(subItem.id)}
+                          sx={{ color: primaryColor }}
+                          disabled={isSavingEdit}
+                        >
+                          {isSavingEdit ? (
+                            <CircularProgress size={18} color="inherit" />
+                          ) : (
+                            <Check sx={{ fontSize: 18 }} />
+                          )}
+                        </IconButton>
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+                        <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 15, fontWeight: subItem.action ? 700 : 500 }} />
+                        {subItem.id && (
+                          <IconButton
+                            className="edit-btn"
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEdit(subItem);
+                            }}
+                            sx={{
+                              opacity: 0,
+                              transition: 'opacity 0.2s',
+                              p: 0.5,
+                              color: isDarkMenu ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                              '&:hover': { color: primaryColor }
+                            }}
+                          >
+                            <Edit sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        )}
+                      </Box>
+                    )}
+                  </ListItemButton>
+                </ListItem>
+                {subItem.text === 'Ferramentas' && !isMobile && (
+                  <Divider sx={{ my: 1, borderColor: isDarkMenu ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }} />
+                )}
+              </React.Fragment>
+            );
+          })
+        )}
+      </List>
+    );
+  };
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', color: sidebarText }}>
@@ -211,7 +790,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       </Box>
 
       <List sx={{ flexGrow: 1, px: 2, pt: 2 }}>
-        {menuItems.map((item) => {
+        {dynamicMenuItems.map((item) => {
           const isSelected = activeMenu === item.text;
 
           return (

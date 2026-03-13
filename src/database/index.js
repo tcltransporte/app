@@ -8,6 +8,7 @@ import { User } from './models/user.model.js'
 import { UserMember } from './models/userMember.model.js'
 import { Session } from './models/session.model.js'
 import { Partner } from './models/partner.model.js'
+import { SolicitationType } from './models/solicitationType.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -35,6 +36,8 @@ export class AppContext extends Sequelize {
 
   Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
 
+  SolicitationType = this.define('solicitationType', new SolicitationType(), { tableName: 'SolicitacaoTipo' })
+
   Session = this.define('session', new Session(), { tableName: 'Session' })
 
   User = this.define('user', new User(), { tableName: 'aspnet_Users' })
@@ -57,6 +60,7 @@ export class AppContext extends Sequelize {
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     //this.Company.hasMany(this.CompanyNfseTributation, { as: 'tributations', foreignKey: 'companyId', onDelete: 'CASCADE' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
+    this.Company.hasMany(this.SolicitationType, { as: 'solicitationTypes', foreignKey: 'companyId' })
 
     this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId' })
 
@@ -65,6 +69,8 @@ export class AppContext extends Sequelize {
 
     this.Session.belongsTo(this.User, { as: 'user', foreignKey: 'userId' })
     this.Session.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+
+    this.SolicitationType.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
 
     this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })
     this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId' })
@@ -76,6 +82,7 @@ export class AppContext extends Sequelize {
     this.CompanyUser.addHook('afterFind', afterFind)
     this.User.addHook('afterFind', afterFind)
     this.UserMember.addHook('afterFind', afterFind)
+    this.SolicitationType.addHook('afterFind', afterFind)
 
   }
 

@@ -1,5 +1,6 @@
 import MainLayout from '@/components/layout/MainLayout';
 import { getSession } from '@/libs/session';
+import { findAll as findSolicitationTypes } from '@/app/services/solicitationType.service';
 import { SessionContextProvider } from '@/context/SessionContext';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
@@ -24,9 +25,12 @@ export default async function PublicLayout({ children }) {
     }
   }
 
+  const typesResp = await findSolicitationTypes({ limit: 100 });
+  const solicitationTypes = typesResp.items || [];
+
   return (
     <SessionContextProvider initialSession={session}>
-      <MainLayout>{children}</MainLayout>
+      <MainLayout solicitationTypes={solicitationTypes}>{children}</MainLayout>
     </SessionContextProvider>
   );
 }

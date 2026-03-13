@@ -6,12 +6,16 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { useLayout } from '@/context/LayoutContext';
 
-function LayoutContent({ children }) {
+function LayoutContent({ children, solicitationTypes }) {
   const { mobileOpen, toggleDrawer } = useLayout();
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
-      <Sidebar mobileOpen={mobileOpen} onMobileClose={toggleDrawer} />
+      <Sidebar 
+        mobileOpen={mobileOpen} 
+        onMobileClose={toggleDrawer} 
+        initialSolicitationTypes={solicitationTypes}
+      />
 
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box 
@@ -31,9 +35,9 @@ function LayoutContent({ children }) {
   );
 }
 
-export default function MainLayout({ children }) {
+export default function MainLayout({ children, solicitationTypes }) {
   return (
-    <LayoutContent>
+    <LayoutContent solicitationTypes={solicitationTypes}>
       {children}
     </LayoutContent>
   );
