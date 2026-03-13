@@ -22,8 +22,8 @@ export async function findAll({ page = 1, limit = 50, filters = {} } = {}) {
         where.description = { [Op.like]: `%${filters.description}%` }
       }
       
-      if (filters.type) {
-        where.type = filters.type
+      if (filters.requestType) {
+        where.requestType = filters.requestType
       }
 
       return typeRepository.findAll({ db, transaction }, {

@@ -9,6 +9,7 @@ import { UserMember } from './models/userMember.model.js'
 import { Session } from './models/session.model.js'
 import { Partner } from './models/partner.model.js'
 import { SolicitationType } from './models/solicitationType.model.js'
+import { SolicitationRequestType } from './models/solicitationRequestType.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -37,6 +38,9 @@ export class AppContext extends Sequelize {
   Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
 
   SolicitationType = this.define('solicitationType', new SolicitationType(), { tableName: 'SolicitacaoTipo' })
+
+  SolicitationRequestType = this.define('solicitationRequestType', new SolicitationRequestType(), { tableName: 'solicitationRequestType' })
+
 
   Session = this.define('session', new Session(), { tableName: 'Session' })
 
@@ -83,6 +87,7 @@ export class AppContext extends Sequelize {
     this.User.addHook('afterFind', afterFind)
     this.UserMember.addHook('afterFind', afterFind)
     this.SolicitationType.addHook('afterFind', afterFind)
+    this.SolicitationRequestType.addHook('afterFind', afterFind)
 
   }
 

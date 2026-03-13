@@ -137,7 +137,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
   const [originalSolicitationTypes, setOriginalSolicitationTypes] = useState([]);
   const [quickAddDesc, setQuickAddDesc] = useState('');
   const [quickAddHash, setQuickAddHash] = useState('');
-  const [quickAddType, setQuickAddType] = useState('Entrada');
+  const [quickAddType, setQuickAddType] = useState(1);
   const [isSavingTipo, setIsSavingTipo] = useState(false);
   const [isSavingOrders, setIsSavingOrders] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -176,7 +176,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
     setShowQuickAddForm(prev => !prev);
     setQuickAddDesc('');
     setQuickAddHash('');
-    setQuickAddType('Entrada');
+    setQuickAddType(1);
   };
 
   const saveQuickAddSolicitationType = async () => {
@@ -190,7 +190,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       const resp = await solicitationTypeService.create({
         description: quickAddDesc,
         hash: quickAddHash || quickAddDesc.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '-'),
-        type: quickAddType
+        requestType: quickAddType
       });
 
       if (resp.status === ServiceStatus.SUCCESS) {
@@ -588,29 +588,29 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
                   />
                   <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                     <Box
-                      onClick={() => setQuickAddType('Entrada')}
+                      onClick={() => setQuickAddType(1)}
                       sx={{
                         flex: 1, p: 1, borderRadius: '8px', cursor: 'pointer', textAlign: 'center',
-                        border: '1px solid', borderColor: quickAddType === 'Entrada' ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.1)' : '#ddd'),
-                        backgroundColor: quickAddType === 'Entrada' ? primaryColor + '11' : 'transparent',
-                        color: quickAddType === 'Entrada' ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.5)' : '#666'),
+                        border: '1px solid', borderColor: quickAddType === 1 ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.1)' : '#ddd'),
+                        backgroundColor: quickAddType === 1 ? primaryColor + '11' : 'transparent',
+                        color: quickAddType === 1 ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.5)' : '#666'),
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, fontSize: '12px', fontWeight: 600
                       }}
                     >
-                      {quickAddType === 'Entrada' ? <CheckCircle sx={{ fontSize: 14 }} /> : <RadioButtonUnchecked sx={{ fontSize: 14 }} />}
+                      {quickAddType === 1 ? <CheckCircle sx={{ fontSize: 14 }} /> : <RadioButtonUnchecked sx={{ fontSize: 14 }} />}
                       Entrada
                     </Box>
                     <Box
-                      onClick={() => setQuickAddType('Saida')}
+                      onClick={() => setQuickAddType(2)}
                       sx={{
                         flex: 1, p: 1, borderRadius: '8px', cursor: 'pointer', textAlign: 'center',
-                        border: '1px solid', borderColor: quickAddType === 'Saida' ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.1)' : '#ddd'),
-                        backgroundColor: quickAddType === 'Saida' ? primaryColor + '11' : 'transparent',
-                        color: quickAddType === 'Saida' ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.5)' : '#666'),
+                        border: '1px solid', borderColor: quickAddType === 2 ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.1)' : '#ddd'),
+                        backgroundColor: quickAddType === 2 ? primaryColor + '11' : 'transparent',
+                        color: quickAddType === 2 ? primaryColor : (isDarkMenu ? 'rgba(255,255,255,0.5)' : '#666'),
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, fontSize: '12px', fontWeight: 600
                       }}
                     >
-                      {quickAddType === 'Saida' ? <CheckCircle sx={{ fontSize: 14 }} /> : <RadioButtonUnchecked sx={{ fontSize: 14 }} />}
+                      {quickAddType === 2 ? <CheckCircle sx={{ fontSize: 14 }} /> : <RadioButtonUnchecked sx={{ fontSize: 14 }} />}
                       Saída
                     </Box>
                   </Box>

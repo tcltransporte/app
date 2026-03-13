@@ -15,14 +15,14 @@ export class SolicitationType {
     type: DataTypes.STRING(255)
   }
 
-  type = {
-    field: 'Tipo',
+  requestType = {
+    field: 'requestType',
     allowNull: false,
-    type: DataTypes.STRING(10) // 'Entrada' or 'Saida'
+    type: DataTypes.INTEGER
   }
 
   companyId = {
-    field: 'CompanyId',
+    field: 'companyId',
     allowNull: false,
     type: DataTypes.INTEGER
   }
