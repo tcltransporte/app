@@ -43,4 +43,19 @@ export class User {
     type: DataTypes.BOOLEAN
   }
 
+  googleAccessToken = {
+    field: 'GoogleAccessToken',
+    type: DataTypes.TEXT
+  }
+
+  googleRefreshToken = {
+    field: 'GoogleRefreshToken',
+    type: DataTypes.TEXT
+  }
+
+  googleTokenExpiry = {
+    field: 'GoogleTokenExpiry',
+    type: DataTypes.BIGINT
+  }
+
 }

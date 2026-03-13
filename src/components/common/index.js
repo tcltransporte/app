@@ -8,3 +8,5 @@ export * from './Title';
 export * from './Toolbar';
 export * from './FilterDrawer';
 export * from './RangeModal';
+export * from './SplitButton';
+export * from './Loading';

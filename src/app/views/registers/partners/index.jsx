@@ -8,13 +8,16 @@ import {
   Search as SearchIcon,
   Event as EventIcon,
   Edit as EditIcon,
+  Google as GoogleIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { Badge } from '@mui/material';
 
 import { PartnerDetail } from './partner.detail';
 import { PartnerFilter } from './filter';
-import { useTable, useNavigation, useRangeFilter, useFilter } from '@/hooks';
-import { Container, Table, Toolbar, RangeModal } from '@/components/common';
+import { useTable, useNavigation, useRangeFilter, useFilter, useExport } from '@/hooks';
+import { ExportFormat } from '@/hooks/useExport';
+import { Container, Table, Toolbar, RangeModal, SplitButton, LoadingOverlay } from '@/components/common';
 import * as partnerService from '@/app/services/partner.service';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
@@ -27,6 +30,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
 
   const filter = useFilter(initialFilters)
   const rangeFilter = useRangeFilter(initialRange, dateFieldOptions)
+  const exporter = useExport()
 
   const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id)
   const handleCloseModal = () => navigation.setSelectedId(undefined)
@@ -97,6 +101,31 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
     }
   }
 
+  const handleExport = async (format = ExportFormat.EXCEL) => {
+    exporter.setExporting(true);
+    try {
+      const params = {
+        filters: filter.filters,
+        range: rangeFilter.range,
+        sortBy: table.sortBy,
+        sortOrder: table.sortOrder,
+        columns: displayColumns
+      };
+
+      const result = await partnerService.exportTable({
+        ...params,
+        format
+      });
+
+      await exporter.processResponse(result, {
+        fileName: 'parceiros',
+        format
+      });
+    } finally {
+      exporter.setExporting(false);
+    }
+  };
+
   const columns = [
     { field: 'id', headerName: 'Código', width: 90 },
     { field: 'cpfCnpj', headerName: 'CPF/CNPJ', width: 150 },
@@ -150,7 +179,26 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
       ),
       onClick: filter.handleOpen
     },
-    { label: 'Pesquisar', icon: <SearchIcon />, color: 'primary', variant: 'outlined', onClick: () => fetchTable() },
+    <SplitButton
+      key="search-split-button"
+      label="Pesquisar"
+      icon={<SearchIcon fontSize="small" />}
+      variant="outlined"
+      onClick={() => fetchTable()}
+      options={[
+        {
+          label: 'Exportar para Excel',
+          icon: <DownloadIcon fontSize="small" />,
+          onClick: () => handleExport(ExportFormat.EXCEL)
+        },
+        {
+          label: 'Exportar para Google Sheets',
+          icon: <GoogleIcon fontSize="small" />,
+          onClick: () => handleExport(ExportFormat.GOOGLE_SHEETS)
+        }
+      ]}
+      sx={{ ml: 1 }}
+    />
   ];
 
   return (
@@ -163,6 +211,12 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
         <Toolbar
           primary={primaryActions}
           secondary={secondaryActions}
+        />
+
+        <LoadingOverlay
+          open={exporter.exporting}
+          title="Preparando Excel"
+          subtitle="Isso pode levar alguns segundos dependendo da quantidade de dados."
         />
 
         <Table

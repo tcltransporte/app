@@ -18,24 +18,27 @@ export const SecondaryActions = ({ actions = [], icon = <MoreIcon /> }) => {
   if (!isMobile) {
     return (
       <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-        {actions.map((action) => (
-          <Button
-            key={action.label}
-            variant={action.variant || "text"}
-            color={action.color || "inherit"}
-            startIcon={action.icon}
-            onClick={action.onClick}
-            sx={{ 
-              textTransform: 'none', 
-              color: action.color ? undefined : 'text.secondary', 
-              fontWeight: 500,
-              fontSize: '0.875rem',
-              borderRadius: '8px',
-            }}
-          >
-            {action.label}
-          </Button>
-        ))}
+        {actions.map((action, index) => {
+          if (React.isValidElement(action)) return React.cloneElement(action, { key: `custom-action-${index}` });
+          return (
+            <Button
+              key={action.label}
+              variant={action.variant || "text"}
+              color={action.color || "inherit"}
+              startIcon={action.icon}
+              onClick={action.onClick}
+              sx={{ 
+                textTransform: 'none', 
+                color: action.color ? undefined : 'text.secondary', 
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                borderRadius: '8px',
+              }}
+            >
+              {action.label}
+            </Button>
+          );
+        })}
       </Box>
     );
   }
@@ -60,28 +63,31 @@ export const SecondaryActions = ({ actions = [], icon = <MoreIcon /> }) => {
       onOpen={handleOpen}
       open={open}
     >
-      {actions.map((action) => (
-        <SpeedDialAction
-          key={action.label}
-          icon={action.icon}
-          tooltipTitle={action.label}
-          tooltipOpen
-          onClick={() => {
-            if (action.onClick) action.onClick();
-            handleClose();
-          }}
-          sx={{
-            whiteSpace: 'nowrap',
-            '& .MuiSpeedDialAction-staticTooltipLabel': {
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              color: 'text.primary',
-              backgroundColor: 'background.paper',
-              boxShadow: theme?.shadows[2],
-            }
-          }}
-        />
-      ))}
+      {actions.map((action, index) => {
+        if (React.isValidElement(action)) return React.cloneElement(action, { key: `custom-speeddial-${index}` });
+        return (
+          <SpeedDialAction
+            key={action.label}
+            icon={action.icon}
+            tooltipTitle={action.label}
+            tooltipOpen
+            onClick={() => {
+              if (action.onClick) action.onClick();
+              handleClose();
+            }}
+            sx={{
+              whiteSpace: 'nowrap',
+              '& .MuiSpeedDialAction-staticTooltipLabel': {
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                color: 'text.primary',
+                backgroundColor: 'background.paper',
+                boxShadow: theme?.shadows[2],
+              }
+            }}
+          />
+        );
+      })}
     </SpeedDial>
   );
 };

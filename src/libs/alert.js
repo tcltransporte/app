@@ -22,7 +22,7 @@ export const alert = {
       text,
       icon,
       showCancelButton: true,
-      confirmButtonText: 'Sim, excluir',
+      confirmButtonText: 'Sim',
       cancelButtonText: 'Cancelar',
       reverseButtons: true,
     });

@@ -4,8 +4,41 @@ import { Op } from 'sequelize'
 import * as partnerRepository from "@/app/repositories/partner.repository"
 
 import { AppContext } from "@/database"
-import { ServiceResponse } from "@/libs/service"
+import { ServiceResponse, ServiceStatus } from "@/libs/service"
 import { getSession } from "@/libs/session"
+import { handleGoogleSheetsExport, handleExcelExport } from "@/libs/export-helper"
+
+export async function exportTable({
+  format = 'excel',
+  filters = {},
+  range = {},
+  sortBy = 'surname',
+  sortOrder = 'ASC',
+  columns = []
+} = {}) {
+
+  const result = await findAll({ filters, range, sortBy, sortOrder, page: 1, limit: 10000 });
+
+  if (result.status !== ServiceStatus.SUCCESS) return result;
+
+  // Convert to plain objects to ensure all properties are accessible by helpers
+  const plainItems = (result.items || []).map(item =>
+    typeof item.get === 'function' ? item.get({ plain: true }) : item
+  );
+
+  if (format === 'sheets') {
+    return handleGoogleSheetsExport({
+      items: plainItems,
+      columns,
+      title: 'Exportação de Parceiros'
+    });
+  }
+
+  return handleExcelExport({
+    items: plainItems,
+    columns
+  });
+}
 
 export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'surname', sortOrder = 'ASC' } = {}) {
   try {
