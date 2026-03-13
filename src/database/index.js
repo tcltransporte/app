@@ -2,6 +2,7 @@ import { Sequelize } from 'sequelize'
 import * as tedious from 'tedious'
 
 import { Company } from './models/company.model.js'
+import { Solicitation } from './models/solicitation.model.js'
 import { CompanyUser } from './models/companyUser.model.js'
 import { CompanyBusiness } from './models/companyBusiness.model.js'
 import { User } from './models/user.model.js'
@@ -30,6 +31,8 @@ const afterFind = (result) => {
 export class AppContext extends Sequelize {
 
   Company = this.define('company', new Company(), { tableName: 'empresa_filial' })
+
+  Solicitation = this.define('solicitation', new Solicitation(), { tableName: 'Solicitacao' })
 
   CompanyBusiness = this.define('companyBusiness', new CompanyBusiness(), { tableName: 'empresa' })
 
@@ -65,6 +68,8 @@ export class AppContext extends Sequelize {
     //this.Company.hasMany(this.CompanyNfseTributation, { as: 'tributations', foreignKey: 'companyId', onDelete: 'CASCADE' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
     this.Company.hasMany(this.SolicitationType, { as: 'solicitationTypes', foreignKey: 'companyId' })
+    this.Company.hasMany(this.Solicitation, { as: 'solicitations', foreignKey: 'companyId' })
+
 
     this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId' })
 
@@ -75,6 +80,11 @@ export class AppContext extends Sequelize {
     this.Session.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
 
     this.SolicitationType.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+    this.SolicitationType.hasMany(this.Solicitation, { as: 'solicitations', foreignKey: 'typeId' })
+
+    this.Solicitation.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+    this.Solicitation.belongsTo(this.SolicitationType, { as: 'type', foreignKey: 'typeId' })
+
 
     this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })
     this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId' })
@@ -88,6 +98,8 @@ export class AppContext extends Sequelize {
     this.UserMember.addHook('afterFind', afterFind)
     this.SolicitationType.addHook('afterFind', afterFind)
     this.SolicitationRequestType.addHook('afterFind', afterFind)
+    this.Solicitation.addHook('afterFind', afterFind)
+
 
   }
 

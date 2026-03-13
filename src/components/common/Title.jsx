@@ -21,15 +21,17 @@ export const Title = ({ items = [] }) => {
         '& .MuiBreadcrumbs-li': {
           fontSize: '0.875rem',
           // Hide all breadcrumb items on mobile except the last one
-          display: { xs: 'none', md: 'block' },
+          display: { xs: 'none', md: 'flex' },
+          alignItems: 'center',
           '&:last-child': {
-            display: 'block',
+            display: 'flex',
           }
         },
         '& .MuiBreadcrumbs-separator': {
           fontSize: '0.875rem',
           // Hide all separators on mobile
-          display: { xs: 'none', md: 'block' }
+          display: { xs: 'none', md: 'flex' },
+          alignItems: 'center'
         }
       }}
     >

@@ -102,7 +102,7 @@ const menuItems = [
   { text: 'Suprimentos', icon: <People /> },
   {
     text: 'Solicitações', icon: <Assignment />, subMenu: [
-      { text: 'Tipos', path: '/solicitations/types' }
+      { text: 'Gestão de Tipos', path: '/solicitations/types' }
     ]
   },
   { text: 'Finanças', icon: <Category /> },
@@ -292,6 +292,11 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         return {
           ...item,
           subMenu: [
+            {
+              text: 'Todas as Solicitações',
+              icon: <Assignment />,
+              path: '/solicitations'
+            },
             ...solicitationTypes.map(tipo => ({
               id: tipo.id,
               text: tipo.description,

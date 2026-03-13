@@ -26,6 +26,10 @@ export async function findAll({ page = 1, limit = 50, filters = {} } = {}) {
         where.requestType = filters.requestType
       }
 
+      if (filters.hash) {
+        where.hash = filters.hash
+      }
+
       return typeRepository.findAll({ db, transaction }, {
         where,
         limit,

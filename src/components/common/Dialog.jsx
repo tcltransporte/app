@@ -16,7 +16,7 @@ function Actions({ children }) {
   return <DialogActions sx={{ p: 2.5, pt: 1.5 }}>{children}</DialogActions>;
 }
 
-export function Dialog({ open, loading, title, onClose, children, maxWidth = 'sm' }) {
+export function Dialog({ open, loading, title, onClose, children, maxWidth = 'sm', width }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -35,7 +35,12 @@ export function Dialog({ open, loading, title, onClose, children, maxWidth = 'sm
       fullWidth 
       maxWidth={maxWidth}
       fullScreen={isMobile}
-      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}
+      PaperProps={{ 
+        sx: { 
+          borderRadius: isMobile ? 0 : 3,
+          ...(width && !isMobile && { width, maxWidth: 'none' })
+        } 
+      }}
     >
       <DialogTitle sx={{ fontWeight: 700, pb: 1, pr: 6 }}>
         {title}
