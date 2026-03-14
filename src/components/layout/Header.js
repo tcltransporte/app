@@ -63,14 +63,25 @@ export default function Header({ children }) {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
-            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'text.secondary' }}>
-              {session?.user?.userName?.toLowerCase() || 'usuário'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">/</Typography>
-            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: 'text.primary', textTransform: 'uppercase' }}>
-              {session?.company ? `${session.company.companyBusiness?.name || ''} - ${session.company.surname || ''}` : ''}
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: '0.875rem', fontWeight: 500, color: 'text.secondary' }}>
+                {session?.user?.userName?.toLowerCase() || 'usuário'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', md: 'block' } }}>/</Typography>
+              <Typography sx={{ 
+                fontSize: { xs: '0.75rem', md: '0.875rem' }, 
+                fontWeight: 600, 
+                color: 'text.primary', 
+                textTransform: 'uppercase',
+                maxWidth: { xs: '150px', sm: '300px', md: 'none' },
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {session?.company ? `${session.company.companyBusiness?.name || ''} - ${session.company.surname || ''}` : ''}
+              </Typography>
+            </Box>
 
             <IconButton
               onClick={handleClick}

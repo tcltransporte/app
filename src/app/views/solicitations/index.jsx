@@ -193,13 +193,13 @@ export default function SolicitationView({
       ),
       onClick: filter.handleOpen
     },
-    <SplitButton
-      key="search-split-button"
-      label="Pesquisar"
-      icon={<SearchIcon fontSize="small" />}
-      variant="outlined"
-      onClick={() => fetchTable()}
-      options={[
+    {
+      label: 'Pesquisar',
+      icon: <SearchIcon fontSize="small" />,
+      variant: 'outlined',
+      color: 'primary',
+      onClick: () => fetchTable(),
+      options: [
         {
           label: 'Exportar para Excel',
           icon: <DownloadIcon fontSize="small" />,
@@ -210,9 +210,8 @@ export default function SolicitationView({
           icon: <GoogleIcon fontSize="small" />,
           onClick: () => handleExport(ExportFormat.GOOGLE_SHEETS)
         }
-      ]}
-      sx={{ ml: 1 }}
-    />
+      ]
+    }
   ];
 
   return (

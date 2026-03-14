@@ -12,6 +12,8 @@ import {
   ListItemText,
   Divider,
   IconButton,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import {
   ChevronLeft,
@@ -74,6 +76,9 @@ export function RangeModal({
   initialField,
   fieldOptions = []
 }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const safeParse = (dateStr) => {
     if (!dateStr) return null;
     const d = parseISO(dateStr);
@@ -149,18 +154,36 @@ export function RangeModal({
   return (
     <Dialog open={open} onClose={onClose} title={title} maxWidth="md">
       <Dialog.Content sx={{ p: 0 }}>
-        <Box sx={{ display: 'flex', minHeight: 450 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row',
+          minHeight: isMobile ? 'auto' : 450 
+        }}>
           {/* Sidebar Presets */}
-          <Box sx={{ width: 220, borderRight: '1px solid', borderColor: 'divider', overflowY: 'auto' }}>
-            <List sx={{ p: 1 }}>
+          <Box sx={{ 
+            width: isMobile ? '100%' : 220, 
+            borderRight: isMobile ? 'none' : '1px solid', 
+            borderBottom: isMobile ? '1px solid' : 'none',
+            borderColor: 'divider', 
+            overflowX: isMobile ? 'auto' : 'hidden',
+            overflowY: isMobile ? 'hidden' : 'auto',
+            backgroundColor: 'background.default'
+          }}>
+            <List sx={{ 
+              p: 1, 
+              display: isMobile ? 'flex' : 'block',
+              gap: isMobile ? 1 : 0,
+              whiteSpace: isMobile ? 'nowrap' : 'normal'
+            }}>
               {PRESETS.map((preset) => (
-                <ListItem key={preset.label} disablePadding sx={{ mb: 0.5 }}>
+                <ListItem key={preset.label} disablePadding sx={{ mb: isMobile ? 0 : 0.5, width: isMobile ? 'auto' : '100%' }}>
                   <ListItemButton
                     selected={activePreset === preset.label}
                     onClick={() => handleApplyPreset(preset)}
                     sx={{
                       borderRadius: 1,
                       py: 0.5,
+                      px: isMobile ? 2 : 1,
                       '&.Mui-selected': {
                         backgroundColor: 'primary.main',
                         color: 'primary.contrastText',
@@ -177,8 +200,8 @@ export function RangeModal({
 
           {/* Calendar Area */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ p: 3, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-              <Grid container spacing={2}>
+            <Box sx={{ p: isMobile ? 2 : 3, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Grid container spacing={isMobile ? 1.5 : 2}>
                 {fieldOptions.length > 0 && (
                   <Grid item xs={12}>
                     <SelectField
@@ -194,7 +217,7 @@ export function RangeModal({
                     />
                   </Grid>
                 )}
-                <Grid item xs={6}>
+                <Grid item xs={isMobile ? 12 : 6}>
                   <DateField
                     label="Data Início"
                     fullWidth
@@ -207,7 +230,7 @@ export function RangeModal({
                     }}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={isMobile ? 12 : 6}>
                   <DateField
                     label="Data Fim"
                     fullWidth
@@ -228,7 +251,7 @@ export function RangeModal({
               display: 'flex', 
               justifyContent: 'center', 
               alignItems: 'center',
-              p: 2,
+              p: isMobile ? 1 : 2,
               backgroundColor: 'background.paper',
               '& .rdrCalendarWrapper': {
                 color: 'text.primary',
@@ -299,8 +322,8 @@ export function RangeModal({
                 onChange={handleSelect}
                 moveRangeOnFirstSelection={false}
                 ranges={dateRange}
-                months={2}
-                direction="horizontal"
+                months={isMobile ? 1 : 2}
+                direction={isMobile ? 'vertical' : 'horizontal'}
                 locale={ptBR}
                 rangeColors={['#6366f1']} // This should ideally come from theme or props
                 showDateDisplay={false}

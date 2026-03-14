@@ -7,6 +7,7 @@ import {
   Close as CloseIcon 
 } from '@mui/icons-material';
 import { useLayout } from '@/context/LayoutContext';
+import { SplitButton } from './SplitButton';
 
 export const SecondaryActions = ({ actions = [], icon = <MoreIcon /> }) => {
   const { isMobile, theme } = useLayout();
@@ -20,6 +21,22 @@ export const SecondaryActions = ({ actions = [], icon = <MoreIcon /> }) => {
       <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
         {actions.map((action, index) => {
           if (React.isValidElement(action)) return React.cloneElement(action, { key: `custom-action-${index}` });
+          
+          if (action.options && action.options.length > 0) {
+            return (
+              <SplitButton
+                key={action.label}
+                label={action.label}
+                icon={action.icon}
+                variant={action.variant || "outlined"}
+                color={action.color || "primary"}
+                onClick={action.onClick}
+                options={action.options}
+                sx={{ ml: 0 }}
+              />
+            );
+          }
+
           return (
             <Button
               key={action.label}
@@ -43,6 +60,22 @@ export const SecondaryActions = ({ actions = [], icon = <MoreIcon /> }) => {
     );
   }
 
+  // Mobile: Flatten actions including sub-options
+  const flatActions = actions.reduce((acc, action) => {
+    if (React.isValidElement(action)) return [...acc, action];
+    
+    const mainAction = { ...action };
+    delete mainAction.options; // Don't pass options to SpeedDialAction
+    
+    acc.push(mainAction);
+    
+    if (action.options) {
+      acc.push(...action.options);
+    }
+    
+    return acc;
+  }, []);
+
   return (
     <SpeedDial
       ariaLabel="Ações secundárias"
@@ -63,11 +96,11 @@ export const SecondaryActions = ({ actions = [], icon = <MoreIcon /> }) => {
       onOpen={handleOpen}
       open={open}
     >
-      {actions.map((action, index) => {
+      {flatActions.map((action, index) => {
         if (React.isValidElement(action)) return React.cloneElement(action, { key: `custom-speeddial-${index}` });
         return (
           <SpeedDialAction
-            key={action.label}
+            key={`${action.label}-${index}`}
             icon={action.icon}
             tooltipTitle={action.label}
             tooltipOpen

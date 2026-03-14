@@ -27,7 +27,7 @@
     </siteMapNode>
 
     <siteMapNode title="Carga" roles="Administrador, Carga" icon="truck">
-		<siteMapNode  title="Solicitações"   url="~\Carga\Solicitacoes.aspx"  description="Solicitações"/>
+		<siteMapNode  title="Solicitações"   url="/solicitations/trips"  description="Solicitações"/>
       <siteMapNode  title="Cálculo de Frete"   url="~\Carga\ListaCalculoFrete.aspx"  description="Cálculo de frete."/>
       <siteMapNode  title="Cotação de Frete"   url="~\Carga\ListaCotacaoFrete.aspx"  description="Cotação de frete."/>
       <siteMapNode  title="Repositório DFe"   url="~\Compras\ListaDfe.aspx?p1=1"  description="Repositório de documentos fiscal eletrônico."/>

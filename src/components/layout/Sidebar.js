@@ -786,14 +786,14 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         display: 'flex',
         alignItems: 'center',
         justifyContent: isEffectivelyCollapsed ? 'center' : 'space-between',
-        p: 2,
-        height: 64, // Matches Header height
+        p: isMobile ? '12px 16px' : 2,
+        height: { xs: 56, md: 64 }, // Matches Header height
       }}>
         {!isEffectivelyCollapsed && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{
-              width: 32,
-              height: 32,
+              width: isMobile ? 28 : 32,
+              height: isMobile ? 28 : 32,
               borderRadius: '8px',
               backgroundColor: primaryColor,
               display: 'flex',
@@ -801,10 +801,10 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
               justifyContent: 'center',
               color: 'white',
               fontWeight: 'bold',
-              fontSize: '12px',
+              fontSize: isMobile ? '10px' : '12px',
               boxShadow: `0 4px 8px ${primaryColor}44`
             }}>{activeSession?.company?.surname?.substring(0, 2).toUpperCase() || 'EMP'}</Box>
-            <Typography variant="h6" sx={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.02em', color: sidebarText }}>
+            <Typography variant="h6" sx={{ fontSize: isMobile ? '0.95rem' : '1.05rem', fontWeight: 700, letterSpacing: '-0.02em', color: sidebarText }}>
               {activeSession?.company?.surname || 'Empresa'}
             </Typography>
           </Box>
@@ -826,7 +826,18 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         )}
       </Box>
 
-      <List sx={{ flexGrow: 1, px: 2, pt: 2 }}>
+      <List sx={{ 
+        flexGrow: 1, 
+        px: 2, 
+        pt: 2, 
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        '&::-webkit-scrollbar': { width: '5px' },
+        '&::-webkit-scrollbar-thumb': { 
+          backgroundColor: isDarkMenu ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          borderRadius: '10px' 
+        }
+      }}>
         {finalMenuItems.map((item) => {
           const isSelected = activeMenu === item.text;
 
@@ -977,7 +988,16 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
           {activeItemData.text}
         </Typography>
       </Box>
-      <Box sx={{ p: 2, flexGrow: 1 }}>
+      <Box sx={{ 
+        p: 2, 
+        flexGrow: 1, 
+        overflowY: 'auto',
+        '&::-webkit-scrollbar': { width: '5px' },
+        '&::-webkit-scrollbar-thumb': { 
+          backgroundColor: isDarkMenu ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          borderRadius: '10px' 
+        }
+      }}>
         {renderSubMenuContent(activeItemData.subMenu)}
       </Box>
     </Box>
