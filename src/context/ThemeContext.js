@@ -103,6 +103,28 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
       fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
     },
     components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          '*': {
+            scrollbarWidth: 'thin',
+            scrollbarColor: mode === 'dark' ? 'rgba(255,255,255,0.1) transparent' : 'rgba(0,0,0,0.1) transparent',
+            '&::-webkit-scrollbar': {
+              width: '5px',
+              height: '5px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+              borderRadius: '10px',
+              '&:hover': {
+                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+              },
+            },
+          },
+        },
+      },
       MuiDrawer: {
         styleOverrides: {
           paper: {

@@ -203,7 +203,7 @@ export function RangeModal({
             <Box sx={{ p: isMobile ? 2 : 3, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
               <Grid container spacing={isMobile ? 1.5 : 2}>
                 {fieldOptions.length > 0 && (
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <SelectField
                       fullWidth
                       size="small"
@@ -217,7 +217,7 @@ export function RangeModal({
                     />
                   </Grid>
                 )}
-                <Grid item xs={isMobile ? 12 : 6}>
+                <Grid size={{ xs: 6 }}>
                   <DateField
                     label="Data Início"
                     fullWidth
@@ -230,7 +230,7 @@ export function RangeModal({
                     }}
                   />
                 </Grid>
-                <Grid item xs={isMobile ? 12 : 6}>
+                <Grid size={{ xs: 6 }}>
                   <DateField
                     label="Data Fim"
                     fullWidth

@@ -32,13 +32,13 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
       title="Filtros de Solicitações"
     >
       <Grid container spacing={2.5}>
-        <Grid size={12}>
+        <Grid size={{ xs: 12 }}>
           <Field component={TextField} name="number" label="Número" fullWidth size="small" />
         </Grid>
-        <Grid size={12}>
+        <Grid size={{ xs: 12 }}>
           <Field component={TextField} name="description" label="Descrição" fullWidth size="small" />
         </Grid>
-        <Grid size={12}>
+        <Grid size={{ xs: 12 }}>
           <Field component={SelectField} name="statusId" label="Status" fullWidth size="small" options={[
             { value: '', label: 'Todos' },
             { value: 1, label: 'Pendente' },
