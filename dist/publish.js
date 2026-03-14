@@ -1,10 +1,7 @@
+import fs from 'fs/promises'
 import { execSync } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import fse from 'fs-extra'
-import fs from 'fs/promises'
-
-import { rimraf } from 'rimraf'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -25,21 +22,21 @@ async function prepareBuildFolder() {
 
   console.log('🧹 Cleaning cache folder...')
 
-  rimraf.sync(path.join(projectRoot, '.next/cache'))
-  rimraf.sync(path.join(projectRoot, '.next/dev'))
+  await fs.rm(path.join(projectRoot, '.next/cache'), { recursive: true, force: true })
+  await fs.rm(path.join(projectRoot, '.next/dev'), { recursive: true, force: true })
 
   console.log('🧹 Cleaning build folder...')
 
-  await fse.remove(buildDir)
+  await fs.rm(buildDir, { recursive: true, force: true })
   await fs.mkdir(buildDir, { recursive: true })
 
   console.log('📦 Copying files...')
 
-  await fse.copy(path.join(projectRoot, '.next'), path.join(buildDir, '.next'))
-  await fse.copy(path.join(projectRoot, 'public'), path.join(buildDir, 'public'))
-  await fse.copy(path.join(projectRoot, 'package.json'), path.join(buildDir, 'package.json'))
+  await fs.cp(path.join(projectRoot, '.next'), path.join(buildDir, '.next'), { recursive: true })
+  await fs.cp(path.join(projectRoot, 'public'), path.join(buildDir, 'public'), { recursive: true })
+  await fs.cp(path.join(projectRoot, 'package.json'), path.join(buildDir, 'package.json'))
 
-  //await fse.copy(path.join(__dirname, '.env'), path.join(buildDir, '.env'))
+  //await fs.cp(path.join(__dirname, '.env'), path.join(buildDir, '.env'))
 
   console.log('✔️ Build folder is ready')
 

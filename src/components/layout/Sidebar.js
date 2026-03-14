@@ -50,7 +50,8 @@ import {
   ExpandMore,
   ChevronRight,
   Edit,
-  Check
+  Check,
+  LocalShipping
 } from '@mui/icons-material';
 import {
   DndContext,
@@ -120,7 +121,7 @@ const menuItems = [
   },*/
 ];
 
-export default function Sidebar({ mobileOpen, onMobileClose, session: propSession, initialSolicitationTypes = EMPTY_ARRAY }) {
+export default function Sidebar({ mobileOpen, onMobileClose, session: propSession, initialSolicitationTypes = EMPTY_ARRAY, sitemapMenuItems }) {
   const router = useRouter();
   const pathname = usePathname();
   const { menu, setMenu, primaryColor, mode, semiDark } = useContext(ThemeContext);
@@ -329,6 +330,38 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
     });
   }, [solicitationTypes, primaryColor, isDarkMenu, sidebarText, showQuickAddForm, quickAddDesc, quickAddType, isSavingTipo, isReorderMode, isSavingOrders]);
 
+  // Map icon strings from web.sitemap to MUI Icons
+  const iconMap = {
+    'check': <CheckCircle />,
+    'user': <People />,
+    'truck': <LocalShipping />,
+    'line-chart': <AccountBalance />,
+    'chart-line': <AccountBalance />,
+    'users': <Group />,
+    'cogs': <Settings />,
+    'globe': <Map />,
+    'table': <RadioButtonUnchecked />,
+    'print': <ReceiptLong />,
+    'cog': <Settings />,
+    'fas fa-tasks': <Assignment />,
+  };
+
+  // If sitemapMenuItems are provided, use them instead of menuItems
+  const finalMenuItems = React.useMemo(() => {
+    if (!sitemapMenuItems || sitemapMenuItems.length === 0) {
+      return dynamicMenuItems;
+    }
+
+    const processSitemapItem = (item) => ({
+      text: item.text,
+      icon: iconMap[item.icon] || <Description />,
+      path: item.path,
+      subMenu: item.subMenu ? item.subMenu.map(processSitemapItem) : null
+    });
+
+    return sitemapMenuItems.map(processSitemapItem);
+  }, [sitemapMenuItems, dynamicMenuItems]);
+
 
 
   // Calculate effective drawer state: if mobile, always show full width.
@@ -351,12 +384,16 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       subItem.action();
       if (isMobile) onMobileClose();
     } else if (subItem.path) {
-      router.push(subItem.path);
+      if (subItem.path.startsWith('http')) {
+        window.location.href = subItem.path;
+      } else {
+        router.push(subItem.path);
+      }
       if (isMobile) onMobileClose();
     }
   };
 
-  const activeItemData = dynamicMenuItems.find(item => item.text === activeMenu);
+  const activeItemData = finalMenuItems.find(item => item.text === activeMenu);
 
   function SortableSubItem({ subItem, index, isActiveSub }) {
     const {
@@ -790,7 +827,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       </Box>
 
       <List sx={{ flexGrow: 1, px: 2, pt: 2 }}>
-        {dynamicMenuItems.map((item) => {
+        {finalMenuItems.map((item) => {
           const isSelected = activeMenu === item.text;
 
           return (

@@ -42,3 +42,4 @@ next-env.d.ts
 src/middleware.js.bkp
 
 dist/build
+dist/release.tar.gz
