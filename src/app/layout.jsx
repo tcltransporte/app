@@ -28,7 +28,7 @@ export default async function RootLayout({ children }) {
   const themeConfig = {
     mode: cookieStore.get('theme-mode')?.value || 'light',
     primaryColor: cookieStore.get('theme-primaryColor')?.value || '#6366f1',
-    menu: cookieStore.get('theme-menu')?.value || 'vertical',
+    menu: cookieStore.get('theme-menu')?.value || 'recolhido',
     semiDark: cookieStore.get('theme-semiDark')?.value === 'true',
   };
 

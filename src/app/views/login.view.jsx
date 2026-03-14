@@ -121,7 +121,7 @@ export function LoginView() {
           name="username"
           fullWidth
           label="Usuário"
-          placeholder="Digite seu usuário"
+          placeholder=""
           sx={{
             mb: 3,
             '& .MuiFilledInput-root': {
@@ -148,7 +148,7 @@ export function LoginView() {
           fullWidth
           type={showPassword ? 'text' : 'password'}
           label="Senha"
-          placeholder="••••••••"
+          placeholder=""
           sx={{
             mb: 2,
             '& .MuiFilledInput-root': {

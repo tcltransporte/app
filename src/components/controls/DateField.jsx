@@ -15,6 +15,7 @@ export const DateField = React.forwardRef(({ field, form, onChange, ...props }, 
       type="date"
       variant="filled"
       InputLabelProps={{ shrink: true }}
+      fullWidth
       ref={ref}
       {...field}
       {...props}

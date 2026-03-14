@@ -81,7 +81,7 @@ const EMPTY_ARRAY = [];
 
 // Added subMenus based on the user's reference image
 const menuItems = [
-  {
+  /*{
     text: 'Início', icon: <Business />, subMenu: [
       { text: 'Dashboard', icon: <Dashboard />, path: '/' },
       { text: 'Chamados', icon: <ConfirmationNumber /> },
@@ -99,13 +99,13 @@ const menuItems = [
       { text: 'Fornecedores', icon: <Badge /> },
     ]
   },
-  { text: 'Suprimentos', icon: <People /> },
+  { text: 'Suprimentos', icon: <People /> },*/
   {
     text: 'Solicitações', icon: <Assignment />, subMenu: [
       { text: 'Gestão de Tipos', path: '/solicitations/types' }
     ]
   },
-  { text: 'Finanças', icon: <Category /> },
+  /*{ text: 'Finanças', icon: <Category /> },
   { text: 'Contabilidade', icon: <ReceiptLong /> },
   {
     text: 'Configurações', icon: <Settings />, subMenu: [
@@ -117,7 +117,7 @@ const menuItems = [
       { text: 'NFS-e', icon: <Description /> },
       { text: 'Integrações', icon: <Extension /> },
     ]
-  },
+  },*/
 ];
 
 export default function Sidebar({ mobileOpen, onMobileClose, session: propSession, initialSolicitationTypes = EMPTY_ARRAY }) {
@@ -292,11 +292,6 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         return {
           ...item,
           subMenu: [
-            {
-              text: 'Todas as Solicitações',
-              icon: <Assignment />,
-              path: '/solicitations'
-            },
             ...solicitationTypes.map(tipo => ({
               id: tipo.id,
               text: tipo.description,

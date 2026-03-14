@@ -11,7 +11,7 @@ export const ThemeContext = createContext({
   mode: 'light',
   skin: 'default',
   layout: 'vertical',
-  menu: 'vertical',
+  menu: 'recolhido',
   primaryColor: '#6366f1',
   semiDark: true,
   initialMobile: false,
@@ -27,7 +27,7 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
   const [mode, setMode] = useState(initialConfig.mode || 'light');
   const [skin, setSkin] = useState('default');
   const [layout, setLayout] = useState('vertical');
-  const [menu, setMenu] = useState(initialConfig.menu || 'vertical');
+  const [menu, setMenu] = useState(initialConfig.menu || 'recolhido');
   const [primaryColor, setPrimaryColor] = useState(initialConfig.primaryColor || '#6366f1');
   const [semiDark, setSemiDark] = useState(initialConfig.semiDark || false);
 

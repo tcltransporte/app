@@ -3,6 +3,7 @@
 import { Op } from 'sequelize'
 import * as solicitationRepository from "@/app/repositories/solicitation.repository"
 import * as typeRepository from "@/app/repositories/solicitationType.repository"
+import * as productRepository from "@/app/repositories/solicitationProduct.repository"
 import { AppContext } from "@/database"
 import { ServiceResponse, ServiceStatus } from "@/libs/service"
 import { getSession } from "@/libs/session"
@@ -117,7 +118,10 @@ export async function findOne(id) {
         where: {
           id: id,
           companyId: session.company.id
-        }
+        },
+        include: [
+          { association: 'products' }
+        ]
       })
 
       if (!solicitation)
@@ -128,6 +132,46 @@ export async function findOne(id) {
 
     return ServiceResponse.success(result)
 
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function findProducts(solicitationId) {
+  try {
+    const db = new AppContext()
+    const result = await productRepository.findAll({ db }, {
+      where: { solicitationId }
+    })
+    return ServiceResponse.success({ items: result.rows })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function upsertProduct(solicitationId, data) {
+  try {
+    const db = new AppContext()
+    const result = await db.transaction(async (transaction) => {
+      if (data.id && String(data.id).length < 10) { // Simple check for existing ID vs temp Date.now()
+        await productRepository.update({ db, transaction }, { where: { id: data.id, solicitationId } }, data)
+        return { id: data.id }
+      } else {
+        const { id, ...createData } = data
+        return productRepository.create({ db, transaction }, { ...createData, solicitationId })
+      }
+    })
+    return ServiceResponse.success(result)
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function deleteProduct(id) {
+  try {
+    const db = new AppContext()
+    await productRepository.destroy({ db }, { where: { id } })
+    return ServiceResponse.success({ id })
   } catch (error) {
     return ServiceResponse.error(error)
   }

@@ -11,6 +11,7 @@ import { Session } from './models/session.model.js'
 import { Partner } from './models/partner.model.js'
 import { SolicitationType } from './models/solicitationType.model.js'
 import { SolicitationRequestType } from './models/solicitationRequestType.model.js'
+import { SolicitationProduct } from './models/solicitationProduct.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -43,6 +44,8 @@ export class AppContext extends Sequelize {
   SolicitationType = this.define('solicitationType', new SolicitationType(), { tableName: 'SolicitacaoTipo' })
 
   SolicitationRequestType = this.define('solicitationRequestType', new SolicitationRequestType(), { tableName: 'solicitationRequestType' })
+
+  SolicitationProduct = this.define('solicitationProduct', new SolicitationProduct(), { tableName: 'SolicitacaoPecaUtilizada' })
 
 
   Session = this.define('session', new Session(), { tableName: 'Session' })
@@ -84,6 +87,9 @@ export class AppContext extends Sequelize {
 
     this.Solicitation.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
     this.Solicitation.belongsTo(this.SolicitationType, { as: 'type', foreignKey: 'typeId' })
+    this.Solicitation.hasMany(this.SolicitationProduct, { as: 'products', foreignKey: 'solicitationId' })
+
+    this.SolicitationProduct.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
 
 
     this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })
@@ -99,6 +105,7 @@ export class AppContext extends Sequelize {
     this.SolicitationType.addHook('afterFind', afterFind)
     this.SolicitationRequestType.addHook('afterFind', afterFind)
     this.Solicitation.addHook('afterFind', afterFind)
+    this.SolicitationProduct.addHook('afterFind', afterFind)
 
 
   }
