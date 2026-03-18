@@ -4,12 +4,14 @@ import React from 'react';
 import { Formik, Form, Field } from 'formik';
 import { Grid, Button, Divider } from '@mui/material';
 import { Dialog } from '@/components/common';
-import { TextField, SelectField } from '@/components/controls';
+import { TextField, SelectField, AutoComplete } from '@/components/controls';
 import { SectionItemTable } from './section-item-table';
 import { ItemDrawer } from './item-drawer';
 import { PaymentDrawer } from './payment-drawer';
 import * as solicitationService from '@/app/services/solicitation.service';
 import { alert } from '@/libs/alert';
+
+import * as search from "@/libs/search";
 
 export default function SolicitationDetail({ solicitationId, onClose, onSave, typeHash }) {
 
@@ -256,7 +258,17 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
                   </Grid>
 
                   <Grid size={{ xs: 12, sm: 6 }}>
-                    <Field component={TextField} name="customerId" label="ID Cliente" fullWidth size="small" type="number" />
+                    {/*<Field component={TextField} name="customerId" label="ID Cliente" fullWidth size="small" type="number" />*/}
+                    <Field
+                      component={AutoComplete}
+                      name="receiver"
+                      label="Cliente"
+                      text={(receiver) => `${receiver.surname}`}
+                      onSearch={(value) => search.partner({ search: value })}
+                      renderSuggestion={(item) => (
+                        <span>{item?.surname}</span>
+                      )}
+                    />
                   </Grid>
                   {/*
                   <Grid size={{ xs: 12, sm: 6 }}>
