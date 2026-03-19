@@ -81,28 +81,15 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
         }
       }
 
-      // Range Filter
-      /*
-      if (range.field && (range.start || range.end)) {
-        let dateCondition = {}
-        if (range.start && range.end) {
-          dateCondition = { [Op.between]: [`${range.start}T00:00:00`, `${range.end}T23:59:59`] }
-        } else if (range.start) {
-          dateCondition = { [Op.gte]: `${range.start}T00:00:00` }
-        } else if (range.end) {
-          dateCondition = { [Op.lte]: `${range.end}T23:59:59` }
-        }
-        where[range.field] = dateCondition
-      }
-      */
-
       return solicitationRepository.findAll({ db, transaction }, {
+        attributes: ['id', 'number', 'partnerId', 'description', 'date', 'statusId'],
         where,
         limit,
         offset,
         order: [[sortBy || 'date', sortOrder || 'DESC']],
         include: [
           { association: 'partner', attributes: ['name', 'surname'] },
+          { association: 'solicitationStatus', attributes: ['description'] },
         ]
       })
     })
@@ -130,6 +117,7 @@ export async function findOne(id) {
         },
         include: [
           { association: 'partner', attributes: ['name', 'surname'] },
+          { association: 'solicitationStatus', attributes: ['description'] },
           {
             association: 'products',
             attributes: ['id', 'itemId', 'quantity', 'value', 'supplierId'],
@@ -168,17 +156,6 @@ export async function create(data) {
     const result = await db.transaction(async (transaction) => {
       const finalData = sanitize(data)
 
-      if (finalData.typeHash && !finalData.typeId) {
-        const type = await typeRepository.findOne({ db, transaction }, {
-          where: { hash: finalData.typeHash, companyId: session.company.id }
-        })
-        if (type) {
-          finalData.typeId = type.id
-        }
-      }
-
-      delete finalData.partner
-
       return solicitationRepository.create({ db, transaction }, {
         ...finalData,
         companyId: session.company.id,
@@ -205,8 +182,9 @@ export async function create(data) {
 export async function update(id, data) {
   try {
 
-    const session = await getSession()
+    console.log(data)
 
+    const session = await getSession()
     const db = new AppContext()
 
     await db.transaction(async (transaction) => {
@@ -223,19 +201,7 @@ export async function update(id, data) {
 
       const finalData = sanitize(data)
 
-      if (finalData.typeHash && !finalData.typeId) {
-        const type = await typeRepository.findOne({ db, transaction }, {
-          where: { hash: finalData.typeHash, companyId: session.company.id }
-        })
-        if (type) {
-          finalData.typeId = type.id
-        }
-      }
-      delete finalData.typeHash
-      delete finalData.partner
-
       await solicitationRepository.update({ db, transaction }, { where: { id: id } }, finalData)
-
     })
 
     return ServiceResponse.success({ id })
@@ -265,6 +231,7 @@ export async function destroy(id) {
     })
 
     return ServiceResponse.success({ id })
+
   } catch (error) {
     return ServiceResponse.error(error)
   }

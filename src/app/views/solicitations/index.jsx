@@ -17,7 +17,7 @@ import SolicitationDetail from './solicitation.detail';
 import SolicitationFilter from './filter';
 import { useTable, useNavigation, useRangeFilter, useFilter, useExport } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
-import { Container, Table, Toolbar, RangeModal, SplitButton, LoadingOverlay } from '@/components/common';
+import { Container, Table, Toolbar, RangeModal, LoadingOverlay } from '@/components/common';
 import * as solicitationService from '@/app/services/solicitation.service';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
@@ -27,12 +27,11 @@ export default function SolicitationView({
   initialFilters,
   initialRange,
   dateFieldOptions = [],
-  typeHash,
   solicitationType,
   selectedId
 }) {
 
-  const navigation = useNavigation(`/solicitations/${typeHash}`, selectedId)
+  const navigation = useNavigation(`/solicitations/${solicitationType?.hash}`, selectedId)
 
   const table = useTable({ initialTable })
   const filter = useFilter(initialFilters)
@@ -67,7 +66,6 @@ export default function SolicitationView({
       table.setSelecteds([])
 
     } catch (error) {
-      console.error('Erro ao buscar solicitações:', error)
       alert.error('Erro ao carregar', error?.message || 'Ocorreu um erro ao buscar solicitações.')
     } finally {
       table.setLoading(false)
@@ -84,11 +82,12 @@ export default function SolicitationView({
   }, [fetchTable])
 
   React.useEffect(() => {
-    filter.setFilters(prev => ({ ...prev, typeHash }));
+    filter.setFilters(prev => ({ ...prev, typeHash: solicitationType?.hash }));
     table.setPage(1);
-  }, [typeHash])
+  }, [solicitationType])
 
   const handleDelete = async () => {
+
     if (!table.selecteds.length) return
 
     const confirmed = await alert.confirm(
@@ -100,14 +99,17 @@ export default function SolicitationView({
     if (!confirmed) return
 
     table.setLoading(true)
+
     try {
+
       for (const item of table.selecteds) {
         await solicitationService.destroy(item.id)
       }
+
       await fetchTable()
       alert.success('Solicitação(ões) excluída(s) com sucesso!')
+
     } catch (error) {
-      console.error('Erro ao excluir:', error)
       alert.error('Erro ao excluir', 'Ocorreu um problema ao tentar excluir os registros.')
     } finally {
       table.setLoading(false)
@@ -115,8 +117,10 @@ export default function SolicitationView({
   }
 
   const handleExport = async (format = ExportFormat.EXCEL) => {
-    exporter.setExporting(true);
     try {
+
+      exporter.setExporting(true);
+
       const params = {
         filters: filter.filters,
         range: rangeFilter.range,
@@ -134,6 +138,7 @@ export default function SolicitationView({
         fileName: 'solicitacoes',
         format
       });
+
     } finally {
       exporter.setExporting(false);
     }
@@ -152,15 +157,7 @@ export default function SolicitationView({
     },
     {
       field: 'statusId', headerName: 'Status', width: 120,
-      renderCell: (value) => {
-        const statuses = {
-          1: 'Pendente',
-          2: 'Em Andamento',
-          3: 'Concluído',
-          4: 'Cancelado'
-        };
-        return statuses[value] || 'Pendente';
-      }
+      renderCell: (value, row) => row.solicitationStatus?.description || 'Pendente'
     },
   ]
 
@@ -257,7 +254,7 @@ export default function SolicitationView({
           solicitationId={navigation.selectedId}
           onClose={handleCloseModal}
           onSave={handleSave}
-          typeHash={typeHash}
+          solicitationType={solicitationType}
         />
 
         <SolicitationFilter
@@ -273,9 +270,9 @@ export default function SolicitationView({
           open={rangeFilter.open}
           onClose={rangeFilter.handleClose}
           title="Filtro de Período"
+          initialField={rangeFilter.range.field}
           initialStart={rangeFilter.range.start}
           initialEnd={rangeFilter.range.end}
-          initialField={rangeFilter.range.field}
           fieldOptions={dateFieldOptions}
           onApply={(vals) => {
             rangeFilter.handleApply(vals, () => table.setPage(1))

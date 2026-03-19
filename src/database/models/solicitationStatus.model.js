@@ -1,0 +1,18 @@
+import { DataTypes } from 'sequelize';
+
+export class SolicitationStatus {
+
+  id = {
+    field: 'Id',
+    primaryKey: true,
+    autoIncrement: true,
+    type: DataTypes.INTEGER
+  }
+
+  description = {
+    field: 'Descricao',
+    allowNull: false,
+    type: DataTypes.STRING(100)
+  }
+
+}

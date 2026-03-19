@@ -1,7 +1,7 @@
 import { Grid } from '@mui/material';
 import { Field } from 'formik';
 import { FilterDrawer } from '@/components/common';
-import { TextField, SelectField, AutoComplete } from '@/components/controls';
+import { TextField, AutoComplete } from '@/components/controls';
 import * as search from "@/libs/search";
 
 export default function SolicitationFilter({ open, onClose, filters, onApply }) {
@@ -9,6 +9,7 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
     number: filters.number || '',
     description: filters.description || '',
     statusId: filters.statusId || '',
+    solicitationStatus: filters.solicitationStatus || null,
     typeId: filters.typeId || '',
     partnerId: filters.partnerId || '',
     partner: filters.partner || null,
@@ -19,6 +20,7 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
       number: '',
       description: '',
       statusId: '',
+      solicitationStatus: null,
       typeId: '',
       partnerId: '',
       partner: null,
@@ -54,20 +56,30 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
             )}
           />
         </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <Field 
+            component={AutoComplete} 
+            name="solicitationStatus" 
+            label="Status" 
+            fullWidth 
+            size="small"
+            text={(item) => item?.description || ''}
+            onSearch={(value, signal) => search.solicitationStatus({ search: value }, signal)}
+            onChange={(val, form) => {
+              form.setFieldValue('statusId', val?.id || '');
+            }}
+            renderSuggestion={(item) => (
+              <span>{item?.description}</span>
+            )}
+          />
+        </Grid>
+
         <Grid size={{ xs: 12 }}>
           <Field component={TextField} name="number" label="Número" fullWidth size="small" />
         </Grid>
         <Grid size={{ xs: 12 }}>
           <Field component={TextField} name="description" label="Descrição" fullWidth size="small" />
-        </Grid>
-        <Grid size={{ xs: 12 }}>
-          <Field component={SelectField} name="statusId" label="Status" fullWidth size="small" options={[
-            { value: '', label: 'Todos' },
-            { value: 1, label: 'Pendente' },
-            { value: 2, label: 'Em Andamento' },
-            { value: 3, label: 'Concluído' },
-            { value: 4, label: 'Cancelado' },
-          ]} />
         </Grid>
       </Grid>
     </FilterDrawer>

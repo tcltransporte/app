@@ -50,6 +50,7 @@ export const bank = (body, signal) => fetchSearch('bank', body, signal)
 export const bankAccount = (body, signal) => fetchSearch('bank-account', body, signal)
 export const fundMethod = (body, signal) => fetchSearch('fund-method', body, signal)
 export const typeCte = (body, signal) => fetchSearch('type-cte', body, signal)
+export const solicitationStatus = (body, signal) => fetchSearch('solicitation-status', body, signal)
 
 export async function centerCost(body, signal) {
     // Current implementation is commented out in original file

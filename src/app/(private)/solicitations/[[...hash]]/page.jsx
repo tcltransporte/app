@@ -44,15 +44,12 @@ export default async function SolicitationPage({ params }) {
     ? { items: solicitationsResp.items || [], total: solicitationsResp.total || 0 }
     : { items: [], total: 0 };
 
-  console.log(solicitationType)
-
   return (
     <SolicitationView
       initialTable={initialTable}
       initialFilters={initialFilters}
       initialRange={initialRange}
       dateFieldOptions={dateFieldOptions}
-      typeHash={typeHash}
       solicitationType={solicitationType}
       selectedId={selectedId}
     />

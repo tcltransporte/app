@@ -16,6 +16,7 @@ import { SolicitationFinance } from './models/solicitationFinance.model.js'
 import { Product } from './models/product.model.js'
 import { Service } from './models/service.model.js'
 import { SolicitationProduct } from './models/solicitationProduct.model.js'
+import { SolicitationStatus } from './models/solicitationStatus.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -48,42 +49,26 @@ export class AppContext extends Sequelize {
     })
 
     this.Company = this.define('company', new Company(), { tableName: 'empresa_filial' })
-
     this.Solicitation = this.define('solicitation', new Solicitation(), { tableName: 'Solicitacao' })
-
     this.CompanyBusiness = this.define('companyBusiness', new CompanyBusiness(), { tableName: 'empresa' })
-
     this.CompanyUser = this.define('companyUser', new CompanyUser(), { tableName: 'companyUser' })
-
     this.Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
-
     this.SolicitationType = this.define('solicitationType', new SolicitationType(), { tableName: 'SolicitacaoTipo' })
-
+    this.SolicitationStatus = this.define('solicitationStatus', new SolicitationStatus(), { tableName: 'SolicitacaoStatus' })
     this.SolicitationRequestType = this.define('solicitationRequestType', new SolicitationRequestType(), { tableName: 'solicitationRequestType' })
-
     this.SolicitationProduct = this.define('solicitationProduct', new SolicitationProduct(), { tableName: 'SolicitacaoPecaUtilizada' })
-
     this.SolicitationService = this.define('solicitationService', new SolicitationService(), { tableName: 'SolicitacaoServicoRealizado' })
-
     this.SolicitationFinance = this.define('solicitationFinance', new SolicitationFinance(), { tableName: 'SolicitacaoFinanceiro' })
-
     this.Product = this.define('product', new Product(), { tableName: 'ItemEstoque' })
-
     this.Service = this.define('service', new Service(), { tableName: 'TipoServico' })
-
     this.Session = this.define('session', new Session(), { tableName: 'Session' })
-
     this.User = this.define('user', new User(), { tableName: 'aspnet_Users' })
-
     this.UserMember = this.define('userMember', new UserMember(), { tableName: 'aspnet_Membership' })
 
-    //this.Company.belongsTo(this.City, { as: 'city', foreignKey: 'CodigoMunicipio', onDelete: 'CASCADE' })
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
-    //this.Company.hasMany(this.CompanyNfseTributation, { as: 'tributations', foreignKey: 'companyId', onDelete: 'CASCADE' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
     this.Company.hasMany(this.SolicitationType, { as: 'solicitationTypes', foreignKey: 'companyId' })
     this.Company.hasMany(this.Solicitation, { as: 'solicitations', foreignKey: 'companyId' })
-
 
     this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId' })
 
@@ -99,22 +84,18 @@ export class AppContext extends Sequelize {
     this.Solicitation.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
     this.Solicitation.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId' })
     this.Solicitation.belongsTo(this.SolicitationType, { as: 'type', foreignKey: 'typeId' })
+    this.Solicitation.belongsTo(this.SolicitationStatus, { as: 'solicitationStatus', foreignKey: 'statusId' })
     this.Solicitation.hasMany(this.SolicitationProduct, { as: 'products', foreignKey: 'solicitationId' })
     this.Solicitation.hasMany(this.SolicitationService, { as: 'services', foreignKey: 'solicitationId' })
+    this.Solicitation.hasMany(this.SolicitationFinance, { as: 'payments', foreignKey: 'solicitationId' })
 
     this.SolicitationProduct.belongsTo(this.Product, { as: 'product', foreignKey: 'itemId' })
     this.SolicitationService.belongsTo(this.Service, { as: 'service', foreignKey: 'itemId' })
-
-    this.Solicitation.hasMany(this.SolicitationFinance, { as: 'payments', foreignKey: 'solicitationId' })
     this.SolicitationFinance.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
-
     this.SolicitationProduct.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
-
 
     this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })
     this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId' })
-    //this.User.belongsTo(this.Partner, { as: 'employee', foreignKey: 'employeeId', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
-
 
     this.Company.addHook('afterFind', afterFind)
     this.CompanyBusiness.addHook('afterFind', afterFind)
@@ -124,11 +105,11 @@ export class AppContext extends Sequelize {
     this.SolicitationType.addHook('afterFind', afterFind)
     this.SolicitationRequestType.addHook('afterFind', afterFind)
     this.Solicitation.addHook('afterFind', afterFind)
+    this.SolicitationStatus.addHook('afterFind', afterFind)
     this.SolicitationProduct.addHook('afterFind', afterFind)
     this.SolicitationService.addHook('afterFind', afterFind)
     this.SolicitationFinance.addHook('afterFind', afterFind)
     this.Product.addHook('afterFind', afterFind)
-
 
   }
 

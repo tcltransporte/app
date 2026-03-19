@@ -14,7 +14,7 @@ import { alert } from '@/libs/alert';
 import * as search from "@/libs/search";
 import { ServiceStatus } from '@/libs/service';
 
-export default function SolicitationDetail({ solicitationId, onClose, onSave, typeHash }) {
+export default function SolicitationDetail({ solicitationId, onClose, onSave, solicitationType }) {
 
   const formikRef = React.useRef(null);
   const [data, setData] = React.useState({});
@@ -35,6 +35,8 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
     solicitationService.findOne(solicitationId)
       .then(result => {
 
+        console.log(result)
+
         if (result.status !== ServiceStatus.SUCCESS) {
           throw result
         }
@@ -44,7 +46,6 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
       })
       .catch((error) => {
         alert.error('Erro ao buscar solicitação', error.message);
-        console.log(error)
       })
       .finally(() => setLoading(false))
   }, [solicitationId])
@@ -59,7 +60,9 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
         payload.partnerId = payload.partner.id;
       }
 
-      if (typeHash) payload.typeHash = typeHash;
+      if (solicitationType && !solicitationId) {
+        payload.typeId = solicitationType.id;
+      }
 
       let result
       if (solicitationId) {
@@ -196,7 +199,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
           description: data.description ?? '',
           number: data.number ?? '',
           statusId: data.statusId ?? 1,
-          typeId: data.typeId ?? '',
+          typeId: data.typeId ?? (solicitationType?.id || ''),
           tripId: data.tripId ?? '',
           tripGroupId: data.tripGroupId ?? '',
           processId: data.processId ?? '',
