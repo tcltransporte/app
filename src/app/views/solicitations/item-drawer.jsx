@@ -68,11 +68,11 @@ export function ItemDrawer({
                           )}
                         </Box>
                       )}
-                      onChange={(id, item) => {
+                      onChange={(item, form) => {
                         // When item changes, we might want to update itemId and value
                         if (item) {
-                          formikRef.current?.setFieldValue('itemId', item.id);
-                          if (item.defaultPrice) formikRef.current?.setFieldValue('value', item.defaultPrice);
+                          form.setFieldValue('itemId', item.id);
+                          if (item.defaultPrice) form.setFieldValue('value', item.defaultPrice);
                         }
                       }}
                     />

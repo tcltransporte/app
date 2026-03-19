@@ -22,13 +22,13 @@ import * as solicitationService from '@/app/services/solicitation.service';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
-export default function SolicitationView({ 
-  initialTable, 
-  initialFilters, 
-  initialRange, 
+export default function SolicitationView({
+  initialTable,
+  initialFilters,
+  initialRange,
   dateFieldOptions = [],
-  typeHash, 
-  solicitationType 
+  typeHash,
+  solicitationType
 }) {
 
   const navigation = useNavigation(`/solicitations/${typeHash}`, undefined)
@@ -140,12 +140,16 @@ export default function SolicitationView({
 
   const columns = [
     { field: 'number', headerName: 'Número', width: 100 },
-    { field: 'description', headerName: 'Descrição', fontWeight: 500 },
-    { 
-      field: 'date', headerName: 'Data', width: 150,
+    {
+      field: 'partnerId', headerName: 'Fornecedor', width: 500,
+      renderCell: (val, row) => row.partner?.surname || row.partner?.name || ''
+    },
+    { field: 'description', headerName: 'Descrição', fontWeight: 200 },
+    {
+      field: 'date', headerName: 'Data', width: 200,
       renderCell: (value) => value ? new Date(value).toLocaleString() : ''
     },
-    { 
+    {
       field: 'statusId', headerName: 'Status', width: 120,
       renderCell: (value) => {
         const statuses = {
@@ -166,7 +170,7 @@ export default function SolicitationView({
     }
   }, [table.orderedColumns.length])
 
-  const displayColumns = table.orderedColumns.length > 0 ? table.orderedColumns : columns
+  const displayColumns = columns;
 
   const primaryActions = [
     { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => navigation.setSelectedId(null) },

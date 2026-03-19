@@ -183,7 +183,7 @@ export const AutoComplete = (props) => {
   const handleSuggestionClick = useCallback(
     (item) => {
       form?.setFieldValue?.(name, item)
-      onChange?.(item)
+      onChange?.(item, form)
 
       setQuery('')
       setData([])

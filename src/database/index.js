@@ -12,6 +12,7 @@ import { Partner } from './models/partner.model.js'
 import { SolicitationType } from './models/solicitationType.model.js'
 import { SolicitationRequestType } from './models/solicitationRequestType.model.js'
 import { SolicitationProduct } from './models/solicitationProduct.model.js'
+import { SolicitationService } from './models/solicitationService.model.js'
 import { Product } from './models/product.model.js'
 import { Service } from './models/service.model.js'
 
@@ -48,6 +49,7 @@ export class AppContext extends Sequelize {
   SolicitationRequestType = this.define('solicitationRequestType', new SolicitationRequestType(), { tableName: 'solicitationRequestType' })
 
   SolicitationProduct = this.define('solicitationProduct', new SolicitationProduct(), { tableName: 'SolicitacaoPecaUtilizada' })
+  SolicitationService = this.define('solicitationService', new SolicitationService(), { tableName: 'SolicitacaoServicoRealizado' })
 
   Product = this.define('product', new Product(), { tableName: 'ItemEstoque' })
 
@@ -91,10 +93,13 @@ export class AppContext extends Sequelize {
     this.SolicitationType.hasMany(this.Solicitation, { as: 'solicitations', foreignKey: 'typeId' })
 
     this.Solicitation.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+    this.Solicitation.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId' })
     this.Solicitation.belongsTo(this.SolicitationType, { as: 'type', foreignKey: 'typeId' })
     this.Solicitation.hasMany(this.SolicitationProduct, { as: 'products', foreignKey: 'solicitationId' })
+    this.Solicitation.hasMany(this.SolicitationService, { as: 'services', foreignKey: 'solicitationId' })
 
     this.SolicitationProduct.belongsTo(this.Product, { as: 'product', foreignKey: 'itemId' })
+    this.SolicitationService.belongsTo(this.Service, { as: 'service', foreignKey: 'itemId' })
 
     this.SolicitationProduct.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
 
@@ -113,6 +118,7 @@ export class AppContext extends Sequelize {
     this.SolicitationRequestType.addHook('afterFind', afterFind)
     this.Solicitation.addHook('afterFind', afterFind)
     this.SolicitationProduct.addHook('afterFind', afterFind)
+    this.SolicitationService.addHook('afterFind', afterFind)
     this.Product.addHook('afterFind', afterFind)
 
 

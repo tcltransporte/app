@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
 
-export class SolicitationProduct {
+export class SolicitationService {
 
   id = {
     field: 'ID',
@@ -10,15 +10,15 @@ export class SolicitationProduct {
   }
 
   itemId = {
-    field: 'IDItemEstoque',
-    allowNull: true,
-    type: DataTypes.BIGINT
+    field: 'IDServico',
+    allowNull: false,
+    type: DataTypes.INTEGER
   }
 
   quantity = {
     field: 'Quantidade',
     allowNull: false,
-    type: DataTypes.DECIMAL(18, 4)
+    type: DataTypes.INTEGER
   }
 
   solicitationId = {
@@ -45,34 +45,22 @@ export class SolicitationProduct {
     type: DataTypes.INTEGER
   }
 
+  date = {
+    field: 'Data',
+    allowNull: true,
+    type: DataTypes.DATE
+  }
+
+  description = {
+    field: 'Descricao',
+    allowNull: true,
+    type: DataTypes.STRING(2000)
+  }
+
   isWithoutInvoice = {
     field: 'IsSemNota',
     allowNull: true,
     type: DataTypes.BOOLEAN
-  }
-
-  stockMovementId = {
-    field: 'IdMovimentoEstoque',
-    allowNull: true,
-    type: DataTypes.BIGINT
-  }
-
-  purchaseItemId = {
-    field: 'IdCompraItem',
-    allowNull: true,
-    type: DataTypes.BIGINT
-  }
-
-  workshopTypeId = {
-    field: 'SolicitacaoOficinaTipoID',
-    allowNull: true,
-    type: DataTypes.INTEGER
-  }
-
-  workshopLocationId = {
-    field: 'SolicitacaoOficinaLocalID',
-    allowNull: true,
-    type: DataTypes.INTEGER
   }
 
 }

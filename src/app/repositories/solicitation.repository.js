@@ -37,6 +37,14 @@ export async function findOne({ db, transaction }, { attributes, include, where 
 */
 export async function create({ db, transaction }, data, options = {}) {
 
+  if (!data.number || data.number === 0 || data.number === '0') {
+    const currentMaxNumber = await db.Solicitation.max('number', {
+      where: { typeId: data.typeId, companyId: data.companyId },
+      transaction
+    });
+    data.number = (isNaN(currentMaxNumber) ? 0 : currentMaxNumber) + 1;
+  }
+
   const solicitation = await db.Solicitation.create(data, { ...options, transaction })
 
   return solicitation?.toJSON()
@@ -92,8 +100,40 @@ export async function update({ db, transaction }, { where }, data) {
     }
   }
 
-  // 3. Sync Services (Similar logic if service model exists, for now following same pattern)
-  // if (updatedServices) { ... }
+  // 3. Sync Services
+  if (updatedServices) {
+    const existingServices = await db.SolicitationService.findAll({
+      where: { solicitationId },
+      transaction
+    })
+    const existingIds = existingServices.map(s => s.id)
+    const incomingIds = updatedServices
+      .filter(s => typeof s.id === 'number' && s.id < 1000000000000)
+      .map(s => s.id)
+
+    // Delete removed items
+    const toDelete = existingIds.filter(eid => !incomingIds.includes(eid))
+    if (toDelete.length > 0) {
+      await db.SolicitationService.destroy({
+        where: { id: { [Op.in]: toDelete }, solicitationId },
+        transaction
+      })
+    }
+
+    // Update or Create
+    for (const serv of updatedServices) {
+      const { service, ...servData } = serv 
+      if (typeof serv.id === 'number' && serv.id < 1000000000000) {
+        await db.SolicitationService.update(servData, {
+          where: { id: serv.id, solicitationId },
+          transaction
+        })
+      } else {
+        const { id: tempId, ...createData } = servData
+        await db.SolicitationService.create({ ...createData, solicitationId }, { transaction })
+      }
+    }
+  }
 }
 
 /**

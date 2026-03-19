@@ -351,7 +351,7 @@ export const Table = ({
                           ...(typeof col.sx === 'function' ? col.sx(row) : col.sx)
                         }}
                       >
-                        {col.renderCell ? col.renderCell(row) : row[col.field]}
+                        {col.renderCell ? col.renderCell(row[col.field], row) : row[col.field]}
                       </Typography>
                     </Box>
                   );
@@ -487,7 +487,7 @@ export const Table = ({
                           ...((typeof col.sx === 'function' ? col.sx(row) : col.sx) || {})
                         }}
                       >
-                        {col.renderCell ? col.renderCell(row) : row[col.field]}
+                        {col.renderCell ? col.renderCell(row[col.field], row) : row[col.field]}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -576,7 +576,7 @@ export const Table = ({
                         ...(typeof col.sx === 'function' ? col.sx(row) : col.sx)
                       }}
                     >
-                      {col.renderCell ? col.renderCell(row) : row[col.field]}
+                      {col.renderCell ? col.renderCell(row[col.field], row) : row[col.field]}
                     </TableCell>
                   ))}
                 </TableRow>

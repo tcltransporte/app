@@ -34,15 +34,18 @@ export const SectionItemTable = ({
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [selectedItem, setSelectedItem] = React.useState(null);
+  const [selectedIndex, setSelectedIndex] = React.useState(-1);
 
-  const handleOpenMenu = (event, item) => {
+  const handleOpenMenu = (event, item, index) => {
     setAnchorEl(event.currentTarget);
     setSelectedItem(item);
+    setSelectedIndex(index);
   };
 
   const handleCloseMenu = () => {
     setAnchorEl(null);
     setSelectedItem(null);
+    setSelectedIndex(-1);
   };
 
   return (
@@ -109,14 +112,14 @@ export const SectionItemTable = ({
               </TableRow>
             )}
             {items.map((item, index) => (
-              <TableRow key={item.id || index} hover onDoubleClick={() => onEdit(item)}>
+              <TableRow key={item.id || index} hover onDoubleClick={() => onEdit(item, index)}>
                 {columns.map((col) => (
                   <TableCell key={col.field} sx={{ fontSize: '0.825rem', py: 0.5 }}>
                     {col.renderCell ? col.renderCell(item[col.field], item) : item[col.field]}
                   </TableCell>
                 ))}
                 <TableCell align="right" sx={{ py: 0.5 }}>
-                  <IconButton size="small" onClick={(e) => handleOpenMenu(e, item)} sx={{ p: 0.5 }}>
+                  <IconButton size="small" onClick={(e) => handleOpenMenu(e, item, index)} sx={{ p: 0.5 }}>
                     <MoreVertIcon fontSize="inherit" />
                   </IconButton>
                 </TableCell>
@@ -126,7 +129,6 @@ export const SectionItemTable = ({
             <TableRow>
               <TableCell colSpan={columns.length + 1} sx={{ p: 0.5 }}>
                 <Button
-                  size="small"
                   onClick={onAdd}
                   sx={{
                     textTransform: 'none',
@@ -149,8 +151,8 @@ export const SectionItemTable = ({
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
       >
-        <MenuItem onClick={() => { onEdit(selectedItem); handleCloseMenu(); }}>Editar</MenuItem>
-        <MenuItem onClick={() => { onDelete(selectedItem); handleCloseMenu(); }} sx={{ color: 'error.main' }}>Excluir</MenuItem>
+        <MenuItem onClick={() => { onEdit(selectedItem, selectedIndex); handleCloseMenu(); }}>Editar</MenuItem>
+        <MenuItem onClick={() => { onDelete(selectedItem, selectedIndex); handleCloseMenu(); }} sx={{ color: 'error.main' }}>Excluir</MenuItem>
       </Menu>
     </Box>
   );

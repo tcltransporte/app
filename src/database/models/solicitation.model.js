@@ -17,7 +17,6 @@ export class Solicitation {
 
   description = {
     field: 'Descricao',
-    allowNull: false,
     type: DataTypes.STRING(100)
   }
 
@@ -69,8 +68,8 @@ export class Solicitation {
     type: DataTypes.BIGINT
   }
 
-  customerId = {
-    field: 'customerId',
+  partnerId = {
+    field: 'partnerId',
     allowNull: true,
     type: DataTypes.BIGINT
   }

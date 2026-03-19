@@ -12,6 +12,7 @@ import * as solicitationService from '@/app/services/solicitation.service';
 import { alert } from '@/libs/alert';
 
 import * as search from "@/libs/search";
+import { ServiceStatus } from '@/libs/service';
 
 export default function SolicitationDetail({ solicitationId, onClose, onSave, typeHash }) {
 
@@ -20,7 +21,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
   const [loading, setLoading] = React.useState(false);
 
   // Drawer state
-  const [drawer, setDrawer] = React.useState({ open: false, type: 'product', item: null });
+  const [drawer, setDrawer] = React.useState({ open: false, type: 'product', item: null, index: -1 });
 
   React.useEffect(() => {
     if (solicitationId === undefined || solicitationId === null) {
@@ -43,26 +44,39 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
   const handleSubmit = async (values) => {
     setLoading(true)
     try {
+
       const payload = { ...values };
+
+      if (payload.partner) {
+        payload.partnerId = payload.partner.id;
+      }
+
       if (typeHash) payload.typeHash = typeHash;
 
+      let result
       if (solicitationId) {
-        await solicitationService.update(Number(solicitationId), payload)
+        result = await solicitationService.update(Number(solicitationId), payload)
       } else {
-        await solicitationService.create(payload)
+        result = await solicitationService.create(payload)
       }
+
+      if (result.status !== ServiceStatus.SUCCESS) {
+        throw result
+      }
+
       alert.success('Salvo com sucesso!');
-      onSave?.()
+      onSave?.();
+      onClose?.();
+
     } catch (error) {
-      console.error('Erro ao salvar:', error)
-      alert.error('Erro ao salvar', 'Ocorreu um problema ao tentar salvar o registro.');
+      alert.error('Erro ao salvar', error.message);
     } finally {
       setLoading(false)
     }
   }
 
-  const handleOpenDrawer = (type, item = null) => {
-    setDrawer({ open: true, type, item });
+  const handleOpenDrawer = (type, item = null, index = -1) => {
+    setDrawer({ open: true, type, item, index });
   }
 
   const handleSaveItem = (values) => {
@@ -71,21 +85,24 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
     const list = formikRef.current?.values[fieldName] || [];
 
     let newList;
-    if (drawer.item) {
-      // Update existing item in local list (match by ID)
-      newList = list.map(i => i.id === drawer.item.id ? { ...i, ...values } : i);
+    if (drawer.index !== undefined && drawer.index >= 0) {
+      // Update existing item in local list (match by index)
+      newList = [...list];
+      newList[drawer.index] = { ...newList[drawer.index], ...values };
     } else {
-      // Add new item with temporary ID
-      newList = [...list, { ...values, id: Date.now() }];
+      // Add new item without temporary ID
+      newList = [...list, { ...values }];
     }
 
     formikRef.current?.setFieldValue(fieldName, newList);
   }
 
-  const handleDeleteItem = (type, item) => {
+  const handleDeleteItem = (type, item, index) => {
     const fieldName = type === 'product' ? 'products' : type === 'service' ? 'services' : 'payments';
     const list = formikRef.current?.values[fieldName] || [];
-    formikRef.current?.setFieldValue(fieldName, list.filter(i => i.id !== item.id));
+    const newList = [...list];
+    newList.splice(index, 1);
+    formikRef.current?.setFieldValue(fieldName, newList);
   };
 
   const columns = [
@@ -93,7 +110,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
       field: 'itemId',
       headerName: 'Produto',
       width: 250,
-      renderCell: (val, row) => row.product?.description || row.product?.name || val
+      renderCell: (val, row) => row.product?.description || row.service?.description || row.product?.name || row.service?.name || val
     },
     { field: 'quantity', headerName: 'Qtd', width: 80, align: 'center' },
     {
@@ -127,11 +144,10 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
           number: data.number ?? '',
           statusId: data.statusId ?? 1,
           typeId: data.typeId ?? '',
-          forecastDate: data.forecastDate ? String(data.forecastDate).substring(0, 10) : '',
           tripId: data.tripId ?? '',
           tripGroupId: data.tripGroupId ?? '',
           processId: data.processId ?? '',
-          customerId: data.customerId ?? '',
+          partner: data.partner ?? null,
           tributationId: data.tributationId ?? '',
           sellerId: data.sellerId ?? '',
           products: data.products ?? [],
@@ -157,9 +173,9 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
                   <Grid size={{ xs: 12, sm: 5 }}>
                     <Field
                       component={AutoComplete}
-                      name="receiver"
+                      name="partner"
                       label="Fornecedor"
-                      text={(receiver) => `${receiver.surname}`}
+                      text={(partner) => `${partner.surname}`}
                       onSearch={(value, signal) => search.partner({ search: value, isSupplier: true }, signal)}
                       renderSuggestion={(item) => (
                         <span>{item?.CpfCnpj} - {item?.surname}</span>
@@ -176,8 +192,8 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
                           columns={columns}
                           items={field.value}
                           onAdd={() => handleOpenDrawer('product')}
-                          onEdit={(item) => handleOpenDrawer('product', item)}
-                          onDelete={(item) => handleDeleteItem('product', item)}
+                          onEdit={(item, index) => handleOpenDrawer('product', item, index)}
+                          onDelete={(item, index) => handleDeleteItem('product', item, index)}
                         //actions={[{ label: 'Listar Peças', onClick: () => console.log('Listar Peças') }]}
                         />
                       )}
@@ -193,8 +209,8 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
                           columns={columns}
                           items={field.value}
                           onAdd={() => handleOpenDrawer('service')}
-                          onEdit={(item) => handleOpenDrawer('service', item)}
-                          onDelete={(item) => handleDeleteItem('service', item)}
+                          onEdit={(item, index) => handleOpenDrawer('service', item, index)}
+                          onDelete={(item, index) => handleDeleteItem('service', item, index)}
                         />
                       )}
                     </Field>
@@ -209,8 +225,8 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
                           columns={paymentColumns}
                           items={field.value}
                           onAdd={() => handleOpenDrawer('payment')}
-                          onEdit={(item) => handleOpenDrawer('payment', item)}
-                          onDelete={(item) => handleDeleteItem('payment', item)}
+                          onEdit={(item, index) => handleOpenDrawer('payment', item, index)}
+                          onDelete={(item, index) => handleDeleteItem('payment', item, index)}
                         />
                       )}
                     </Field>

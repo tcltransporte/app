@@ -68,6 +68,10 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
         where.number = filters.number
       }
 
+      if (filters.partnerId) {
+        where.partnerId = filters.partnerId
+      }
+
       if (filters.typeHash) {
         const type = await typeRepository.findOne({ db, transaction }, {
           where: { hash: filters.typeHash, companyId: session.company.id }
@@ -96,7 +100,10 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
         where,
         limit,
         offset,
-        order: [[sortBy || 'date', sortOrder || 'DESC']]
+        order: [[sortBy || 'date', sortOrder || 'DESC']],
+        include: [
+          { association: 'partner', attributes: ['name', 'surname'] },
+        ]
       })
     })
 
@@ -119,9 +126,14 @@ export async function findOne(id) {
           companyId: session.company.id
         },
         include: [
-          { 
+          { association: 'partner', attributes: ['name', 'surname'] },
+          {
             association: 'products',
             include: [{ association: 'product', attributes: ['name', 'productCode', 'description'] }]
+          },
+          {
+            association: 'services',
+            include: [{ association: 'service', attributes: ['name'] }]
           }
         ]
       })
@@ -185,11 +197,13 @@ export async function deleteProduct(id) {
 
 export async function create(data) {
   try {
+
     const session = await getSession()
+
     const db = new AppContext()
 
     const result = await db.transaction(async (transaction) => {
-      const finalData = { ...data }
+      const finalData = sanitize(data)
 
       if (finalData.typeHash && !finalData.typeId) {
         const type = await typeRepository.findOne({ db, transaction }, {
@@ -199,16 +213,21 @@ export async function create(data) {
           finalData.typeId = type.id
         }
       }
-      delete finalData.typeHash
+
+      delete finalData.partner
 
       return solicitationRepository.create({ db, transaction }, {
         ...finalData,
         companyId: session.company.id,
         userId: session.user.id,
         date: new Date(),
+        forecastDate: new Date(),
         number: data.number || 0
       }, {
-        include: [{ association: 'products' }]
+        include: [
+          { association: 'products' },
+          { association: 'services' }
+        ]
       })
     })
 
@@ -221,6 +240,9 @@ export async function create(data) {
 
 export async function update(id, data) {
   try {
+
+    console.log(data)
+
     const session = await getSession()
     const db = new AppContext()
 
@@ -235,6 +257,19 @@ export async function update(id, data) {
 
       if (!existing)
         throw ServiceResponse.badRequest("SOLICITATION_NOT_FOUND", "Solicitação não encontrada!")
+
+      const finalData = sanitize(data)
+
+      if (finalData.typeHash && !finalData.typeId) {
+        const type = await typeRepository.findOne({ db, transaction }, {
+          where: { hash: finalData.typeHash, companyId: session.company.id }
+        })
+        if (type) {
+          finalData.typeId = type.id
+        }
+      }
+      delete finalData.typeHash
+      delete finalData.partner
 
       await solicitationRepository.update({ db, transaction }, { where: { id: id } }, finalData)
     })
@@ -270,4 +305,24 @@ export async function destroy(id) {
   } catch (error) {
     return ServiceResponse.error(error)
   }
+}
+
+function sanitize(data) {
+  if (Array.isArray(data)) {
+    return data.map(sanitize)
+  }
+
+  if (data !== null && typeof data === 'object' && !(data instanceof Date)) {
+    const sanitized = {}
+    for (const key in data) {
+      sanitized[key] = sanitize(data[key])
+    }
+    return sanitized
+  }
+
+  if (data === '' || data === 'Invalid date') {
+    return null
+  }
+
+  return data
 }

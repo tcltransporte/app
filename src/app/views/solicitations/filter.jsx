@@ -1,7 +1,8 @@
 import { Grid } from '@mui/material';
 import { Field } from 'formik';
 import { FilterDrawer } from '@/components/common';
-import { TextField, SelectField } from '@/components/controls';
+import { TextField, SelectField, AutoComplete } from '@/components/controls';
+import * as search from "@/libs/search";
 
 export default function SolicitationFilter({ open, onClose, filters, onApply }) {
   const initialValues = {
@@ -9,6 +10,8 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
     description: filters.description || '',
     statusId: filters.statusId || '',
     typeId: filters.typeId || '',
+    partnerId: filters.partnerId || '',
+    partner: filters.partner || null,
   };
 
   const handleClear = (setValues) => {
@@ -17,6 +20,8 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
       description: '',
       statusId: '',
       typeId: '',
+      partnerId: '',
+      partner: null,
     };
     setValues(clearedValues);
     onApply(clearedValues);
@@ -32,6 +37,23 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
       title="Filtros de Solicitações"
     >
       <Grid container spacing={2.5}>
+        <Grid size={{ xs: 12 }}>
+          <Field 
+            component={AutoComplete} 
+            name="partner" 
+            label="Fornecedor" 
+            fullWidth 
+            size="small"
+            text={(item) => item?.surname || ''}
+            onSearch={(value, signal) => search.partner({ search: value, isSupplier: true }, signal)}
+            onChange={(val, form) => {
+              form.setFieldValue('partnerId', val?.id || '');
+            }}
+            renderSuggestion={(item) => (
+              <span>{item?.CpfCnpj} - {item?.surname}</span>
+            )}
+          />
+        </Grid>
         <Grid size={{ xs: 12 }}>
           <Field component={TextField} name="number" label="Número" fullWidth size="small" />
         </Grid>
