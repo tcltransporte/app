@@ -44,7 +44,7 @@ export async function POST(request) {
         }
 
         const partners = await db.Partner.findAll({
-            attributes: ['codigo_pessoa', 'surname'],
+            attributes: ['codigo_pessoa', 'CpfCnpj', 'surname'],
             order: [['surname', 'asc']],
             where: where,
             limit: 20,

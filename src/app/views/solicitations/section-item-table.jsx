@@ -61,46 +61,6 @@ export const SectionItemTable = ({
       }}>
         <Typography variant="subtitle2" fontWeight={700}>{title}</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            size="small"
-            variant="contained"
-            disableElevation
-            onClick={onAdd}
-            sx={{
-              bgcolor: 'rgba(255,255,255,0.25)',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.4)' },
-              textTransform: 'none',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.3)',
-              px: 1.2,
-              minHeight: 24,
-              py: 0
-            }}
-          >
-            Inserir
-          </Button>
-          <Button
-            size="small"
-            variant="contained"
-            disableElevation
-            onClick={() => onEdit && onEdit(null)}
-            sx={{
-              bgcolor: 'rgba(255,255,255,0.25)',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.4)' },
-              textTransform: 'none',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.3)',
-              px: 1.2,
-              minHeight: 24,
-              py: 0
-            }}
-          >
-            Editar
-          </Button>
           {actions.map((action, idx) => (
             <Button
               key={idx}
@@ -141,28 +101,45 @@ export const SectionItemTable = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.length === 0 ? (
+            {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={columns.length + 1} align="left" sx={{ pt: 1, pb: 2, px: 2, color: 'text.secondary', fontSize: '0.825rem' }}>
+                <TableCell colSpan={columns.length + 1} align="left" sx={{ pt: 1, pb: 1, px: 2, color: 'text.secondary', fontSize: '0.825rem' }}>
                   Não há itens na tabela.
                 </TableCell>
               </TableRow>
-            ) : (
-              items.map((item, index) => (
-                <TableRow key={item.id || index} hover onDoubleClick={() => onEdit(item)}>
-                  {columns.map((col) => (
-                    <TableCell key={col.field} sx={{ fontSize: '0.825rem', py: 0.5 }}>
-                      {col.renderCell ? col.renderCell(item[col.field], item) : item[col.field]}
-                    </TableCell>
-                  ))}
-                  <TableCell align="right" sx={{ py: 0.5 }}>
-                    <IconButton size="small" onClick={(e) => handleOpenMenu(e, item)} sx={{ p: 0.5 }}>
-                      <MoreVertIcon fontSize="inherit" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
             )}
+            {items.map((item, index) => (
+              <TableRow key={item.id || index} hover onDoubleClick={() => onEdit(item)}>
+                {columns.map((col) => (
+                  <TableCell key={col.field} sx={{ fontSize: '0.825rem', py: 0.5 }}>
+                    {col.renderCell ? col.renderCell(item[col.field], item) : item[col.field]}
+                  </TableCell>
+                ))}
+                <TableCell align="right" sx={{ py: 0.5 }}>
+                  <IconButton size="small" onClick={(e) => handleOpenMenu(e, item)} sx={{ p: 0.5 }}>
+                    <MoreVertIcon fontSize="inherit" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+
+            <TableRow>
+              <TableCell colSpan={columns.length + 1} sx={{ p: 0.5 }}>
+                <Button
+                  size="small"
+                  onClick={onAdd}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    color: 'primary.main',
+                    '&:hover': { bgcolor: 'primary.lighter' }
+                  }}
+                >
+                  + Adicionar
+                </Button>
+              </TableCell>
+            </TableRow>
           </TableBody>
         </Table>
       </TableContainer>

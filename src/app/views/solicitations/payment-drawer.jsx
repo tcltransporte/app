@@ -146,10 +146,8 @@ export function PaymentDrawer({
                               <TableCell>{inst.id}</TableCell>
                               <TableCell>
                                 <Field
-                                  component={TextField}
+                                  component={NumericField}
                                   name={`installments[${idx}].value`}
-                                  size="small"
-                                  type="number"
                                   sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
                                 />
                               </TableCell>

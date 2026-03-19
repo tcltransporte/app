@@ -12,6 +12,8 @@ import { Partner } from './models/partner.model.js'
 import { SolicitationType } from './models/solicitationType.model.js'
 import { SolicitationRequestType } from './models/solicitationRequestType.model.js'
 import { SolicitationProduct } from './models/solicitationProduct.model.js'
+import { Product } from './models/product.model.js'
+import { Service } from './models/service.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -47,6 +49,9 @@ export class AppContext extends Sequelize {
 
   SolicitationProduct = this.define('solicitationProduct', new SolicitationProduct(), { tableName: 'SolicitacaoPecaUtilizada' })
 
+  Product = this.define('product', new Product(), { tableName: 'ItemEstoque' })
+
+  Service = this.define('service', new Service(), { tableName: 'TipoServico' })
 
   Session = this.define('session', new Session(), { tableName: 'Session' })
 
@@ -89,6 +94,8 @@ export class AppContext extends Sequelize {
     this.Solicitation.belongsTo(this.SolicitationType, { as: 'type', foreignKey: 'typeId' })
     this.Solicitation.hasMany(this.SolicitationProduct, { as: 'products', foreignKey: 'solicitationId' })
 
+    this.SolicitationProduct.belongsTo(this.Product, { as: 'product', foreignKey: 'itemId' })
+
     this.SolicitationProduct.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
 
 
@@ -106,6 +113,7 @@ export class AppContext extends Sequelize {
     this.SolicitationRequestType.addHook('afterFind', afterFind)
     this.Solicitation.addHook('afterFind', afterFind)
     this.SolicitationProduct.addHook('afterFind', afterFind)
+    this.Product.addHook('afterFind', afterFind)
 
 
   }

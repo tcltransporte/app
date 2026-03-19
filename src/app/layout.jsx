@@ -12,7 +12,7 @@ const inter = Inter({ subsets: ['latin'] });
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 
 export const metadata = {
-  title: 'Sistema de Gestão de Grupos',
+  title: process.env.NEXT_PUBLIC_APP_TITLE || 'Sistema de Gestão de Grupos',
   description: 'Gestão de filiais e grupos de empresas',
 }
 

@@ -3,31 +3,42 @@
 import React from 'react';
 import { TextField as MuiTextField } from '@mui/material';
 
-const toDisplay = (value) => {
-  const cents = Math.round(Math.abs(Number(value) * 100));
-  return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
+export const NumericField = React.forwardRef((props, ref) => {
+  const { field, form, onChange, precision = 2, ...rest } = props;
+  const factor = Math.pow(10, precision);
 
-export const NumericField = React.forwardRef(({ field, form, onChange, ...props }, ref) => {
+  const toDisplay = (value) => {
+    const val = Number(value) || 0;
+    return val.toLocaleString('pt-BR', { 
+      minimumFractionDigits: precision, 
+      maximumFractionDigits: precision 
+    });
+  };
 
   const handleChange = (e) => {
     const raw = e.target.value.replace(/\D/g, '');
-    const num = Number(raw) / 100;
+    const num = Number(raw) / factor;
 
     // Formik integration
-    field?.onChange({ target: { name: field.name, value: num } });
+    if (field) {
+      field.onChange({ target: { name: field.name, value: num } });
+    }
 
     onChange?.(num);
   };
 
+  const val = field?.value ?? props.value ?? 0;
+
   return (
     <MuiTextField
       variant="filled"
+      fullWidth
+      size="small"
       InputLabelProps={{ shrink: true }}
       ref={ref}
       {...field}
-      {...props}
-      value={toDisplay(field?.value ?? props.value ?? 0)}
+      {...rest}
+      value={toDisplay(val)}
       onChange={handleChange}
       inputProps={{ inputMode: 'numeric', ...props.inputProps }}
     />

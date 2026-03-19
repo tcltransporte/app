@@ -14,6 +14,7 @@ export const DateTimeField = React.forwardRef(({ field, form, onChange, ...props
     <MuiTextField
       type="datetime-local"
       variant="filled"
+      size="small"
       InputLabelProps={{ shrink: true }}
       fullWidth
       ref={ref}

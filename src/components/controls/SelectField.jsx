@@ -20,6 +20,7 @@ export const SelectField = React.forwardRef(({ field, form, options = [], onChan
       SelectProps={{ native: true }}
       InputLabelProps={{ shrink: true }}
       fullWidth
+      size="small"
       ref={ref}
       {...field}
       {...props}

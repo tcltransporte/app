@@ -20,6 +20,7 @@ export const TextField = React.forwardRef(({ transform, field, form, onChange, .
     <MuiTextField
       variant="filled"
       InputLabelProps={{ shrink: true }}
+      size="small"
       ref={ref}
       {...field}
       {...props}

@@ -3,7 +3,6 @@
 import { Op } from 'sequelize'
 import * as solicitationRepository from "@/app/repositories/solicitation.repository"
 import * as typeRepository from "@/app/repositories/solicitationType.repository"
-import * as productRepository from "@/app/repositories/solicitationProduct.repository"
 import { AppContext } from "@/database"
 import { ServiceResponse, ServiceStatus } from "@/libs/service"
 import { getSession } from "@/libs/session"
@@ -120,7 +119,10 @@ export async function findOne(id) {
           companyId: session.company.id
         },
         include: [
-          { association: 'products' }
+          { 
+            association: 'products',
+            include: [{ association: 'product', attributes: ['name', 'productCode', 'description'] }]
+          }
         ]
       })
 
@@ -140,8 +142,9 @@ export async function findOne(id) {
 export async function findProducts(solicitationId) {
   try {
     const db = new AppContext()
-    const result = await productRepository.findAll({ db }, {
-      where: { solicitationId }
+    const result = await solicitationRepository.findProductAll({ db }, {
+      where: { solicitationId },
+      include: [{ association: 'product', attributes: ['name', 'productCode', 'description'] }]
     })
     return ServiceResponse.success({ items: result.rows })
   } catch (error) {
@@ -153,12 +156,15 @@ export async function upsertProduct(solicitationId, data) {
   try {
     const db = new AppContext()
     const result = await db.transaction(async (transaction) => {
-      if (data.id && String(data.id).length < 10) { // Simple check for existing ID vs temp Date.now()
-        await productRepository.update({ db, transaction }, { where: { id: data.id, solicitationId } }, data)
-        return { id: data.id }
+      // Sanitize data: remove nested objects that shouldn't be saved directly
+      const { item, service, ...saveData } = data
+
+      if (saveData.id && String(saveData.id).length < 10) { // Simple check for existing ID vs temp Date.now()
+        await solicitationRepository.updateProduct({ db, transaction }, { where: { id: saveData.id, solicitationId } }, saveData)
+        return { id: saveData.id }
       } else {
-        const { id, ...createData } = data
-        return productRepository.create({ db, transaction }, { ...createData, solicitationId })
+        const { id, ...createData } = saveData
+        return solicitationRepository.createProduct({ db, transaction }, { ...createData, solicitationId })
       }
     })
     return ServiceResponse.success(result)
@@ -170,7 +176,7 @@ export async function upsertProduct(solicitationId, data) {
 export async function deleteProduct(id) {
   try {
     const db = new AppContext()
-    await productRepository.destroy({ db }, { where: { id } })
+    await solicitationRepository.destroyProduct({ db }, { where: { id } })
     return ServiceResponse.success({ id })
   } catch (error) {
     return ServiceResponse.error(error)
@@ -201,6 +207,8 @@ export async function create(data) {
         userId: session.user.id,
         date: new Date(),
         number: data.number || 0
+      }, {
+        include: [{ association: 'products' }]
       })
     })
 
@@ -228,22 +236,10 @@ export async function update(id, data) {
       if (!existing)
         throw ServiceResponse.badRequest("SOLICITATION_NOT_FOUND", "Solicitação não encontrada!")
 
-      const finalData = { ...data }
-      if (finalData.typeHash && !finalData.typeId) {
-        const type = await typeRepository.findOne({ db, transaction }, {
-          where: { hash: finalData.typeHash, companyId: session.company.id }
-        })
-        if (type) {
-          finalData.typeId = type.id
-        }
-      }
-      delete finalData.typeHash
-
       await solicitationRepository.update({ db, transaction }, { where: { id: id } }, finalData)
     })
 
     return ServiceResponse.success({ id })
-
   } catch (error) {
     return ServiceResponse.error(error)
   }

@@ -18,7 +18,7 @@ const SuggestionsBox = styled.div`
   max-height: 300px;
   overflow-y: auto;
   background-color: white;
-  z-index: 1300;
+  z-index: 2000;
   border: 1px solid #ccc;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   border-radius: ${(props) => (props.isAbove ? '4px 4px 0 0' : '0 0 4px 4px')};

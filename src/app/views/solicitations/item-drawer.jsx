@@ -4,25 +4,27 @@ import React from 'react';
 import { Drawer, Box, Typography, IconButton, Divider, Button, Grid } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Formik, Form, Field } from 'formik';
-import { TextField } from '@/components/controls';
+import { TextField, AutoComplete, NumericField } from '@/components/controls';
+import * as search from '@/libs/search';
 
 /**
  * Drawer for adding or editing items (pieces/services).
  */
-export function ItemDrawer({ 
-  open, 
-  onClose, 
-  initialValues, 
-  onSave, 
+export function ItemDrawer({
+  open,
+  onClose,
+  initialValues,
+  onSave,
   title = 'Produto'
 }) {
+  const formikRef = React.useRef(null);
   return (
     <Drawer
       anchor="right"
       open={open}
       onClose={onClose}
       PaperProps={{
-        sx: { width: { xs: '100%', sm: 400 }, p: 0 }
+        sx: { width: { xs: '100%', sm: 500 }, p: 0 }
       }}
       // Z-index higher than the dialog
       sx={{ zIndex: (theme) => theme.zIndex.modal + 1 }}
@@ -37,6 +39,7 @@ export function ItemDrawer({
         <Divider />
 
         <Formik
+          innerRef={formikRef}
           initialValues={initialValues || {}}
           enableReinitialize
           onSubmit={(values) => {
@@ -44,58 +47,49 @@ export function ItemDrawer({
             onClose();
           }}
         >
-          {({ submitForm }) => (
+          {({ submitForm, setFieldValue }) => (
             <Form style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
               <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
                 <Grid container spacing={2}>
                   <Grid size={12}>
-                    <Field 
-                      component={TextField} 
-                      name="itemId" 
-                      label="ID Item Estoque" 
-                      fullWidth 
-                      size="small" 
-                      type="number"
+                    <Field
+                      component={AutoComplete}
+                      name="product"
+                      label={title === 'Produto' ? "Produto" : "Serviço"}
+                      fullWidth
+                      size="small"
+                      text={(item) => item?.description || item?.name || item?.surname || ''}
+                      onSearch={(value, signal) => title === 'Produto' ? search.product({ search: value }, signal) : search.service({ search: value }, signal)}
+                      renderSuggestion={(item) => (
+                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                          <Typography variant="body2" fontWeight={600}>{item?.name || item?.surname || item?.description}</Typography>
+                          {item?.productCode && (
+                            <Typography variant="caption" color="text.secondary">Código: {item.productCode}</Typography>
+                          )}
+                        </Box>
+                      )}
+                      onChange={(id, item) => {
+                        // When item changes, we might want to update itemId and value
+                        if (item) {
+                          formikRef.current?.setFieldValue('itemId', item.id);
+                          if (item.defaultPrice) formikRef.current?.setFieldValue('value', item.defaultPrice);
+                        }
+                      }}
                     />
                   </Grid>
                   <Grid size={6}>
-                    <Field 
-                      component={TextField} 
-                      name="quantity" 
-                      label="Quantidade" 
-                      fullWidth 
-                      size="small" 
-                      type="number"
+                    <Field
+                      component={NumericField}
+                      name="quantity"
+                      label="Quantidade"
+                      precision={3}
                     />
                   </Grid>
                   <Grid size={6}>
-                    <Field 
-                      component={TextField} 
-                      name="value" 
-                      label="Valor" 
-                      fullWidth 
-                      size="small" 
-                      type="number"
-                    />
-                  </Grid>
-                  <Grid size={12}>
-                    <Field 
-                      component={TextField} 
-                      name="vehicleId" 
-                      label="ID Veículo" 
-                      fullWidth 
-                      size="small" 
-                      type="number"
-                    />
-                  </Grid>
-                  <Grid size={12}>
-                    <Field 
-                      component={TextField} 
-                      name="supplierId" 
-                      label="ID Fornecedor" 
-                      fullWidth 
-                      size="small" 
-                      type="number"
+                    <Field
+                      component={NumericField}
+                      name="value"
+                      label="Valor"
                     />
                   </Grid>
                 </Grid>
