@@ -2,11 +2,12 @@
 
 import React from 'react';
 import { Formik, Form, Field } from 'formik';
-import { Grid, Button, Divider } from '@mui/material';
+import { Grid, Button, Box, InputAdornment } from '@mui/material';
 import { Dialog } from '@/components/common';
-import { TextField, SelectField, AutoComplete } from '@/components/controls';
+import { TextField, AutoComplete } from '@/components/controls';
 import { SectionTable } from '@/components/common/SectionTable';
-import { ItemDrawer } from './item-drawer';
+import { ProductDrawer } from './product-drawer';
+import { ServiceDrawer } from './service-drawer';
 import { PaymentDrawer } from './payment-drawer';
 import * as solicitationService from '@/app/services/solicitation.service';
 import { alert } from '@/libs/alert';
@@ -149,9 +150,9 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
   const columns = [
     {
       field: 'itemId',
-      headerName: 'Produto',
+      headerName: 'Descrição',
       width: 250,
-      renderCell: (val, row) => row.product?.description || row.service?.description || row.product?.name || row.service?.name || val
+      renderCell: (val, row) => row.product?.description || row.service?.name || row.description || val
     },
     { field: 'quantity', headerName: 'Qtd', width: 80, align: 'center' },
     {
@@ -166,14 +167,6 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
 
   const paymentColumns = [
     { field: 'documentNumber', headerName: 'Número Doc.' },
-    {
-      field: 'costCenterId',
-      headerName: 'C. Custo',
-      renderCell: (val) => {
-        const centers = { 1: 'Geral', 2: 'Administrativo', 3: 'Operacional' };
-        return centers[val] || val || '';
-      }
-    },
     {
       field: 'dueDate',
       headerName: 'Vencimento',
@@ -196,19 +189,14 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
         innerRef={formikRef}
         enableReinitialize
         initialValues={{
-          description: data.description ?? '',
-          number: data.number ?? '',
-          statusId: data.statusId ?? 1,
-          typeId: data.typeId ?? (solicitationType?.id || ''),
-          tripId: data.tripId ?? '',
-          tripGroupId: data.tripGroupId ?? '',
-          processId: data.processId ?? '',
-          partner: data.partner ?? null,
-          tributationId: data.tributationId ?? '',
-          sellerId: data.sellerId ?? '',
-          products: data.products ?? [],
-          services: data.services ?? [],
-          payments: data.payments ?? [],
+          description: data?.description ?? '',
+          number: data?.number ?? '',
+          statusId: data?.statusId ?? '',
+          typeId: data?.typeId ?? (solicitationType?.id || ''),
+          partner: data?.partner ?? null,
+          products: data?.products ?? [],
+          services: data?.services ?? [],
+          payments: data?.payments ?? [],
         }}
         onSubmit={handleSubmit}
       >
@@ -224,9 +212,10 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
               <Form>
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, sm: 2 }}>
-                    <Field component={TextField} name="number" label="Número" />
+                    <Field component={TextField} name="number" label="Número" readOnly />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 5 }}>
+
+                  <Grid size={{ xs: 12, sm: 4 }}>
                     <Field
                       component={AutoComplete}
                       name="partner"
@@ -236,6 +225,47 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
                       renderSuggestion={(item) => (
                         <span>{item?.CpfCnpj} - {item?.surname}</span>
                       )}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 3 }}>
+                    <Field
+                      component={TextField}
+                      name="status"
+                      label="Status"
+                      fullWidth
+                      readOnly
+                      value={data?.solicitationStatus?.description || 'Pendente'}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start" sx={{ mr: 1.5, mt: 0.5 }}>
+                            <Box
+                              sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                backgroundColor: (theme) => {
+                                  const statusId = data?.statusId;
+                                  const colors = {
+                                    1: theme.palette.warning.main,    // Pendente
+                                    2: theme.palette.info.main,       // Em Aprovação
+                                    3: theme.palette.success.main,    // Aprovada
+                                    4: theme.palette.error.main,      // Rejeitada
+                                    5: theme.palette.grey[500],       // Cancelada
+                                  };
+                                  return colors[statusId] || theme.palette.warning.main;
+                                },
+                                "@keyframes pulse": {
+                                  "0%": { transform: "scale(1)", opacity: 1 },
+                                  "50%": { transform: "scale(1.4)", opacity: 0.6 },
+                                  "100%": { transform: "scale(1)", opacity: 1 }
+                                },
+                                animation: "pulse 2s infinite ease-in-out"
+                              }}
+                            />
+                          </InputAdornment>
+                        )
+                      }}
                     />
                   </Grid>
 
@@ -250,7 +280,6 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
                           onAdd={() => handleOpenDrawer('product')}
                           onEdit={(item, index) => handleOpenDrawer('product', item, index)}
                           onDelete={(item, index) => handleDeleteItem('product', item, index)}
-                        //actions={[{ label: 'Listar Peças', onClick: () => console.log('Listar Peças') }]}
                         />
                       )}
                     </Field>
@@ -306,22 +335,27 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
           </Dialog>
         )}
       </Formik>
-      {drawer.type !== 'payment' ? (
-        <ItemDrawer
-          open={drawer.open}
-          onClose={() => setDrawer({ ...drawer, open: false })}
-          title={drawer.type === 'product' ? 'Produto' : 'Serviço'}
-          initialValues={drawer.item ? { ...drawer.item, product: drawer.item.product || drawer.item.service } : { itemId: '', quantity: 1, value: 0, vehicleId: '', supplierId: '' }}
-          onSave={handleSaveItem}
-        />
-      ) : (
-        <PaymentDrawer
-          open={drawer.open}
-          onClose={() => setDrawer({ ...drawer, open: false })}
-          initialValues={drawer.item}
-          onSave={handleSavePayment}
-        />
-      )}
+
+      <ProductDrawer
+        open={drawer.open && drawer.type === 'product'}
+        onClose={() => setDrawer({ ...drawer, open: false })}
+        initialValues={drawer.item}
+        onSave={handleSaveItem}
+      />
+
+      <ServiceDrawer
+        open={drawer.open && drawer.type === 'service'}
+        onClose={() => setDrawer({ ...drawer, open: false })}
+        initialValues={drawer.item}
+        onSave={handleSaveItem}
+      />
+
+      <PaymentDrawer
+        open={drawer.open && drawer.type === 'payment'}
+        onClose={() => setDrawer({ ...drawer, open: false })}
+        initialValues={drawer.item}
+        onSave={handleSavePayment}
+      />
     </>
   );
 }

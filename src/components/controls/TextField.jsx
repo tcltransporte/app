@@ -3,7 +3,7 @@
 import React from 'react';
 import { TextField as MuiTextField } from '@mui/material';
 
-export const TextField = React.forwardRef(({ transform, field, form, onChange, ...props }, ref) => {
+export const TextField = React.forwardRef(({ transform, field, form, onChange, readOnly, InputProps, ...props }, ref) => {
 
   const handleChange = (e) => {
 
@@ -22,8 +22,13 @@ export const TextField = React.forwardRef(({ transform, field, form, onChange, .
       InputLabelProps={{ shrink: true }}
       size="small"
       ref={ref}
+      InputProps={{
+        readOnly,
+        ...InputProps
+      }}
       {...field}
       {...props}
+      value={field?.value ?? props.value ?? ''}
       onChange={handleChange}
     />
   );

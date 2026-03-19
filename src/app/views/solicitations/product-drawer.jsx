@@ -4,20 +4,17 @@ import React from 'react';
 import { Drawer, Box, Typography, IconButton, Divider, Button, Grid } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Formik, Form, Field } from 'formik';
-import { TextField, AutoComplete, NumericField } from '@/components/controls';
+import { AutoComplete, NumericField } from '@/components/controls';
 import * as search from '@/libs/search';
 
-/**
- * Drawer for adding or editing items (pieces/services).
- */
-export function ItemDrawer({
+export function ProductDrawer({
   open,
   onClose,
   initialValues,
-  onSave,
-  title = 'Produto'
+  onSave
 }) {
   const formikRef = React.useRef(null);
+  
   return (
     <Drawer
       anchor="right"
@@ -26,12 +23,11 @@ export function ItemDrawer({
       PaperProps={{
         sx: { width: { xs: '100%', sm: 500 }, p: 0 }
       }}
-      // Z-index higher than the dialog
       sx={{ zIndex: (theme) => theme.zIndex.modal + 1 }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" fontWeight={700}>{title}</Typography>
+          <Typography variant="h6" fontWeight={700}>Produto</Typography>
           <IconButton onClick={onClose} size="small">
             <CloseIcon fontSize="small" />
           </IconButton>
@@ -40,14 +36,19 @@ export function ItemDrawer({
 
         <Formik
           innerRef={formikRef}
-          initialValues={initialValues || {}}
+          initialValues={{
+          itemId: initialValues?.itemId ?? '',
+          quantity: initialValues?.quantity ?? 1,
+          value: initialValues?.value ?? 0,
+          product: initialValues?.product ?? null,
+        }}
           enableReinitialize
           onSubmit={(values) => {
             onSave(values);
             onClose();
           }}
         >
-          {({ submitForm, setFieldValue }) => (
+          {({ submitForm }) => (
             <Form style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
               <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
                 <Grid container spacing={2}>
@@ -55,21 +56,20 @@ export function ItemDrawer({
                     <Field
                       component={AutoComplete}
                       name="product"
-                      label={title === 'Produto' ? "Produto" : "Serviço"}
+                      label="Produto"
                       fullWidth
                       size="small"
-                      text={(item) => item?.description || item?.name || item?.surname || ''}
-                      onSearch={(value, signal) => title === 'Produto' ? search.product({ search: value }, signal) : search.service({ search: value }, signal)}
+                      text={(item) => item?.description || item?.name || ''}
+                      onSearch={(value, signal) => search.product({ search: value }, signal)}
                       renderSuggestion={(item) => (
                         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                          <Typography variant="body2" fontWeight={600}>{item?.name || item?.surname || item?.description}</Typography>
+                          <Typography variant="body2" fontWeight={600}>{item?.description || item?.name}</Typography>
                           {item?.productCode && (
                             <Typography variant="caption" color="text.secondary">Código: {item.productCode}</Typography>
                           )}
                         </Box>
                       )}
                       onChange={(item, form) => {
-                        // When item changes, we might want to update itemId and value
                         if (item) {
                           form.setFieldValue('itemId', item.id);
                           if (item.defaultPrice) form.setFieldValue('value', item.defaultPrice);

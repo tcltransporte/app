@@ -88,7 +88,6 @@ export function PaymentDrawer({
             isEdit: false,
             totalValue: 0,
             documentNumber: '',
-            costCenterId: '',
             issueDate: new Date().toISOString().substring(0, 16),
             baseDueDate: new Date().toISOString().substring(0, 10),
             installmentsCount: 1,
@@ -113,13 +112,6 @@ export function PaymentDrawer({
                   )}
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <Field component={TextField} name="documentNumber" label="Número do documento" size="small" />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Field component={SelectField} name="costCenterId" label="Centro de custo" size="small" options={[
-                      { value: 1, label: 'Geral' },
-                      { value: 2, label: 'Administrativo' },
-                      { value: 3, label: 'Operacional' },
-                    ]} />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <Field component={TextField} name="issueDate" label="Data emissão" type="datetime-local" size="small" slotProps={{ inputLabel: { shrink: true } }} />

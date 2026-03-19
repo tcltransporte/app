@@ -182,9 +182,8 @@ export async function create(data) {
 export async function update(id, data) {
   try {
 
-    console.log(data)
-
     const session = await getSession()
+
     const db = new AppContext()
 
     await db.transaction(async (transaction) => {
