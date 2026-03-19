@@ -29,43 +29,10 @@ export async function findOne({ db, transaction }, { attributes, include, where 
 
 }
 
-/**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
-* @param {object} data
-* @param {object} options
-* @returns {Promise<object>}
-*/
-export async function create({ db, transaction }, data, options = {}) {
+async function syncAssociations({ db, transaction }, solicitationId, data) {
+  const { products: updatedProducts, services: updatedServices, payments: updatedPayments } = data
 
-  if (!data.number || data.number === 0 || data.number === '0') {
-    const currentMaxNumber = await db.Solicitation.max('number', {
-      where: { typeId: data.typeId, companyId: data.companyId },
-      transaction
-    });
-    data.number = (isNaN(currentMaxNumber) ? 0 : currentMaxNumber) + 1;
-  }
-
-  const solicitation = await db.Solicitation.create(data, { ...options, transaction })
-
-  return solicitation?.toJSON()
-
-}
-
-/**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
-* @param {{ where? }} params
-* @param {object} data
-*/
-export async function update({ db, transaction }, { where }, data) {
-
-  const { products: updatedProducts, services: updatedServices, ...solicitationData } = data
-
-  // 1. Update the parent solicitation record
-  await db.Solicitation.update(solicitationData, { where, transaction })
-
-  const solicitationId = where.id
-
-  // 2. Sync Products
+  // 1. Sync Products
   if (updatedProducts) {
     const existingProducts = await db.SolicitationProduct.findAll({
       where: { solicitationId },
@@ -100,7 +67,7 @@ export async function update({ db, transaction }, { where }, data) {
     }
   }
 
-  // 3. Sync Services
+  // 2. Sync Services
   if (updatedServices) {
     const existingServices = await db.SolicitationService.findAll({
       where: { solicitationId },
@@ -134,6 +101,90 @@ export async function update({ db, transaction }, { where }, data) {
       }
     }
   }
+
+  // 3. Sync Payments (SolicitationFinance - Flat list)
+  if (updatedPayments) {
+    const incomingPayments = updatedPayments
+
+    const existingPayments = await db.SolicitationFinance.findAll({
+      where: { solicitationId },
+      transaction
+    })
+
+    const existingIds = existingPayments.map(p => p.id)
+    const incomingIds = incomingPayments
+      .filter(p => typeof p.id === 'number' && p.id < 1000000000000)
+      .map(p => p.id)
+
+    // Delete removed
+    const toDelete = existingIds.filter(id => !incomingIds.includes(id))
+    if (toDelete.length > 0) {
+      await db.SolicitationFinance.destroy({
+        where: { id: { [Op.in]: toDelete } },
+        transaction
+      })
+    }
+
+    // Update or Create
+    for (const item of incomingPayments) {
+      const { id, isEdit, paymentId, ...paymentData } = item
+      if (typeof id === 'number' && id < 1000000000000) {
+        await db.SolicitationFinance.update(paymentData, {
+          where: { id },
+          transaction
+        })
+      } else {
+        await db.SolicitationFinance.create({
+          ...paymentData,
+          solicitationId
+        }, { transaction })
+      }
+    }
+  }
+}
+
+/**
+* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {object} data
+* @param {object} options
+* @returns {Promise<object>}
+*/
+export async function create({ db, transaction }, data, options = {}) {
+
+  if (!data.number || data.number === 0 || data.number === '0') {
+    const currentMaxNumber = await db.Solicitation.max('number', {
+      where: { typeId: data.typeId, companyId: data.companyId },
+      transaction
+    });
+    data.number = (isNaN(currentMaxNumber) ? 0 : currentMaxNumber) + 1;
+  }
+
+  const { products, services, payments, ...solicitationData } = data
+
+  const solicitation = await db.Solicitation.create(solicitationData, { ...options, transaction })
+
+  await syncAssociations({ db, transaction }, solicitation.id, { products, services, payments })
+
+  return solicitation?.toJSON()
+
+}
+
+/**
+* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {{ where? }} params
+* @param {object} data
+*/
+export async function update({ db, transaction }, { where }, data) {
+
+  const { products, services, payments, ...solicitationData } = data
+
+  // 1. Update the parent solicitation record
+  await db.Solicitation.update(solicitationData, { where, transaction })
+
+  const solicitationId = where.id
+
+  await syncAssociations({ db, transaction }, solicitationId, { products, services, payments })
+
 }
 
 /**

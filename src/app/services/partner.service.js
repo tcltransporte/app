@@ -4,7 +4,7 @@ import { Op } from 'sequelize'
 import * as partnerRepository from "@/app/repositories/partner.repository"
 
 import { AppContext } from "@/database"
-import { ServiceResponse, ServiceStatus } from "@/libs/service"
+import { ServiceResponse, ServiceStatus, sanitize } from "@/libs/service"
 import { getSession } from "@/libs/session"
 import { handleGoogleSheetsExport, handleExcelExport } from "@/libs/export-helper"
 
@@ -134,9 +134,10 @@ export async function create(data) {
     const db = new AppContext()
 
     const result = await db.transaction(async (transaction) => {
+      const finalData = sanitize(data)
 
       return partnerRepository.create({ db, transaction }, {
-        ...data,
+        ...finalData,
         companyBusinessId: session.company.companyBusiness.id,
         companyId: session.company.id,
         isActive: true
@@ -170,7 +171,9 @@ export async function update(id, data) {
       if (!existing)
         throw ServiceResponse.badRequest("PARTNER_NOT_FOUND", "Parceiro não encontrado!")
 
-      await partnerRepository.update({ db, transaction }, { where: { id: id } }, data)
+      const finalData = sanitize(data)
+
+      await partnerRepository.update({ db, transaction }, { where: { id: id } }, finalData)
 
     })
 

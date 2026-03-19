@@ -11,10 +11,11 @@ import { Session } from './models/session.model.js'
 import { Partner } from './models/partner.model.js'
 import { SolicitationType } from './models/solicitationType.model.js'
 import { SolicitationRequestType } from './models/solicitationRequestType.model.js'
-import { SolicitationProduct } from './models/solicitationProduct.model.js'
 import { SolicitationService } from './models/solicitationService.model.js'
+import { SolicitationFinance } from './models/solicitationFinance.model.js'
 import { Product } from './models/product.model.js'
 import { Service } from './models/service.model.js'
+import { SolicitationProduct } from './models/solicitationProduct.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -34,33 +35,6 @@ const afterFind = (result) => {
 
 export class AppContext extends Sequelize {
 
-  Company = this.define('company', new Company(), { tableName: 'empresa_filial' })
-
-  Solicitation = this.define('solicitation', new Solicitation(), { tableName: 'Solicitacao' })
-
-  CompanyBusiness = this.define('companyBusiness', new CompanyBusiness(), { tableName: 'empresa' })
-
-  CompanyUser = this.define('companyUser', new CompanyUser(), { tableName: 'companyUser' })
-
-  Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
-
-  SolicitationType = this.define('solicitationType', new SolicitationType(), { tableName: 'SolicitacaoTipo' })
-
-  SolicitationRequestType = this.define('solicitationRequestType', new SolicitationRequestType(), { tableName: 'solicitationRequestType' })
-
-  SolicitationProduct = this.define('solicitationProduct', new SolicitationProduct(), { tableName: 'SolicitacaoPecaUtilizada' })
-  SolicitationService = this.define('solicitationService', new SolicitationService(), { tableName: 'SolicitacaoServicoRealizado' })
-
-  Product = this.define('product', new Product(), { tableName: 'ItemEstoque' })
-
-  Service = this.define('service', new Service(), { tableName: 'TipoServico' })
-
-  Session = this.define('session', new Session(), { tableName: 'Session' })
-
-  User = this.define('user', new User(), { tableName: 'aspnet_Users' })
-
-  UserMember = this.define('userMember', new UserMember(), { tableName: 'aspnet_Membership' })
-
   constructor() {
 
     super({
@@ -72,6 +46,36 @@ export class AppContext extends Sequelize {
         console.log(query)
       },
     })
+
+    this.Company = this.define('company', new Company(), { tableName: 'empresa_filial' })
+
+    this.Solicitation = this.define('solicitation', new Solicitation(), { tableName: 'Solicitacao' })
+
+    this.CompanyBusiness = this.define('companyBusiness', new CompanyBusiness(), { tableName: 'empresa' })
+
+    this.CompanyUser = this.define('companyUser', new CompanyUser(), { tableName: 'companyUser' })
+
+    this.Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
+
+    this.SolicitationType = this.define('solicitationType', new SolicitationType(), { tableName: 'SolicitacaoTipo' })
+
+    this.SolicitationRequestType = this.define('solicitationRequestType', new SolicitationRequestType(), { tableName: 'solicitationRequestType' })
+
+    this.SolicitationProduct = this.define('solicitationProduct', new SolicitationProduct(), { tableName: 'SolicitacaoPecaUtilizada' })
+
+    this.SolicitationService = this.define('solicitationService', new SolicitationService(), { tableName: 'SolicitacaoServicoRealizado' })
+
+    this.SolicitationFinance = this.define('solicitationFinance', new SolicitationFinance(), { tableName: 'SolicitacaoFinanceiro' })
+
+    this.Product = this.define('product', new Product(), { tableName: 'ItemEstoque' })
+
+    this.Service = this.define('service', new Service(), { tableName: 'TipoServico' })
+
+    this.Session = this.define('session', new Session(), { tableName: 'Session' })
+
+    this.User = this.define('user', new User(), { tableName: 'aspnet_Users' })
+
+    this.UserMember = this.define('userMember', new UserMember(), { tableName: 'aspnet_Membership' })
 
     //this.Company.belongsTo(this.City, { as: 'city', foreignKey: 'CodigoMunicipio', onDelete: 'CASCADE' })
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
@@ -101,6 +105,9 @@ export class AppContext extends Sequelize {
     this.SolicitationProduct.belongsTo(this.Product, { as: 'product', foreignKey: 'itemId' })
     this.SolicitationService.belongsTo(this.Service, { as: 'service', foreignKey: 'itemId' })
 
+    this.Solicitation.hasMany(this.SolicitationFinance, { as: 'payments', foreignKey: 'solicitationId' })
+    this.SolicitationFinance.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
+
     this.SolicitationProduct.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
 
 
@@ -119,6 +126,7 @@ export class AppContext extends Sequelize {
     this.Solicitation.addHook('afterFind', afterFind)
     this.SolicitationProduct.addHook('afterFind', afterFind)
     this.SolicitationService.addHook('afterFind', afterFind)
+    this.SolicitationFinance.addHook('afterFind', afterFind)
     this.Product.addHook('afterFind', afterFind)
 
 

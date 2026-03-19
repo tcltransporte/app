@@ -3,7 +3,7 @@
 import { Op } from 'sequelize'
 import * as typeRepository from "@/app/repositories/solicitationType.repository"
 import { AppContext } from "@/database"
-import { ServiceResponse, ServiceStatus } from "@/libs/service"
+import { ServiceResponse, ServiceStatus, sanitize } from "@/libs/service"
 import { getSession } from "@/libs/session"
 
 export async function findAll({ page = 1, limit = 50, filters = {} } = {}) {
@@ -77,6 +77,8 @@ export async function create(data) {
     const db = new AppContext()
 
     const result = await db.transaction(async (transaction) => {
+      const finalData = sanitize(data)
+
       // Get current max order to append at the end
       const maxOrder = await db.SolicitationType.max('order', { 
         where: { companyId: session.company.id },
@@ -84,7 +86,7 @@ export async function create(data) {
       }) || 0;
 
       return typeRepository.create({ db, transaction }, {
-        ...data,
+        ...finalData,
         order: maxOrder + 1,
         companyId: session.company.id
       })
@@ -114,7 +116,9 @@ export async function update(id, data) {
       if (!existing)
         throw ServiceResponse.badRequest("TYPE_NOT_FOUND", "Tipo de solicitação não encontrado!")
 
-      await typeRepository.update({ db, transaction }, { where: { id: id } }, data)
+      const finalData = sanitize(data)
+
+      await typeRepository.update({ db, transaction }, { where: { id: id } }, finalData)
     })
 
     return ServiceResponse.success({ id })

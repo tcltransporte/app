@@ -20,16 +20,17 @@ import {
 import { MoreVert as MoreVertIcon } from '@mui/icons-material';
 
 /**
- * A themed section with a header and a table for listing solicitation items (pieces or services).
+ * A themed section with a header and a table for listing items with a consistent pattern.
  */
-export const SectionItemTable = ({
+export const SectionTable = ({
   title,
   columns = [],
   items = [],
   onAdd,
   onEdit,
   onDelete,
-  actions = []
+  actions = [],
+  emptyMessage = "Não há itens na tabela."
 }) => {
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -107,12 +108,12 @@ export const SectionItemTable = ({
             {items.length === 0 && (
               <TableRow>
                 <TableCell colSpan={columns.length + 1} align="left" sx={{ pt: 1, pb: 1, px: 2, color: 'text.secondary', fontSize: '0.825rem' }}>
-                  Não há itens na tabela.
+                  {emptyMessage}
                 </TableCell>
               </TableRow>
             )}
             {items.map((item, index) => (
-              <TableRow key={item.id || index} hover onDoubleClick={() => onEdit(item, index)}>
+              <TableRow key={item.id || index} hover onDoubleClick={() => onEdit && onEdit(item, index)}>
                 {columns.map((col) => (
                   <TableCell key={col.field} sx={{ fontSize: '0.825rem', py: 0.5 }}>
                     {col.renderCell ? col.renderCell(item[col.field], item) : item[col.field]}
@@ -151,8 +152,8 @@ export const SectionItemTable = ({
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
       >
-        <MenuItem onClick={() => { onEdit(selectedItem, selectedIndex); handleCloseMenu(); }}>Editar</MenuItem>
-        <MenuItem onClick={() => { onDelete(selectedItem, selectedIndex); handleCloseMenu(); }} sx={{ color: 'error.main' }}>Excluir</MenuItem>
+        <MenuItem onClick={() => { onEdit && onEdit(selectedItem, selectedIndex); handleCloseMenu(); }}>Editar</MenuItem>
+        <MenuItem onClick={() => { onDelete && onDelete(selectedItem, selectedIndex); handleCloseMenu(); }} sx={{ color: 'error.main' }}>Excluir</MenuItem>
       </Menu>
     </Box>
   );

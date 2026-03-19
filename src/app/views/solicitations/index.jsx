@@ -28,10 +28,11 @@ export default function SolicitationView({
   initialRange,
   dateFieldOptions = [],
   typeHash,
-  solicitationType
+  solicitationType,
+  selectedId
 }) {
 
-  const navigation = useNavigation(`/solicitations/${typeHash}`, undefined)
+  const navigation = useNavigation(`/solicitations/${typeHash}`, selectedId)
 
   const table = useTable({ initialTable })
   const filter = useFilter(initialFilters)

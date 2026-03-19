@@ -4,7 +4,7 @@ import { Op } from 'sequelize'
 import * as solicitationRepository from "@/app/repositories/solicitation.repository"
 import * as typeRepository from "@/app/repositories/solicitationType.repository"
 import { AppContext } from "@/database"
-import { ServiceResponse, ServiceStatus } from "@/libs/service"
+import { ServiceResponse, ServiceStatus, sanitize } from "@/libs/service"
 import { getSession } from "@/libs/session"
 import { handleGoogleSheetsExport, handleExcelExport } from "@/libs/export-helper"
 
@@ -116,25 +116,31 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
 
 export async function findOne(id) {
   try {
+
     const session = await getSession()
+
     const db = new AppContext()
 
     const result = await db.transaction(async (transaction) => {
       const solicitation = await solicitationRepository.findOne({ db, transaction }, {
+        attributes: ['id', 'description', 'number', 'date', 'forecastDate', 'typeId', 'statusId', 'partnerId'],
         where: {
           id: id,
-          companyId: session.company.id
+          //companyId: session.company.id
         },
         include: [
           { association: 'partner', attributes: ['name', 'surname'] },
           {
             association: 'products',
-            include: [{ association: 'product', attributes: ['name', 'productCode', 'description'] }]
+            attributes: ['id', 'itemId', 'quantity', 'value', 'supplierId'],
+            include: [{ association: 'product', attributes: ['name', 'productCode'] }]
           },
           {
             association: 'services',
+            attributes: ['id', 'itemId', 'quantity', 'value', 'supplierId', 'description'],
             include: [{ association: 'service', attributes: ['name'] }]
-          }
+          },
+          { association: 'payments', attributes: ['id', 'documentNumber', 'dueDate', 'issueDate', 'costCenterId', 'value', 'description', 'installment'] }
         ]
       })
 
@@ -142,54 +148,11 @@ export async function findOne(id) {
         throw ServiceResponse.badRequest("SOLICITATION_NOT_FOUND", "Solicitação não encontrada!")
 
       return solicitation
+
     })
 
     return ServiceResponse.success(result)
 
-  } catch (error) {
-    return ServiceResponse.error(error)
-  }
-}
-
-export async function findProducts(solicitationId) {
-  try {
-    const db = new AppContext()
-    const result = await solicitationRepository.findProductAll({ db }, {
-      where: { solicitationId },
-      include: [{ association: 'product', attributes: ['name', 'productCode', 'description'] }]
-    })
-    return ServiceResponse.success({ items: result.rows })
-  } catch (error) {
-    return ServiceResponse.error(error)
-  }
-}
-
-export async function upsertProduct(solicitationId, data) {
-  try {
-    const db = new AppContext()
-    const result = await db.transaction(async (transaction) => {
-      // Sanitize data: remove nested objects that shouldn't be saved directly
-      const { item, service, ...saveData } = data
-
-      if (saveData.id && String(saveData.id).length < 10) { // Simple check for existing ID vs temp Date.now()
-        await solicitationRepository.updateProduct({ db, transaction }, { where: { id: saveData.id, solicitationId } }, saveData)
-        return { id: saveData.id }
-      } else {
-        const { id, ...createData } = saveData
-        return solicitationRepository.createProduct({ db, transaction }, { ...createData, solicitationId })
-      }
-    })
-    return ServiceResponse.success(result)
-  } catch (error) {
-    return ServiceResponse.error(error)
-  }
-}
-
-export async function deleteProduct(id) {
-  try {
-    const db = new AppContext()
-    await solicitationRepository.destroyProduct({ db }, { where: { id } })
-    return ServiceResponse.success({ id })
   } catch (error) {
     return ServiceResponse.error(error)
   }
@@ -226,7 +189,8 @@ export async function create(data) {
       }, {
         include: [
           { association: 'products' },
-          { association: 'services' }
+          { association: 'services' },
+          { association: 'payments' }
         ]
       })
     })
@@ -241,9 +205,8 @@ export async function create(data) {
 export async function update(id, data) {
   try {
 
-    console.log(data)
-
     const session = await getSession()
+
     const db = new AppContext()
 
     await db.transaction(async (transaction) => {
@@ -272,6 +235,7 @@ export async function update(id, data) {
       delete finalData.partner
 
       await solicitationRepository.update({ db, transaction }, { where: { id: id } }, finalData)
+
     })
 
     return ServiceResponse.success({ id })
@@ -301,28 +265,7 @@ export async function destroy(id) {
     })
 
     return ServiceResponse.success({ id })
-
   } catch (error) {
     return ServiceResponse.error(error)
   }
-}
-
-function sanitize(data) {
-  if (Array.isArray(data)) {
-    return data.map(sanitize)
-  }
-
-  if (data !== null && typeof data === 'object' && !(data instanceof Date)) {
-    const sanitized = {}
-    for (const key in data) {
-      sanitized[key] = sanitize(data[key])
-    }
-    return sanitized
-  }
-
-  if (data === '' || data === 'Invalid date') {
-    return null
-  }
-
-  return data
 }

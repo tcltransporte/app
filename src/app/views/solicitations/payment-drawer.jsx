@@ -27,7 +27,10 @@ import { TextField, SelectField, NumericField } from '@/components/controls';
 const InstallmentsLogic = () => {
   const { values, setFieldValue } = useFormikContext();
 
+  const { isEdit } = values;
   React.useEffect(() => {
+    if (isEdit) return; // Don't auto-generate if editing one specifically
+
     const count = parseInt(values.installmentsCount) || 0;
     const total = parseFloat(values.totalValue) || 0;
     const baseDate = values.baseDueDate ? new Date(values.baseDueDate) : new Date();
@@ -38,7 +41,8 @@ const InstallmentsLogic = () => {
         const dueDate = new Date(baseDate);
         dueDate.setMonth(dueDate.getMonth() + i);
         return {
-          id: i + 1,
+          id: `new_${Date.now()}_${i}`,
+          installment: i + 1,
           value: parseFloat(perInstallment),
           dueDate: dueDate.toISOString().split('T')[0]
         };
@@ -80,10 +84,11 @@ export function PaymentDrawer({
         <Divider />
 
         <Formik
-          initialValues={initialValues || {
+          initialValues={initialValues ? { ...initialValues, isEdit: true } : {
+            isEdit: false,
             totalValue: 0,
             documentNumber: '',
-            costCenter: 'Geral',
+            costCenterId: '',
             issueDate: new Date().toISOString().substring(0, 16),
             baseDueDate: new Date().toISOString().substring(0, 10),
             installmentsCount: 1,
@@ -101,84 +106,103 @@ export function PaymentDrawer({
               <InstallmentsLogic />
               <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Field component={NumericField} name="totalValue" label="Valor Total" size="small" />
-                  </Grid>
+                  {!values.isEdit && (
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Field component={NumericField} name="totalValue" label="Valor Total" size="small" />
+                    </Grid>
+                  )}
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <Field component={TextField} name="documentNumber" label="Número do documento" size="small" />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 4 }}>
-                    <Field component={SelectField} name="costCenter" label="Centro de custo" size="small" options={[
-                      { value: 'Geral', label: 'Geral' },
-                      { value: 'Administrativo', label: 'Administrativo' },
-                      { value: 'Operacional', label: 'Operacional' },
+                    <Field component={SelectField} name="costCenterId" label="Centro de custo" size="small" options={[
+                      { value: 1, label: 'Geral' },
+                      { value: 2, label: 'Administrativo' },
+                      { value: 3, label: 'Operacional' },
                     ]} />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <Field component={TextField} name="issueDate" label="Data emissão" type="datetime-local" size="small" slotProps={{ inputLabel: { shrink: true } }} />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Field component={TextField} name="baseDueDate" label="Data base vencimento" type="date" size="small" slotProps={{ inputLabel: { shrink: true } }} />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 4 }}>
-                    <Field component={SelectField} name="installmentsCount" label="Quantidade de parcelas" size="small" options={
-                      Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1} Parcela${i > 0 ? 's' : ''}` }))
-                    } />
-                  </Grid>
+                  {values.isEdit ? (
+                    <>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <Field component={NumericField} name="value" label="Valor" size="small" />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <Field component={TextField} name="dueDate" label="Vencimento" type="date" size="small" slotProps={{ inputLabel: { shrink: true } }} />
+                      </Grid>
+                    </>
+                  ) : (
+                    <>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <Field component={TextField} name="baseDueDate" label="Data base vencimento" type="date" size="small" slotProps={{ inputLabel: { shrink: true } }} />
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <Field component={SelectField} name="installmentsCount" label="Quantidade de parcelas" size="small" options={
+                          Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1} Parcela${i > 0 ? 's' : ''}` }))
+                        } />
+                      </Grid>
+                    </>
+                  )}
 
                   <Grid size={12}>
                     <Field component={TextField} name="description" label="Descrição" fullWidth size="small" />
                   </Grid>
 
-                  <Grid size={12}>
-                    <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
-                      <Table size="small">
-                        <TableHead sx={{ bgcolor: 'grey.100' }}>
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 700 }}>ID</TableCell>
-                            <TableCell sx={{ fontWeight: 700 }}>Valor Parcela</TableCell>
-                            <TableCell sx={{ fontWeight: 700 }}>Data Vencimento</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {values.installments.map((inst, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell>{inst.id}</TableCell>
-                              <TableCell>
-                                <Field
-                                  component={NumericField}
-                                  name={`installments[${idx}].value`}
-                                  sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Field
-                                  component={TextField}
-                                  name={`installments[${idx}].dueDate`}
-                                  size="small"
-                                  type="date"
-                                  sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-                                />
-                              </TableCell>
+                  {!values.isEdit && (
+                    <Grid size={12}>
+                      <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
+                        <Table size="small">
+                          <TableHead sx={{ bgcolor: 'grey.100' }}>
+                            <TableRow>
+                              <TableCell sx={{ fontWeight: 700 }}>ID</TableCell>
+                              <TableCell sx={{ fontWeight: 700 }}>Valor Parcela</TableCell>
+                              <TableCell sx={{ fontWeight: 700 }}>Data Vencimento</TableCell>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Grid>
+                          </TableHead>
+                          <TableBody>
+                            {values.installments.map((inst, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell>{inst.id}</TableCell>
+                                <TableCell>
+                                  <Field
+                                    component={NumericField}
+                                    name={`installments[${idx}].value`}
+                                    sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Field
+                                    component={TextField}
+                                    name={`installments[${idx}].dueDate`}
+                                    size="small"
+                                    type="date"
+                                    sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Grid>
+                  )}
                 </Grid>
               </Box>
 
               <Divider />
               <Box sx={{ p: 2, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  color="warning"
-                  onClick={() => setFieldValue('installments', [])}
-                  sx={{ textTransform: 'none', fontWeight: 600, bgcolor: '#ffb300', '&:hover': { bgcolor: '#ffa000' } }}
-                >
-                  Limpar Data Parcelas
-                </Button>
+                {!values.isEdit && (
+                  <Button
+                    variant="contained"
+                    color="warning"
+                    onClick={() => setFieldValue('installments', [])}
+                    sx={{ textTransform: 'none', fontWeight: 600, bgcolor: '#ffb300', '&:hover': { bgcolor: '#ffa000' } }}
+                  >
+                    Novo
+                  </Button>
+                )}
                 <Button
                   variant="contained"
                   color="success"

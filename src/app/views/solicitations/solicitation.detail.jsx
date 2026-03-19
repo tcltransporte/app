@@ -5,7 +5,7 @@ import { Formik, Form, Field } from 'formik';
 import { Grid, Button, Divider } from '@mui/material';
 import { Dialog } from '@/components/common';
 import { TextField, SelectField, AutoComplete } from '@/components/controls';
-import { SectionItemTable } from './section-item-table';
+import { SectionTable } from '@/components/common/SectionTable';
 import { ItemDrawer } from './item-drawer';
 import { PaymentDrawer } from './payment-drawer';
 import * as solicitationService from '@/app/services/solicitation.service';
@@ -24,6 +24,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
   const [drawer, setDrawer] = React.useState({ open: false, type: 'product', item: null, index: -1 });
 
   React.useEffect(() => {
+
     if (solicitationId === undefined || solicitationId === null) {
       setData({});
       formikRef.current?.resetForm();
@@ -33,11 +34,18 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
     setLoading(true)
     solicitationService.findOne(solicitationId)
       .then(result => {
-        if (result.status === 200) {
-          setData(result);
+
+        if (result.status !== ServiceStatus.SUCCESS) {
+          throw result
         }
+
+        setData(result);
+
       })
-      .catch(console.error)
+      .catch((error) => {
+        alert.error('Erro ao buscar solicitação', error.message);
+        console.log(error)
+      })
       .finally(() => setLoading(false))
   }, [solicitationId])
 
@@ -97,6 +105,36 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
     formikRef.current?.setFieldValue(fieldName, newList);
   }
 
+  const handleSavePayment = (values) => {
+    const list = formikRef.current?.values.payments || [];
+    let newList;
+
+    if (drawer.index !== undefined && drawer.index >= 0) {
+      // Editing a single installment
+      newList = [...list];
+      newList[drawer.index] = { ...newList[drawer.index], ...values };
+    } else {
+      // Adding new payment (possibly multiple installments)
+      const commonData = {
+        documentNumber: values.documentNumber,
+        costCenterId: values.costCenterId, // This might be in the installment instead
+        description: values.description,
+        issueDate: values.issueDate,
+      };
+
+      const newInstallments = values.installments.map(inst => ({
+        ...commonData,
+        ...inst,
+        // Ensure decimal values are numbers
+        value: parseFloat(inst.value)
+      }));
+
+      newList = [...list, ...newInstallments];
+    }
+
+    formikRef.current?.setFieldValue('payments', newList);
+  }
+
   const handleDeleteItem = (type, item, index) => {
     const fieldName = type === 'product' ? 'products' : type === 'service' ? 'services' : 'payments';
     const list = formikRef.current?.values[fieldName] || [];
@@ -125,10 +163,25 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
 
   const paymentColumns = [
     { field: 'documentNumber', headerName: 'Número Doc.' },
-    { field: 'costCenter', headerName: 'Centro de Custo' },
-    { field: 'installmentsCount', headerName: 'Parc.', width: 80, align: 'center' },
     {
-      field: 'totalValue', headerName: 'Valor Total', width: 150, align: 'right',
+      field: 'costCenterId',
+      headerName: 'C. Custo',
+      renderCell: (val) => {
+        const centers = { 1: 'Geral', 2: 'Administrativo', 3: 'Operacional' };
+        return centers[val] || val || '';
+      }
+    },
+    {
+      field: 'dueDate',
+      headerName: 'Vencimento',
+      width: 120,
+      renderCell: (val) => val ? new Date(val).toLocaleDateString('pt-BR') : ''
+    },
+    {
+      field: 'value',
+      headerName: 'Valor',
+      width: 130,
+      align: 'right',
       renderCell: (val) => val?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     },
     { field: 'description', headerName: 'Descrição' },
@@ -187,7 +240,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
                   <Grid size={12}>
                     <Field name="products">
                       {({ field }) => (
-                        <SectionItemTable
+                        <SectionTable
                           title="Produtos"
                           columns={columns}
                           items={field.value}
@@ -204,7 +257,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
                   <Grid size={12}>
                     <Field name="services">
                       {({ field }) => (
-                        <SectionItemTable
+                        <SectionTable
                           title="Serviços"
                           columns={columns}
                           items={field.value}
@@ -220,7 +273,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
                   <Grid size={12}>
                     <Field name="payments">
                       {({ field }) => (
-                        <SectionItemTable
+                        <SectionTable
                           title="Pagamento"
                           columns={paymentColumns}
                           items={field.value}
@@ -250,21 +303,20 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, ty
           </Dialog>
         )}
       </Formik>
-
-      {drawer.type === 'payment' ? (
-        <PaymentDrawer
-          open={drawer.open}
-          onClose={() => setDrawer({ ...drawer, open: false })}
-          initialValues={drawer.item}
-          onSave={handleSaveItem}
-        />
-      ) : (
+      {drawer.type !== 'payment' ? (
         <ItemDrawer
           open={drawer.open}
           onClose={() => setDrawer({ ...drawer, open: false })}
           title={drawer.type === 'product' ? 'Produto' : 'Serviço'}
           initialValues={drawer.item ? { ...drawer.item, product: drawer.item.product || drawer.item.service } : { itemId: '', quantity: 1, value: 0, vehicleId: '', supplierId: '' }}
           onSave={handleSaveItem}
+        />
+      ) : (
+        <PaymentDrawer
+          open={drawer.open}
+          onClose={() => setDrawer({ ...drawer, open: false })}
+          initialValues={drawer.item}
+          onSave={handleSavePayment}
         />
       )}
     </>

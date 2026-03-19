@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 export default async function SolicitationPage({ params }) {
   const { hash } = await params;
   const typeHash = Array.isArray(hash) ? hash[0] : hash;
+  const selectedId = Array.isArray(hash) && hash.length > 1 ? hash[1] : undefined;
 
   const session = await getSession();
   if (!session) redirect('/sign-in');
@@ -30,7 +31,7 @@ export default async function SolicitationPage({ params }) {
   const initialFilters = { typeHash };
   const initialRange = { start: today, end: today, field: 'date' };
 
-  const solicitationsResp = await solicitationService.findAll({ 
+  const solicitationsResp = await solicitationService.findAll({
     page: 1,
     limit: 50,
     filters: initialFilters,
@@ -38,19 +39,22 @@ export default async function SolicitationPage({ params }) {
     sortBy: 'date',
     sortOrder: 'DESC'
   });
-  
+
   const initialTable = solicitationsResp.status === ServiceStatus.SUCCESS
     ? { items: solicitationsResp.items || [], total: solicitationsResp.total || 0 }
     : { items: [], total: 0 };
 
+  console.log(solicitationType)
+
   return (
-    <SolicitationView 
+    <SolicitationView
       initialTable={initialTable}
       initialFilters={initialFilters}
       initialRange={initialRange}
       dateFieldOptions={dateFieldOptions}
       typeHash={typeHash}
       solicitationType={solicitationType}
+      selectedId={selectedId}
     />
   );
 }
