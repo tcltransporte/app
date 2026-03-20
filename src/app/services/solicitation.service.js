@@ -248,3 +248,85 @@ export async function findAllStatuses() {
     return ServiceResponse.error(error)
   }
 }
+
+export async function findAllowedTransitions(fromStatusIds) {
+  try {
+    const db = new AppContext()
+    
+    // If no status is provided, we can't determine allowed transitions
+    if (!fromStatusIds || fromStatusIds.length === 0) {
+      return ServiceResponse.success({ items: [] })
+    }
+
+    const uniqueFromStatusIds = [...new Set(fromStatusIds)]
+    
+    // Find transitions for each unique status
+    const allowedByStatus = await Promise.all(
+      uniqueFromStatusIds.map(async (fromId) => {
+        const transitions = await db.SolicitationStatusWorkflow.findAll({
+          where: { fromStatusId: fromId },
+          include: [{ as: 'toStatus', model: db.SolicitationStatus }]
+        })
+        return transitions.map(t => t.toStatus.get({ plain: true }))
+      })
+    )
+
+    // Find intersection of allowed statuses
+    if (allowedByStatus.length === 0) return ServiceResponse.success({ items: [] })
+    
+    let intersection = allowedByStatus[0]
+    for (let i = 1; i < allowedByStatus.length; i++) {
+      intersection = intersection.filter(status => 
+        allowedByStatus[i].some(s => s.id === status.id)
+      )
+    }
+
+    return ServiceResponse.success({ items: intersection })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function findAllStatusRelationships() {
+  try {
+    const db = new AppContext()
+    const relationships = await db.SolicitationStatusWorkflow.findAll()
+    return ServiceResponse.success({ items: relationships.map(r => r.get({ plain: true })) })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function updateStatusRelationships(fromStatusId, toStatusIds) {
+  try {
+    const db = new AppContext()
+    
+    // We update within a transaction to ensure atomicity
+    const transaction = await db.transaction()
+    
+    try {
+      // 1. Delete existing transitions for this source
+      await db.SolicitationStatusWorkflow.destroy({ 
+        where: { fromStatusId },
+        transaction 
+      })
+      
+      // 2. Insert new transitions
+      if (toStatusIds && toStatusIds.length > 0) {
+        const newTransitions = toStatusIds.map(toId => ({
+          fromStatusId,
+          toStatusId: toId
+        }))
+        await db.SolicitationStatusWorkflow.bulkCreate(newTransitions, { transaction })
+      }
+      
+      await transaction.commit()
+      return ServiceResponse.success({ message: 'Fluxo atualizado!' })
+    } catch (err) {
+      await transaction.rollback()
+      throw err
+    }
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}

@@ -35,7 +35,7 @@ export default function SolicitationView({
 
   const navigation = useNavigation(`/solicitations/${solicitationType?.hash}`, selectedId)
 
-  const [statusDrawer, setStatusDrawer] = React.useState({ open: false, selectedIds: [] });
+  const [statusDrawer, setStatusDrawer] = React.useState({ open: false, selectedIds: [], fromStatusIds: [] });
 
   const table = useTable({ initialTable })
   const filter = useFilter(initialFilters)
@@ -171,7 +171,7 @@ export default function SolicitationView({
               sx={{ p: 0 }}
               onClick={(e) => {
                 e.stopPropagation();
-                setStatusDrawer({ open: true, selectedIds: [row.id] });
+                setStatusDrawer({ open: true, selectedIds: [row.id], fromStatusIds: [row.statusId] });
               }}
             >
               <StatusIcon sx={{ fontSize: 18 }} />
@@ -199,7 +199,11 @@ export default function SolicitationView({
         icon: <StatusIcon />,
         variant: 'outlined',
         color: 'primary',
-        onClick: () => setStatusDrawer({ open: true, selectedIds: table.selecteds.map(s => s.id) })
+        onClick: () => setStatusDrawer({ 
+          open: true, 
+          selectedIds: table.selecteds.map(s => s.id),
+          fromStatusIds: table.selecteds.map(s => s.statusId)
+        })
       },
     ] : []),
     ...(table.selecteds.length === 1 ? [
@@ -312,6 +316,7 @@ export default function SolicitationView({
         <StatusDrawer
           open={statusDrawer.open}
           selectedIds={statusDrawer.selectedIds}
+          fromStatusIds={statusDrawer.fromStatusIds}
           onClose={() => setStatusDrawer({ ...statusDrawer, open: false })}
           onSave={() => fetchTable()}
         />

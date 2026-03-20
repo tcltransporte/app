@@ -17,6 +17,7 @@ import { Product } from './models/product.model.js'
 import { Service } from './models/service.model.js'
 import { SolicitationProduct } from './models/solicitationProduct.model.js'
 import { SolicitationStatus } from './models/solicitationStatus.model.js'
+import { SolicitationStatusWorkflow } from './models/solicitationStatusWorkflow.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -55,6 +56,7 @@ export class AppContext extends Sequelize {
     this.Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
     this.SolicitationType = this.define('solicitationType', new SolicitationType(), { tableName: 'SolicitacaoTipo' })
     this.SolicitationStatus = this.define('solicitationStatus', new SolicitationStatus(), { tableName: 'SolicitacaoStatus' })
+    this.SolicitationStatusWorkflow = this.define('solicitationStatusWorkflow', new SolicitationStatusWorkflow(), { tableName: 'SolicitacaoStatusWorkflow' })
     this.SolicitationRequestType = this.define('solicitationRequestType', new SolicitationRequestType(), { tableName: 'solicitationRequestType' })
     this.SolicitationProduct = this.define('solicitationProduct', new SolicitationProduct(), { tableName: 'SolicitacaoPecaUtilizada' })
     this.SolicitationService = this.define('solicitationService', new SolicitationService(), { tableName: 'SolicitacaoServicoRealizado' })
@@ -89,6 +91,9 @@ export class AppContext extends Sequelize {
     this.Solicitation.hasMany(this.SolicitationService, { as: 'services', foreignKey: 'solicitationId' })
     this.Solicitation.hasMany(this.SolicitationFinance, { as: 'payments', foreignKey: 'solicitationId' })
 
+    this.SolicitationStatusWorkflow.belongsTo(this.SolicitationStatus, { as: 'fromStatus', foreignKey: 'fromStatusId' })
+    this.SolicitationStatusWorkflow.belongsTo(this.SolicitationStatus, { as: 'toStatus', foreignKey: 'toStatusId' })
+
     this.SolicitationProduct.belongsTo(this.Product, { as: 'product', foreignKey: 'itemId' })
     this.SolicitationService.belongsTo(this.Service, { as: 'service', foreignKey: 'itemId' })
     this.SolicitationFinance.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
@@ -106,6 +111,7 @@ export class AppContext extends Sequelize {
     this.SolicitationRequestType.addHook('afterFind', afterFind)
     this.Solicitation.addHook('afterFind', afterFind)
     this.SolicitationStatus.addHook('afterFind', afterFind)
+    this.SolicitationStatusWorkflow.addHook('afterFind', afterFind)
     this.SolicitationProduct.addHook('afterFind', afterFind)
     this.SolicitationService.addHook('afterFind', afterFind)
     this.SolicitationFinance.addHook('afterFind', afterFind)
