@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Badge, IconButton as MuiIconButton, Tooltip, Box, Typography } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -10,11 +11,12 @@ import {
   Edit as EditIcon,
   Download as DownloadIcon,
   Google as GoogleIcon,
+  Autorenew as StatusIcon,
 } from '@mui/icons-material';
-import { Badge } from '@mui/material';
 
 import SolicitationDetail from './solicitation.detail';
 import SolicitationFilter from './filter';
+import { StatusDrawer } from './status-drawer';
 import { useTable, useNavigation, useRangeFilter, useFilter, useExport } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import { Container, Table, Toolbar, RangeModal, LoadingOverlay } from '@/components/common';
@@ -32,6 +34,8 @@ export default function SolicitationView({
 }) {
 
   const navigation = useNavigation(`/solicitations/${solicitationType?.hash}`, selectedId)
+
+  const [statusDrawer, setStatusDrawer] = React.useState({ open: false, selectedIds: [] });
 
   const table = useTable({ initialTable })
   const filter = useFilter(initialFilters)
@@ -156,8 +160,25 @@ export default function SolicitationView({
       renderCell: (value) => value ? new Date(value).toLocaleString() : ''
     },
     {
-      field: 'statusId', headerName: 'Status', width: 120,
-      renderCell: (value, row) => row.solicitationStatus?.description || 'Pendente'
+      field: 'statusId', headerName: 'Status', width: 200,
+      sx: { py: 0 },
+      renderCell: (value, row) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: 32 }}>
+          <Typography variant="body2" sx={{ lineHeight: 1 }}>{row.solicitationStatus?.description || 'Pendente'}</Typography>
+          <Tooltip title="Alterar status">
+            <MuiIconButton
+              size="small"
+              sx={{ p: 0 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setStatusDrawer({ open: true, selectedIds: [row.id] });
+              }}
+            >
+              <StatusIcon sx={{ fontSize: 18 }} />
+            </MuiIconButton>
+          </Tooltip>
+        </Box>
+      )
     },
   ]
 
@@ -172,6 +193,15 @@ export default function SolicitationView({
 
   const primaryActions = [
     { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => navigation.setSelectedId(null) },
+    ...(table.selecteds.length > 0 ? [
+      {
+        label: 'Alterar Status',
+        icon: <StatusIcon />,
+        variant: 'outlined',
+        color: 'primary',
+        onClick: () => setStatusDrawer({ open: true, selectedIds: table.selecteds.map(s => s.id) })
+      },
+    ] : []),
     ...(table.selecteds.length === 1 ? [
       { label: 'Editar', icon: <EditIcon />, variant: 'outlined', color: 'primary', onClick: () => navigation.setSelectedId(table.selecteds[0].id) },
     ] : []),
@@ -277,6 +307,13 @@ export default function SolicitationView({
           onApply={(vals) => {
             rangeFilter.handleApply(vals, () => table.setPage(1))
           }}
+        />
+
+        <StatusDrawer
+          open={statusDrawer.open}
+          selectedIds={statusDrawer.selectedIds}
+          onClose={() => setStatusDrawer({ ...statusDrawer, open: false })}
+          onSave={() => fetchTable()}
         />
 
       </Container.Content>

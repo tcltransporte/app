@@ -235,3 +235,16 @@ export async function destroy(id) {
     return ServiceResponse.error(error)
   }
 }
+
+export async function findAllStatuses() {
+  try {
+    const db = new AppContext()
+    const statuses = await db.SolicitationStatus.findAll({
+      attributes: ['id', 'description'],
+      order: [['id', 'ASC']]
+    })
+    return ServiceResponse.success({ items: statuses.map(s => s.get({ plain: true })) })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}

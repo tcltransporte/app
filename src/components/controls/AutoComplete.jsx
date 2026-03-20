@@ -356,7 +356,7 @@ export const AutoComplete = (props) => {
         InputProps={{
           ...rest.InputProps,
           endAdornment: (
-            <InputAdornment position="end">
+            <InputAdornment position="end" sx={{ mt: '18px !important' }}>
               {loading ? (
                 <IconButton size="small" edge="end" tabIndex={-1} disabled>
                   <CircularProgress size={18} color="inherit" />

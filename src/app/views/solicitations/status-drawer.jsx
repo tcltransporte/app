@@ -1,0 +1,132 @@
+'use client';
+
+import React from 'react';
+import { Drawer, Box, Typography, IconButton, Divider, Button } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
+import { Formik, Form, Field } from 'formik';
+import { SelectField, TextField } from '@/components/controls';
+import * as solicitationService from '@/app/services/solicitation.service';
+import { alert } from '@/libs/alert';
+import { ServiceStatus } from '@/libs/service';
+
+export function StatusDrawer({
+  open,
+  onClose,
+  selectedIds,
+  onSave
+}) {
+  const [statuses, setStatuses] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      solicitationService.findAllStatuses()
+        .then(result => {
+          if (result.status === ServiceStatus.SUCCESS) {
+            setStatuses(result.items || []);
+          }
+        });
+    }
+  }, [open]);
+
+  const handleSubmit = async (values) => {
+    setLoading(true);
+    try {
+      for (const id of selectedIds) {
+        const result = await solicitationService.update(id, {
+          statusId: values.statusId,
+          description: values.observation // Mapping observation to description
+        });
+        if (result.status !== ServiceStatus.SUCCESS) throw result;
+      }
+      alert.success('Status alterado com sucesso!');
+      onSave();
+      onClose();
+    } catch (error) {
+      alert.error('Erro ao alterar status', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: { width: { xs: '100%', sm: 450 }, p: 0 }
+      }}
+      sx={{ zIndex: (theme) => theme.zIndex.modal + 1 }}
+    >
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" fontWeight={700}>Alterar Status</Typography>
+          <IconButton onClick={onClose} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+        <Divider />
+
+        <Formik
+          initialValues={{
+            statusId: '',
+            observation: ''
+          }}
+          onSubmit={handleSubmit}
+        >
+          {({ submitForm }) => (
+            <Form style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+              <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Alterando status de {selectedIds.length} solicitação(ões).
+                  </Typography>
+
+                  <Field
+                    component={SelectField}
+                    name="statusId"
+                    label="Status"
+                    options={statuses.map(s => ({ value: s.id, label: s.description }))}
+                  />
+
+                  <Field
+                    component={TextField}
+                    name="observation"
+                    label="Observação"
+                    fullWidth
+                    multiline
+                    rows={4}
+                  />
+                </Box>
+              </Box>
+
+              <Divider />
+              <Box sx={{ p: 2, display: 'flex', gap: 2 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  color="inherit"
+                  onClick={onClose}
+                  disabled={loading}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={submitForm}
+                  disabled={loading}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  {loading ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </Box>
+            </Form>
+          )}
+        </Formik>
+      </Box>
+    </Drawer>
+  );
+}
