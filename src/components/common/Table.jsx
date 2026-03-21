@@ -180,7 +180,8 @@ export const Table = ({
   widths = {},
   onResize,
   rowKey = 'id',
-  loading = false
+  loading = false,
+  containerSx = {}
 }) => {
   const [isMounted, setIsMounted] = React.useState(false);
 
@@ -214,17 +215,22 @@ export const Table = ({
   const clickTimer = React.useRef(null);
 
   if (isMobile) {
-    const handleCardTouchStart = (id) => {
+    const handleCardTouchStart = (row) => {
       isLongPress.current = false;
       longPressTimer.current = setTimeout(() => {
         isLongPress.current = true;
-        onSelect(id); // Select on long press
+        onSelect(row); // Select on long press
       }, 500);
     };
 
     const handleCardTouchEnd = (e, row) => {
       clearTimeout(longPressTimer.current);
       
+      // If click was on checkbox or other interactive elements, don't trigger row click logic
+      if (e.target.closest('button, input, [role="button"], .MuiCheckbox-root')) {
+        return;
+      }
+
       // If it wasn't a long press, handle the click logic
       if (!isLongPress.current) {
         if (selecteds.length > 0) {
@@ -303,9 +309,9 @@ export const Table = ({
             <Paper
               key={row[rowKey]}
               elevation={0}
-              onMouseDown={() => handleCardTouchStart(row[rowKey])}
+              onMouseDown={() => handleCardTouchStart(row)}
               onMouseUp={(e) => handleCardTouchEnd(e, row)}
-              onTouchStart={() => handleCardTouchStart(row[rowKey])}
+              onTouchStart={() => handleCardTouchStart(row)}
               onTouchEnd={(e) => handleCardTouchEnd(e, row)}
               sx={{
                 p: 2,
@@ -376,7 +382,8 @@ export const Table = ({
           borderRadius: 2,
           '&::-webkit-scrollbar': { width: 6, height: 6 },
           '&::-webkit-scrollbar-thumb': { backgroundColor: 'divider', borderRadius: 3 },
-          animation: `${slideUp} 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards`
+          animation: `${slideUp} 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+          ...containerSx
         }}
       >
       {isMounted ? (
@@ -454,7 +461,7 @@ export const Table = ({
                     onClick={(e) => {
                       if (e.detail === 1) {
                         clickTimer.current = setTimeout(() => {
-                          onSelect(row);
+                          if (typeof onSelect === 'function') onSelect(row);
                         }, 250);
                       }
                     }}

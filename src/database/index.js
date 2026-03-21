@@ -18,6 +18,9 @@ import { Service } from './models/service.model.js'
 import { SolicitationProduct } from './models/solicitationProduct.model.js'
 import { SolicitationStatus } from './models/solicitationStatus.model.js'
 import { SolicitationStatusWorkflow } from './models/solicitationStatusWorkflow.model.js'
+import { SolicitationStatusTipo } from './models/solicitationStatusTipo.model.js'
+import { Document } from './models/document.model.js'
+import { DocumentType } from './models/documentType.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -57,6 +60,7 @@ export class AppContext extends Sequelize {
     this.SolicitationType = this.define('solicitationType', new SolicitationType(), { tableName: 'SolicitacaoTipo' })
     this.SolicitationStatus = this.define('solicitationStatus', new SolicitationStatus(), { tableName: 'SolicitacaoStatus' })
     this.SolicitationStatusWorkflow = this.define('solicitationStatusWorkflow', new SolicitationStatusWorkflow(), { tableName: 'SolicitacaoStatusWorkflow' })
+    this.SolicitationStatusTipo = this.define('solicitationStatusTipo', new SolicitationStatusTipo(), { tableName: 'SolicitacaoStatusTipo' })
     this.SolicitationRequestType = this.define('solicitationRequestType', new SolicitationRequestType(), { tableName: 'solicitationRequestType' })
     this.SolicitationProduct = this.define('solicitationProduct', new SolicitationProduct(), { tableName: 'SolicitacaoPecaUtilizada' })
     this.SolicitationService = this.define('solicitationService', new SolicitationService(), { tableName: 'SolicitacaoServicoRealizado' })
@@ -66,6 +70,8 @@ export class AppContext extends Sequelize {
     this.Session = this.define('session', new Session(), { tableName: 'Session' })
     this.User = this.define('user', new User(), { tableName: 'aspnet_Users' })
     this.UserMember = this.define('userMember', new UserMember(), { tableName: 'aspnet_Membership' })
+    this.Document = this.define('document', new Document(), { tableName: 'Compras' })
+    this.DocumentType = this.define('documentType', new DocumentType(), { tableName: 'TipoModeloDocumento' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -94,6 +100,11 @@ export class AppContext extends Sequelize {
     this.SolicitationStatusWorkflow.belongsTo(this.SolicitationStatus, { as: 'fromStatus', foreignKey: 'fromStatusId' })
     this.SolicitationStatusWorkflow.belongsTo(this.SolicitationStatus, { as: 'toStatus', foreignKey: 'toStatusId' })
 
+    this.SolicitationStatusTipo.belongsTo(this.SolicitationStatus, { as: 'status', foreignKey: 'statusId' })
+    this.SolicitationStatusTipo.belongsTo(this.SolicitationType, { as: 'type', foreignKey: 'typeId' })
+    this.SolicitationStatus.hasMany(this.SolicitationStatusTipo, { as: 'statusTypes', foreignKey: 'statusId' })
+    this.SolicitationType.hasMany(this.SolicitationStatusTipo, { as: 'statusTypes', foreignKey: 'typeId' })
+
     this.SolicitationProduct.belongsTo(this.Product, { as: 'product', foreignKey: 'itemId' })
     this.SolicitationService.belongsTo(this.Service, { as: 'service', foreignKey: 'itemId' })
     this.SolicitationFinance.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
@@ -101,6 +112,11 @@ export class AppContext extends Sequelize {
 
     this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })
     this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId' })
+
+    this.Document.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId' })
+    this.Document.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+    this.Document.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
+    this.Document.belongsTo(this.DocumentType, { as: 'documentType', foreignKey: 'documentModelId' })
 
     this.Company.addHook('afterFind', afterFind)
     this.CompanyBusiness.addHook('afterFind', afterFind)
@@ -112,10 +128,13 @@ export class AppContext extends Sequelize {
     this.Solicitation.addHook('afterFind', afterFind)
     this.SolicitationStatus.addHook('afterFind', afterFind)
     this.SolicitationStatusWorkflow.addHook('afterFind', afterFind)
+    this.SolicitationStatusTipo.addHook('afterFind', afterFind)
     this.SolicitationProduct.addHook('afterFind', afterFind)
     this.SolicitationService.addHook('afterFind', afterFind)
     this.SolicitationFinance.addHook('afterFind', afterFind)
     this.Product.addHook('afterFind', afterFind)
+    this.Document.addHook('afterFind', afterFind)
+    this.DocumentType.addHook('afterFind', afterFind)
 
   }
 

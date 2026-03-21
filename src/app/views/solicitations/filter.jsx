@@ -26,7 +26,7 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
       partner: null,
     };
     setValues(clearedValues);
-    onApply(clearedValues);
+    onApply({ ...filters, ...clearedValues });
   };
 
   return (
@@ -34,7 +34,7 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
       open={open}
       onClose={onClose}
       initialValues={initialValues}
-      onApply={onApply}
+      onApply={(values) => onApply({ ...filters, ...values })}
       onClear={handleClear}
       title="Filtros de Solicitações"
     >

@@ -31,7 +31,7 @@ export function PartnerFilter({ open, onClose, filters, onApply }) {
       isSeller: false,
     };
     setValues(clearedValues);
-    onApply(clearedValues);
+    onApply({ ...filters, ...clearedValues });
   };
 
   return (
@@ -39,7 +39,7 @@ export function PartnerFilter({ open, onClose, filters, onApply }) {
       open={open}
       onClose={onClose}
       initialValues={initialValues}
-      onApply={onApply}
+      onApply={(values) => onApply({ ...filters, ...values })}
       onClear={handleClear}
       title="Filtros de Parceiros"
     >

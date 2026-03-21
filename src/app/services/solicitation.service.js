@@ -209,6 +209,54 @@ export async function update(id, data) {
   }
 }
 
+export async function toStatus(id, statusId, documents = [], description = null) {
+  try {
+    const session = await getSession()
+    const db = new AppContext()
+
+    await db.transaction(async (transaction) => {
+      const existing = await solicitationRepository.findOne({ db, transaction }, {
+        attributes: ['id', 'partnerId', 'companyId', 'statusId'],
+        where: {
+          id: id,
+          companyId: session.company.id
+        }
+      })
+
+      if (!existing)
+        throw ServiceResponse.badRequest("SOLICITATION_NOT_FOUND", "Solicitação não encontrada!")
+
+      const statusChanged = statusId && String(statusId) !== String(existing.statusId);
+
+      if (documents && documents.length > 0 && statusChanged) {
+        for (const doc of documents) {
+          await db.Document.create({
+            partnerId: existing.partnerId,
+            invoiceNumber: doc.invoiceNumber || 0,
+            invoiceDate: doc.invoiceDate || new Date(),
+            invoiceValue: doc.invoiceValue || 0,
+            companyId: session.company.id,
+            solicitationId: id,
+            documentModelId: doc.documentTypeId,
+            createdById: session.user.id,
+            createdAt: new Date(),
+            systemDate: new Date()
+          }, { transaction });
+        }
+      }
+
+      const updateData = { statusId };
+      if (description !== null) updateData.description = description;
+
+      await solicitationRepository.update({ db, transaction }, { where: { id: id } }, updateData)
+    })
+
+    return ServiceResponse.success({ id })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
 export async function destroy(id) {
   try {
     const session = await getSession()

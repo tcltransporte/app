@@ -11,7 +11,7 @@ export class SolicitationStatusWorkflow {
 
   fromStatusId = {
     field: 'IDTipoStatusOrigem',
-    allowNull: false,
+    allowNull: true,
     type: DataTypes.INTEGER
   }
 

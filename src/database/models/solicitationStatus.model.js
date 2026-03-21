@@ -15,4 +15,17 @@ export class SolicitationStatus {
     type: DataTypes.STRING(100)
   }
 
+  companyId = {
+    field: 'companyId',
+    allowNull: false,
+    type: DataTypes.INTEGER
+  }
+
+  generateDocument = {
+    field: 'generateDocument',
+    allowNull: true,
+    defaultValue: false,
+    type: DataTypes.BOOLEAN
+  }
+
 }

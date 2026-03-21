@@ -6,7 +6,7 @@ import { TextField as MuiTextField, MenuItem } from '@mui/material';
 /**
  * @param {Array<{ value, label }>} options - List of options to render
  */
-export const SelectField = React.forwardRef(({ field, form, options = [], onChange, ...props }, ref) => {
+export const SelectField = React.forwardRef(({ field, form, options = [], onChange, placeholder = '[Selecione]', ...props }, ref) => {
 
   const handleChange = (e) => {
     field?.onChange(e);
@@ -33,7 +33,7 @@ export const SelectField = React.forwardRef(({ field, form, options = [], onChan
         ...props.sx
       }}
     >
-      <option value="">[Selecione]</option>
+      {placeholder !== null && <option value="">{placeholder}</option>}
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>
           {opt.label}

@@ -124,7 +124,7 @@ export const AutoComplete = (props) => {
       if (value) {
         // Ao digitar com item já selecionado, limpa a seleção e inicia nova pesquisa
         form?.setFieldValue?.(name, null)
-        onChange?.(null)
+        onChange?.(null, form)
         setQuery(newQuery)
         setLoading(true)
         return
@@ -141,7 +141,7 @@ export const AutoComplete = (props) => {
       isClearingRef.current = true
 
       form?.setFieldValue?.(name, null)
-      onChange?.(null)
+      onChange?.(null, form)
 
       setQuery('')
       setData([])
