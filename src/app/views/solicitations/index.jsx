@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Badge, IconButton as MuiIconButton, Tooltip, Box, Typography } from '@mui/material';
+import { Badge, IconButton as MuiIconButton, Tooltip, Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
@@ -12,6 +12,7 @@ import {
   Download as DownloadIcon,
   Google as GoogleIcon,
   Autorenew as StatusIcon,
+  MoreVert as MoreIcon,
 } from '@mui/icons-material';
 
 import SolicitationDetail from './solicitation.detail';
@@ -32,6 +33,58 @@ export default function SolicitationView({
   solicitationType,
   selectedId
 }) {
+  const RowActions = ({ row }) => {
+    const [anchorEl, setAnchorEl] = React.useState(null);
+    const openMenu = Boolean(anchorEl);
+
+    const handleClick = (event) => {
+      event.stopPropagation();
+      setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = (e) => {
+      if (e) e.stopPropagation();
+      setAnchorEl(null);
+    };
+
+    const handleGenerateDocument = (e) => {
+      e.stopPropagation();
+      handleClose();
+      // Em uma implementação real, chamaria o serviço para gerar o link ou PDF
+      alert.info(`Gerando documento para ${row.number}...`);
+    };
+
+    const hasGenerate = row.solicitationStatus?.generateDocument === true;
+
+    if (!hasGenerate) return null;
+
+    return (
+      <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+        <Tooltip title="Ações">
+          <MuiIconButton size="small" onClick={handleClick}>
+            <MoreIcon fontSize="small" />
+          </MuiIconButton>
+        </Tooltip>
+        <Menu
+          anchorEl={anchorEl}
+          open={openMenu}
+          onClose={handleClose}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        >
+          <MenuItem 
+            onClick={handleGenerateDocument}
+            sx={{ gap: 1 }}
+          >
+            <ListItemIcon sx={{ minWidth: 'auto !important' }}>
+              <DownloadIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Gerar documento" primaryTypographyProps={{ variant: 'body2' }} />
+          </MenuItem>
+        </Menu>
+      </Box>
+    );
+  };
 
   const navigation = useNavigation(`/solicitations/${solicitationType?.hash}`, selectedId)
 
@@ -160,6 +213,15 @@ export default function SolicitationView({
       renderCell: (value) => value ? new Date(value).toLocaleString() : ''
     },
     {
+      field: 'payments', headerName: 'Valor', width: 140,
+      renderCell: (value, row) => {
+        const total = (row.payments || []).reduce((sum, p) => sum + parseFloat(p.value || 0), 0);
+        return total > 0
+          ? total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+          : '';
+      }
+    },
+    {
       field: 'statusId', headerName: 'Status', width: 200,
       sx: { py: 0 },
       renderCell: (value, row) => (
@@ -180,6 +242,14 @@ export default function SolicitationView({
         </Box>
       )
     },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 50,
+      sortable: false,
+      sx: { py: 0 },
+      renderCell: (val, row) => <RowActions row={row} />
+    }
   ]
 
   // Initialize columns in hook if not already done
