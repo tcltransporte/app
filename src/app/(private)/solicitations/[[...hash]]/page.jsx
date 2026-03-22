@@ -36,19 +36,20 @@ export default async function SolicitationPage({ params }) {
     limit: 50,
     filters: initialFilters,
     range: initialRange,
-    sortBy: 'date',
+    sortBy: 'id',
     sortOrder: 'DESC'
   });
 
-  const initialTable = solicitationsResp.status === ServiceStatus.SUCCESS
-    ? { items: solicitationsResp.items || [], total: solicitationsResp.total || 0 }
-    : { items: [], total: 0 };
+  const isSuccess = solicitationsResp.status === ServiceStatus.SUCCESS;
+  const initialTable = isSuccess ? solicitationsResp : { items: [], total: 0 };
+  const resolvedFilters = isSuccess ? solicitationsResp.filters : initialFilters;
+  const resolvedRange = isSuccess ? solicitationsResp.range : initialRange;
 
   return (
     <SolicitationView
       initialTable={initialTable}
-      initialFilters={initialFilters}
-      initialRange={initialRange}
+      initialFilters={resolvedFilters}
+      initialRange={resolvedRange}
       dateFieldOptions={dateFieldOptions}
       solicitationType={solicitationType}
       selectedId={selectedId}

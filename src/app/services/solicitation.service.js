@@ -40,7 +40,7 @@ export async function exportTable({
   });
 }
 
-export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'date', sortOrder = 'DESC' } = {}) {
+export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'id', sortOrder = 'DESC' } = {}) {
   try {
     const session = await getSession()
     const db = new AppContext()
@@ -86,7 +86,7 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
         where,
         limit,
         offset,
-        order: [[sortBy || 'date', sortOrder || 'DESC']],
+        order: [[sortBy, sortOrder]],
         include: [
           { association: 'partner', attributes: ['name', 'surname'] },
           { association: 'solicitationStatus', attributes: ['description', 'generateDocument'] },
@@ -98,7 +98,7 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
       })
     })
 
-    return ServiceResponse.success({ items: result.rows, total: result.count, page, limit })
+    return ServiceResponse.success({ items: result.rows, total: result.count, page, limit, sortBy, sortOrder, filters, range })
 
   } catch (error) {
     return ServiceResponse.error(error)

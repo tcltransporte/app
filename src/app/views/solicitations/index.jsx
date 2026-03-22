@@ -73,7 +73,7 @@ export default function SolicitationView({
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-          <MenuItem 
+          <MenuItem
             onClick={handleGenerateDocument}
             sx={{ gap: 1 }}
           >
@@ -141,9 +141,12 @@ export default function SolicitationView({
   }, [fetchTable])
 
   React.useEffect(() => {
-    filter.setFilters(prev => ({ ...prev, typeHash: solicitationType?.hash }));
-    table.setPage(1);
-  }, [solicitationType])
+    filter.setFilters(prev => {
+      if (prev.typeHash === solicitationType?.hash) return prev;
+      return { ...prev, typeHash: solicitationType?.hash };
+    });
+    table.setPage(prev => (prev === 1 ? prev : 1));
+  }, [solicitationType?.hash])
 
   const handleDelete = async () => {
 
@@ -271,8 +274,8 @@ export default function SolicitationView({
         icon: <StatusIcon />,
         variant: 'outlined',
         color: 'primary',
-        onClick: () => setStatusDrawer({ 
-          open: true, 
+        onClick: () => setStatusDrawer({
+          open: true,
           selectedIds: table.selecteds.map(s => s.id),
           fromStatusIds: table.selecteds.map(s => s.statusId)
         })

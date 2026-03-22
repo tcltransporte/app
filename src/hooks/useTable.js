@@ -20,8 +20,8 @@ export const useTable = ({
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [loading, setLoading] = useState(false);
   const [selecteds, setSelecteds] = useState([]);
-  const [sortBy, setSortBy] = useState(null);
-  const [sortOrder, setSortOrder] = useState('ASC');
+  const [sortBy, setSortBy] = useState(initialTable?.sortBy || null);
+  const [sortOrder, setSortOrder] = useState(initialTable?.sortOrder || 'ASC');
   const [orderedColumns, setOrderedColumns] = useState([]);
   const [columnWidths, setColumnWidths] = useState({});
 
@@ -73,6 +73,8 @@ export const useTable = ({
     if (initialTable) {
       setItems(initialTable.items || []);
       setTotal(initialTable.total || 0);
+      if (initialTable.sortBy) setSortBy(initialTable.sortBy);
+      if (initialTable.sortOrder) setSortOrder(initialTable.sortOrder);
     }
   }, [initialTable]);
 
