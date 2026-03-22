@@ -91,6 +91,9 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
           { association: 'partner', attributes: ['name', 'surname'] },
           { association: 'solicitationStatus', attributes: ['description', 'generateDocument'] },
           { association: 'payments', attributes: ['value'] },
+          { association: 'products', attributes: ['id', 'value', 'quantity'] },
+          { association: 'services', attributes: ['id', 'value', 'quantity'] },
+          { association: 'documents' },
         ]
       })
     })
@@ -375,6 +378,125 @@ export async function updateStatusRelationships(fromStatusId, toStatusIds) {
       await transaction.rollback()
       throw err
     }
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function findDocuments(solicitationId) {
+  try {
+    const session = await getSession()
+    const db = new AppContext()
+    const documents = await db.Document.findAll({
+      attributes: ['id', 'documentModelId', 'invoiceNumber', 'invoiceDate', 'invoiceValue'],
+      where: { solicitationId, companyId: session.company.id },
+      include: [{ association: 'documentType', attributes: ['id', 'description', 'initials'] }],
+      order: [['id', 'ASC']]
+    })
+    return ServiceResponse.success({ items: documents.map(d => d.get({ plain: true })) })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function saveDocuments(solicitationId, documents = []) {
+  try {
+    const session = await getSession()
+    const db = new AppContext()
+
+    await db.transaction(async (transaction) => {
+      const solicitation = await db.Solicitation.findOne({
+        attributes: ['id', 'partnerId'],
+        where: { id: solicitationId, companyId: session.company.id }
+      })
+      if (!solicitation) throw ServiceResponse.badRequest('SOLICITATION_NOT_FOUND', 'Solicitação não encontrada!')
+
+      for (const doc of documents) {
+        const payload = {
+          documentModelId: doc.documentModelId,
+          invoiceNumber: doc.invoiceNumber || 0,
+          invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate) : new Date(),
+          invoiceValue: doc.invoiceValue || 0,
+        }
+        if (doc.id) {
+          await db.Document.update(payload, { where: { id: doc.id }, transaction })
+        } else {
+          await db.Document.create({
+            ...payload,
+            solicitationId,
+            partnerId: solicitation.partnerId,
+            companyId: session.company.id,
+            createdById: session.user.id,
+            createdAt: new Date(),
+            systemDate: new Date(),
+          }, { transaction })
+        }
+      }
+    })
+
+    return ServiceResponse.success({ message: 'Documentos salvos com sucesso!' })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function generateDocuments(solicitationIds = []) {
+  try {
+
+    const session = await getSession()
+
+    const db = new AppContext()
+
+    const solicitations = await db.Solicitation.findAll({
+      where: { id: solicitationIds, companyId: session.company.id },
+      include: [
+        { association: 'partner', attributes: ['name', 'surname'] },
+        { association: 'products', attributes: ['id', 'value', 'quantity'] },
+        { association: 'services', attributes: ['id', 'value', 'quantity'] },
+        { association: 'documents' },
+      ]
+    })
+
+    const docTypes = await db.DocumentType.findAll({ attributes: ['id', 'initials'] })
+
+    const type55 = docTypes.find(dt => dt.id && String(dt.id).trim() === '55')
+    const type99 = docTypes.find(dt => dt.id && String(dt.id).trim() === '99')
+
+    const defaultType = docTypes.length > 0 ? docTypes[0] : null
+
+    const items = solicitations.map(sRow => {
+
+      const s = sRow.toJSON()
+
+      if (!s.documents || s.documents.length === 0) {
+
+        s.documents = [];
+
+        const hasProducts = (s.products || []).length > 0;
+        const hasServices = (s.services || []).length > 0;
+        const defaultInvoiceDate = new Date().toISOString();
+
+        if (hasProducts && type55) {
+          const total = (s.products || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
+          s.documents.push({ id: null, documentModelId: type55.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
+        }
+
+        if (hasServices && type99) {
+          const total = (s.services || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
+          s.documents.push({ id: null, documentModelId: type99.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
+        }
+
+        if (s.documents.length === 0 && defaultType) {
+          s.documents.push({ id: null, documentModelId: defaultType.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
+        }
+
+      }
+
+      return s;
+
+    });
+
+    return ServiceResponse.success({ items })
   } catch (error) {
     return ServiceResponse.error(error)
   }

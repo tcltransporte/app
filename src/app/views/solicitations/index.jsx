@@ -13,11 +13,13 @@ import {
   Google as GoogleIcon,
   Autorenew as StatusIcon,
   MoreVert as MoreIcon,
+  NoteAdd as GenerateIcon,
 } from '@mui/icons-material';
 
 import SolicitationDetail from './solicitation.detail';
 import SolicitationFilter from './filter';
 import { StatusDrawer } from './status-drawer';
+import { GenerateDocumentDrawer } from './generate-document-drawer';
 import { useTable, useNavigation, useRangeFilter, useFilter, useExport } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import { Container, Table, Toolbar, RangeModal, LoadingOverlay } from '@/components/common';
@@ -50,8 +52,7 @@ export default function SolicitationView({
     const handleGenerateDocument = (e) => {
       e.stopPropagation();
       handleClose();
-      // Em uma implementação real, chamaria o serviço para gerar o link ou PDF
-      alert.info(`Gerando documento para ${row.number}...`);
+      setGenerateDocumentDrawer({ open: true, solicitations: [row] });
     };
 
     const hasGenerate = row.solicitationStatus?.generateDocument === true;
@@ -77,7 +78,7 @@ export default function SolicitationView({
             sx={{ gap: 1 }}
           >
             <ListItemIcon sx={{ minWidth: 'auto !important' }}>
-              <DownloadIcon fontSize="small" />
+              <GenerateIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary="Gerar documento" primaryTypographyProps={{ variant: 'body2' }} />
           </MenuItem>
@@ -89,6 +90,7 @@ export default function SolicitationView({
   const navigation = useNavigation(`/solicitations/${solicitationType?.hash}`, selectedId)
 
   const [statusDrawer, setStatusDrawer] = React.useState({ open: false, selectedIds: [], fromStatusIds: [] });
+  const [generateDocumentDrawer, setGenerateDocumentDrawer] = React.useState({ open: false, solicitations: [] });
 
   const table = useTable({ initialTable })
   const filter = useFilter(initialFilters)
@@ -388,6 +390,13 @@ export default function SolicitationView({
           selectedIds={statusDrawer.selectedIds}
           fromStatusIds={statusDrawer.fromStatusIds}
           onClose={() => setStatusDrawer({ ...statusDrawer, open: false })}
+          onSave={() => fetchTable()}
+        />
+
+        <GenerateDocumentDrawer
+          open={generateDocumentDrawer.open}
+          solicitations={generateDocumentDrawer.solicitations}
+          onClose={() => setGenerateDocumentDrawer({ open: false, solicitations: [] })}
           onSave={() => fetchTable()}
         />
 

@@ -8,9 +8,16 @@ export function useFilter(initialFilters = {}) {
 
   const activeCount = useMemo(() => {
     return Object.entries(filters).filter(([key, value]) => {
-      // Ignore internal or empty values
-      if (key === 'search') return false; // Usually search is treated separately or already visible
+      // Ignore internal system filters
+      if (key === 'search' || key === 'typeHash' || key === 'companyId') return false;
+      
+      // Avoid double counting (e.g., partnerId and partner)
+      if (key.endsWith('Id') && filters[key.replace('Id', '')]) return false;
+
       if (typeof value === 'boolean') return value === true;
+      if (Array.isArray(value)) return value.length > 0;
+      if (value && typeof value === 'object') return Object.keys(value).length > 0;
+      
       return value !== '' && value !== undefined && value !== null;
     }).length;
   }, [filters]);
