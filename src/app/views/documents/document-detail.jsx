@@ -8,12 +8,9 @@ import {
   DialogActions,
   Button,
   Box,
-  FormControl,
-  Typography,
-  Select,
-  MenuItem as MuiMenuItem,
   TextField,
 } from '@mui/material';
+import { SelectField } from '@/components/controls/SelectField';
 
 export function DocumentDetail({ open, onClose, onSave, documentTypes, initialData }) {
   const [editForm, setEditForm] = React.useState({ documentTypeId: '', invoiceNumber: 0, invoiceDate: '', invoiceValue: 0 });
@@ -35,19 +32,13 @@ export function DocumentDetail({ open, onClose, onSave, documentTypes, initialDa
       <DialogTitle>Editar Documento</DialogTitle>
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <FormControl size="small" fullWidth>
-            <Typography variant="caption" color="text.secondary" mb={0.5}>Documento</Typography>
-            <Select
-              value={editForm.documentTypeId || ''}
-              onChange={(e) => setEditForm(prev => ({ ...prev, documentTypeId: e.target.value }))}
-              displayEmpty
-            >
-              <MuiMenuItem value=""><em>Selecione...</em></MuiMenuItem>
-              {documentTypes.map(dt => (
-                <MuiMenuItem key={dt.id} value={dt.id}>{dt.description}</MuiMenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <SelectField
+            label="Documento"
+            value={editForm.documentTypeId || ''}
+            onChange={(val) => setEditForm(prev => ({ ...prev, documentTypeId: val }))}
+            options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
+            placeholder="Selecione..."
+          />
           <TextField
             size="small"
             fullWidth

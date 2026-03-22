@@ -16,12 +16,10 @@ import {
   TableRow,
   Checkbox,
   Collapse,
-  Select,
-  MenuItem as MuiMenuItem,
-  FormControl,
 } from '@mui/material';
 import { Close as CloseIcon, ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon, Edit as EditIcon } from '@mui/icons-material';
 import { DocumentDetail } from '../documents/document-detail';
+import { SelectField } from '@/components/controls/SelectField';
 import * as documentTypeService from '@/app/services/documentType.service';
 import * as solicitationService from '@/app/services/solicitation.service';
 import { ServiceStatus } from '@/libs/service';
@@ -74,22 +72,13 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
                     </TableCell>
                     <TableCell sx={{ minWidth: 200 }}>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                        <FormControl size="small" fullWidth>
-                          <Select
-                            value={row.documentTypeId || ''}
-                            onChange={(e) => onChangeType(solicitation.id, row.rowKey, e.target.value)}
-                            disabled={!row.checked}
-                            displayEmpty
-                            sx={{ fontSize: 14 }}
-                          >
-                            <MuiMenuItem value=""><em>Selecione...</em></MuiMenuItem>
-                            {documentTypes.map(dt => (
-                              <MuiMenuItem key={dt.id} value={dt.id}>
-                                {dt.description}
-                              </MuiMenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
+                        <SelectField
+                          value={row.documentTypeId || ''}
+                          onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
+                          disabled={!row.checked}
+                          options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
+                          variant="outlined"
+                        />
                         <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
                           <EditIcon fontSize="small" />
                         </IconButton>
@@ -270,7 +259,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
     >
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2 }}>
-        <Typography variant="h6" fontWeight={600}>Gerar Documentos</Typography>
+        <Typography variant="h6" fontWeight={600}>Gerar documentos</Typography>
         <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
       </Box>
       <Divider />

@@ -21,11 +21,11 @@ export class SolicitationStatus {
     type: DataTypes.INTEGER
   }
 
-  generateDocument = {
-    field: 'generateDocument',
+  generateDocumentTypeId = {
+    field: 'generateDocumentTypeId',
     allowNull: true,
     defaultValue: false,
-    type: DataTypes.BOOLEAN
+    type: DataTypes.INTEGER
   }
 
 }

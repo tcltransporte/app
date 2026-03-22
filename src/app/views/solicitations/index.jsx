@@ -55,7 +55,7 @@ export default function SolicitationView({
       setGenerateDocumentDrawer({ open: true, solicitations: [row] });
     };
 
-    const hasGenerate = row.solicitationStatus?.generateDocument === true;
+    const hasGenerate = !!row.solicitationStatus?.generateDocumentTypeId;
 
     if (!hasGenerate) return null;
 
@@ -108,6 +108,7 @@ export default function SolicitationView({
   const fetchTable = React.useCallback(async () => {
     table.setLoading(true)
     try {
+
       const result = await solicitationService.findAll({
         page: table.page,
         limit: table.rowsPerPage,
@@ -181,7 +182,7 @@ export default function SolicitationView({
   const handleExport = async (format = ExportFormat.EXCEL) => {
     try {
 
-      exporter.setExporting(true);
+      exporter.setExporting(true)
 
       const params = {
         filters: filter.filters,

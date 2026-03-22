@@ -89,7 +89,7 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
         order: [[sortBy, sortOrder]],
         include: [
           { association: 'partner', attributes: ['name', 'surname'] },
-          { association: 'solicitationStatus', attributes: ['description', 'generateDocument'] },
+          { association: 'solicitationStatus', attributes: ['description', 'generateDocumentTypeId'] },
           { association: 'payments', attributes: ['value'] },
           { association: 'products', attributes: ['id', 'value', 'quantity'] },
           { association: 'services', attributes: ['id', 'value', 'quantity'] },
@@ -454,6 +454,7 @@ export async function generateDocuments(solicitationIds = []) {
         { association: 'products', attributes: ['id', 'value', 'quantity'] },
         { association: 'services', attributes: ['id', 'value', 'quantity'] },
         { association: 'documents' },
+        { association: 'solicitationStatus', attributes: ['id', 'generateDocumentTypeId'] }
       ]
     })
 
@@ -480,12 +481,13 @@ export async function generateDocuments(solicitationIds = []) {
           const total = (s.products || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
           s.documents.push({ id: null, documentModelId: type55.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
         }
-
         if (hasServices && type99) {
           const total = (s.services || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
           s.documents.push({ id: null, documentModelId: type99.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
         }
-
+        if (s.documents.length === 0 && s.solicitationStatus?.generateDocumentTypeId) {
+          s.documents.push({ id: null, documentModelId: s.solicitationStatus.generateDocumentTypeId, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
+        }
         if (s.documents.length === 0 && defaultType) {
           s.documents.push({ id: null, documentModelId: defaultType.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
         }
