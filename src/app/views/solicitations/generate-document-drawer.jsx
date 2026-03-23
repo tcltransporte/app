@@ -25,12 +25,12 @@ import {
   Menu,
   MenuItem,
 } from '@mui/material';
-import { 
-  Close as CloseIcon, 
-  ExpandMore as ExpandMoreIcon, 
-  ExpandLess as ExpandLessIcon, 
-  Edit as EditIcon, 
-  Link as LinkIcon, 
+import {
+  Close as CloseIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Edit as EditIcon,
+  Link as LinkIcon,
   CheckCircle as CheckCircleIcon,
   Search as SearchIcon
 } from '@mui/icons-material';
@@ -88,20 +88,21 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell padding="checkbox" />
+                  {/*<TableCell padding="checkbox" />*/}
                   <TableCell>Tipo</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {solRows.map((row) => (
                   <TableRow key={row.rowKey} hover>
+                    {/*
                     <TableCell padding="checkbox">
                       <Checkbox
                         size="small"
                         checked={row.checked}
                         onChange={() => onToggle(solicitation.id, row.rowKey)}
                       />
-                    </TableCell>
+                    </TableCell>*/}
                     <TableCell sx={{ minWidth: 200 }}>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                         <SelectField
@@ -213,10 +214,10 @@ function LinkDocumentModal({ open, onClose, onSelect }) {
           </TableHead>
           <TableBody>
             {results.map((doc) => (
-              <TableRow 
-                key={doc.id} 
-                hover 
-                sx={{ 
+              <TableRow
+                key={doc.id}
+                hover
+                sx={{
                   '& .link-button': { opacity: 0, transition: '0.2s' },
                   '&:hover .link-button': { opacity: 1 }
                 }}
@@ -227,12 +228,12 @@ function LinkDocumentModal({ open, onClose, onSelect }) {
                 <TableCell>R$ {doc.invoiceValue}</TableCell>
                 <TableCell align="right">
                   <Tooltip title="Vincular este documento">
-                    <IconButton 
-                      className="link-button" 
-                      size="large" 
-                      color="success" 
+                    <IconButton
+                      className="link-button"
+                      size="large"
+                      color="success"
                       onClick={() => onSelect(doc)}
-                      sx={{ 
+                      sx={{
                         backgroundColor: 'success.lighter',
                         '&:hover': { backgroundColor: 'success.light' }
                       }}
@@ -308,8 +309,24 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
                 checked: true,
                 documentTypeId: doc.documentModelId || doc.documentTypeId,
                 invoiceNumber: doc.invoiceNumber || 0,
+                invoiceSeries: doc.invoiceSeries || '',
                 invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : defaultInvoiceDate,
+                receiptDate: doc.receiptDate ? new Date(doc.receiptDate).toISOString().split('T')[0] : '',
+                invoiceKey: doc.invoiceKey || '',
                 invoiceValue: doc.invoiceValue || 0,
+                totalProductsValue: doc.totalProductsValue || 0,
+                discountValue: doc.discountValue || 0,
+                freightValue: doc.freightValue || 0,
+                insuranceValue: doc.insuranceValue || 0,
+                otherValues: doc.otherValues || 0,
+                icmsBaseValue: doc.icmsBaseValue || 0,
+                icmsValue: doc.icmsValue || 0,
+                ipiValue: doc.ipiValue || 0,
+                pisValue: doc.pisValue || 0,
+                cofinsValue: doc.cofinsValue || 0,
+                icmsstBaseValue: doc.icmsstBaseValue || 0,
+                icmsstValue: doc.icmsstValue || 0,
+                description: doc.description || '',
                 id: doc.id
               });
             });
@@ -358,8 +375,24 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
           id: row.id,
           documentTypeId: row.documentTypeId || '',
           invoiceNumber: row.invoiceNumber || 0,
+          invoiceSeries: row.invoiceSeries || '',
           invoiceDate: formattedDate,
+          receiptDate: row.receiptDate ? new Date(row.receiptDate).toISOString().split('T')[0] : '',
+          invoiceKey: row.invoiceKey || '',
           invoiceValue: row.invoiceValue || 0,
+          totalProductsValue: row.totalProductsValue || 0,
+          discountValue: row.discountValue || 0,
+          freightValue: row.freightValue || 0,
+          insuranceValue: row.insuranceValue || 0,
+          otherValues: row.otherValues || 0,
+          icmsBaseValue: row.icmsBaseValue || 0,
+          icmsValue: row.icmsValue || 0,
+          ipiValue: row.ipiValue || 0,
+          pisValue: row.pisValue || 0,
+          cofinsValue: row.cofinsValue || 0,
+          icmsstBaseValue: row.icmsstBaseValue || 0,
+          icmsstValue: row.icmsstValue || 0,
+          description: row.description || '',
         }
       });
     }
@@ -375,8 +408,24 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
           id: editedForm.id || r.id,
           documentTypeId: editedForm.documentTypeId,
           invoiceNumber: Number(editedForm.invoiceNumber),
+          invoiceSeries: editedForm.invoiceSeries,
           invoiceDate: editedForm.invoiceDate,
-          invoiceValue: Number(editedForm.invoiceValue)
+          receiptDate: editedForm.receiptDate,
+          invoiceKey: editedForm.invoiceKey,
+          invoiceValue: Number(editedForm.invoiceValue),
+          totalProductsValue: Number(editedForm.totalProductsValue),
+          discountValue: Number(editedForm.discountValue),
+          freightValue: Number(editedForm.freightValue),
+          insuranceValue: Number(editedForm.insuranceValue),
+          otherValues: Number(editedForm.otherValues),
+          icmsBaseValue: Number(editedForm.icmsBaseValue),
+          icmsValue: Number(editedForm.icmsValue),
+          ipiValue: Number(editedForm.ipiValue),
+          pisValue: Number(editedForm.pisValue),
+          cofinsValue: Number(editedForm.cofinsValue),
+          icmsstBaseValue: Number(editedForm.icmsstBaseValue),
+          icmsstValue: Number(editedForm.icmsstValue),
+          description: editedForm.description,
         } : r
       ),
     }));
@@ -393,7 +442,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
 
   const handleLinkSelect = (doc) => {
     if (!doc || !linkModal.solicitationId) return;
-    
+
     setRows(prev => ({
       ...prev,
       [linkModal.solicitationId]: prev[linkModal.solicitationId].map(r =>
@@ -402,12 +451,28 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
           id: doc.id,
           documentTypeId: doc.documentModelId || r.documentTypeId,
           invoiceNumber: doc.invoiceNumber || 0,
+          invoiceSeries: doc.invoiceSeries || '',
           invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : r.invoiceDate,
-          invoiceValue: doc.invoiceValue || 0
+          receiptDate: doc.receiptDate ? new Date(doc.receiptDate).toISOString().split('T')[0] : '',
+          invoiceKey: doc.invoiceKey || '',
+          invoiceValue: doc.invoiceValue || 0,
+          totalProductsValue: doc.totalProductsValue || 0,
+          discountValue: doc.discountValue || 0,
+          freightValue: doc.freightValue || 0,
+          insuranceValue: doc.insuranceValue || 0,
+          otherValues: doc.otherValues || 0,
+          icmsBaseValue: doc.icmsBaseValue || 0,
+          icmsValue: doc.icmsValue || 0,
+          ipiValue: doc.ipiValue || 0,
+          pisValue: doc.pisValue || 0,
+          cofinsValue: doc.cofinsValue || 0,
+          icmsstBaseValue: doc.icmsstBaseValue || 0,
+          icmsstValue: doc.icmsstValue || 0,
+          description: doc.description || '',
         } : r
       ),
     }));
-    
+
     handleLinkClose();
   };
 
@@ -443,8 +508,24 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
             id: r.id,
             documentModelId: r.documentTypeId,
             invoiceNumber: r.invoiceNumber || 0,
+            invoiceSeries: r.invoiceSeries || '',
             invoiceDate: r.invoiceDate ? new Date(r.invoiceDate) : new Date(),
-            invoiceValue: r.invoiceValue || 0
+            receiptDate: r.receiptDate ? new Date(r.receiptDate) : null,
+            invoiceKey: r.invoiceKey || '',
+            invoiceValue: r.invoiceValue || 0,
+            totalProductsValue: r.totalProductsValue || 0,
+            discountValue: r.discountValue || 0,
+            freightValue: r.freightValue || 0,
+            insuranceValue: r.insuranceValue || 0,
+            otherValues: r.otherValues || 0,
+            icmsBaseValue: r.icmsBaseValue || 0,
+            icmsValue: r.icmsValue || 0,
+            ipiValue: r.ipiValue || 0,
+            pisValue: r.pisValue || 0,
+            cofinsValue: r.cofinsValue || 0,
+            icmsstBaseValue: r.icmsstBaseValue || 0,
+            icmsstValue: r.icmsstValue || 0,
+            description: r.description || '',
           }));
 
         if (docs.length === 0) continue;

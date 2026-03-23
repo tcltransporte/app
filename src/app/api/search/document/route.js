@@ -25,7 +25,13 @@ export async function POST(request) {
     }
 
     const documents = await db.Document.findAll({
-      attributes: ['id', 'invoiceNumber', 'invoiceDate', 'invoiceValue', 'documentModelId'],
+      attributes: [
+        'id', 'invoiceNumber', 'invoiceSeries', 'invoiceDate', 'receiptDate', 
+        'invoiceKey', 'invoiceValue', 'totalProductsValue', 'discountValue', 
+        'freightValue', 'insuranceValue', 'otherValues', 'icmsBaseValue', 
+        'icmsValue', 'ipiValue', 'pisValue', 'cofinsValue', 'icmsstBaseValue', 
+        'icmsstValue', 'documentModelId', 'description'
+      ],
       where: where,
       order: [['invoiceDate', 'DESC'], ['id', 'DESC']],
       limit: 20
