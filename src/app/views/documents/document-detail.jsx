@@ -9,17 +9,19 @@ import {
   Button,
   Box,
   TextField,
+  Divider,
+  Typography,
 } from '@mui/material';
 import { SelectField } from '@/components/controls/SelectField';
 
 export function DocumentDetail({ open, onClose, onSave, documentTypes, initialData }) {
-  const [editForm, setEditForm] = React.useState({ documentTypeId: '', invoiceNumber: 0, invoiceDate: '', invoiceValue: 0 });
+  const [editForm, setEditForm] = React.useState({ id: null, documentTypeId: '', invoiceNumber: 0, invoiceDate: '', invoiceValue: 0 });
 
   React.useEffect(() => {
     if (open && initialData) {
-      setEditForm(initialData);
+      setEditForm({ ...initialData, id: initialData.id || null });
     } else {
-      setEditForm({ documentTypeId: '', invoiceNumber: 0, invoiceDate: '', invoiceValue: 0 });
+      setEditForm({ id: null, documentTypeId: '', invoiceNumber: 0, invoiceDate: '', invoiceValue: 0 });
     }
   }, [open, initialData]);
 

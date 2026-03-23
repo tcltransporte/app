@@ -16,10 +16,27 @@ import {
   TableRow,
   Checkbox,
   Collapse,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Menu,
+  MenuItem,
 } from '@mui/material';
-import { Close as CloseIcon, ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon, Edit as EditIcon } from '@mui/icons-material';
+import { 
+  Close as CloseIcon, 
+  ExpandMore as ExpandMoreIcon, 
+  ExpandLess as ExpandLessIcon, 
+  Edit as EditIcon, 
+  Link as LinkIcon, 
+  CheckCircle as CheckCircleIcon,
+  Search as SearchIcon
+} from '@mui/icons-material';
 import { DocumentDetail } from '../documents/document-detail';
 import { SelectField } from '@/components/controls/SelectField';
+// No longer using AutoComplete here as we have manual filters in modal
 import * as documentTypeService from '@/app/services/documentType.service';
 import * as solicitationService from '@/app/services/solicitation.service';
 import { ServiceStatus } from '@/libs/service';
@@ -29,8 +46,23 @@ import { alert } from '@/libs/alert';
  * rowItems[solicitationId] = Array<{ rowKey: string, checked: boolean, documentTypeId: number }>
  */
 
-function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChangeType, onEdit }) {
+function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChangeType, onEdit, onLinkClick, onUnlink }) {
   const [expanded, setExpanded] = React.useState(true);
+  const [unlinkMenu, setUnlinkMenu] = React.useState({ anchorEl: null, rowKey: null });
+
+  const handleUnlinkOpen = (event, rowKey) => {
+    setUnlinkMenu({ anchorEl: event.currentTarget, rowKey });
+  };
+
+  const handleUnlinkClose = () => {
+    setUnlinkMenu({ anchorEl: null, rowKey: null });
+  };
+
+  const handleUnlinkClick = () => {
+    onUnlink(solicitation.id, unlinkMenu.rowKey);
+    handleUnlinkClose();
+  };
+
   const solRows = rows[solicitation.id] || [];
 
   return (
@@ -79,9 +111,34 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
                           disabled={!row.checked}
                           options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
                         />
-                        <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          {row.id ? (
+                            <Tooltip title="Vínculo realizado. Clique para opções.">
+                              <IconButton size="small" color="success" onClick={(e) => handleUnlinkOpen(e, row.rowKey)} disabled={!row.checked}>
+                                <CheckCircleIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip title="Vincular documento existente">
+                              <IconButton size="small" onClick={(e) => onLinkClick(e, solicitation.id, row.rowKey)} disabled={!row.checked}>
+                                <LinkIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+
+                        <Menu
+                          anchorEl={unlinkMenu.anchorEl}
+                          open={Boolean(unlinkMenu.anchorEl)}
+                          onClose={handleUnlinkClose}
+                        >
+                          <MenuItem onClick={handleUnlinkClick} sx={{ color: 'error.main' }}>
+                            Desvincular documento
+                          </MenuItem>
+                        </Menu>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -102,6 +159,116 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
   );
 }
 
+function LinkDocumentModal({ open, onClose, onSelect }) {
+  const [search, setSearch] = React.useState('');
+  const [results, setResults] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+
+  const handleSearch = async () => {
+    if (!search.trim()) return;
+    setLoading(true);
+    try {
+      const resp = await fetch('/api/search/document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ search })
+      });
+      const data = await resp.json();
+      setResults(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>Vincular Documento Existente</DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ display: 'flex', gap: 1, mb: 3, mt: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Pesquisar por número da NF"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Button variant="contained" onClick={handleSearch} disabled={loading} startIcon={<SearchIcon />}>
+            Buscar
+          </Button>
+        </Box>
+
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>NF</TableCell>
+              <TableCell>Data</TableCell>
+              <TableCell>Valor</TableCell>
+              <TableCell align="right">Ação</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {results.map((doc) => (
+              <TableRow 
+                key={doc.id} 
+                hover 
+                sx={{ 
+                  '& .link-button': { opacity: 0, transition: '0.2s' },
+                  '&:hover .link-button': { opacity: 1 }
+                }}
+              >
+                <TableCell>{doc.id}</TableCell>
+                <TableCell>{doc.invoiceNumber}</TableCell>
+                <TableCell>{new Date(doc.invoiceDate).toLocaleDateString()}</TableCell>
+                <TableCell>R$ {doc.invoiceValue}</TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Vincular este documento">
+                    <IconButton 
+                      className="link-button" 
+                      size="large" 
+                      color="success" 
+                      onClick={() => onSelect(doc)}
+                      sx={{ 
+                        backgroundColor: 'success.lighter',
+                        '&:hover': { backgroundColor: 'success.light' }
+                      }}
+                    >
+                      <CheckCircleIcon fontSize="medium" />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            ))}
+            {results.length === 0 && !loading && (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                    Nenhum documento encontrado.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  <CircularProgress size={24} sx={{ my: 2 }} />
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose}>Fechar</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSave }) {
   const [documentTypes, setDocumentTypes] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -111,6 +278,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
   const [rows, setRows] = React.useState({});
 
   const [editModal, setEditModal] = React.useState({ open: false, rowKey: null, solicitationId: null, initialData: null });
+  const [linkModal, setLinkModal] = React.useState({ open: false, solicitationId: null, rowKey: null });
 
   React.useEffect(() => {
     if (!open || solicitations.length === 0) return;
@@ -187,6 +355,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
         solicitationId,
         rowKey,
         initialData: {
+          id: row.id,
           documentTypeId: row.documentTypeId || '',
           invoiceNumber: row.invoiceNumber || 0,
           invoiceDate: formattedDate,
@@ -203,6 +372,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
       [editModal.solicitationId]: prev[editModal.solicitationId].map(r =>
         r.rowKey === editModal.rowKey ? {
           ...r,
+          id: editedForm.id || r.id,
           documentTypeId: editedForm.documentTypeId,
           invoiceNumber: Number(editedForm.invoiceNumber),
           invoiceDate: editedForm.invoiceDate,
@@ -211,6 +381,49 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
       ),
     }));
     setEditModal({ open: false, rowKey: null, solicitationId: null, initialData: null });
+  };
+
+  const handleLinkClick = (event, solicitationId, rowKey) => {
+    setLinkModal({ open: true, solicitationId, rowKey });
+  };
+
+  const handleLinkClose = () => {
+    setLinkModal({ open: false, solicitationId: null, rowKey: null });
+  };
+
+  const handleLinkSelect = (doc) => {
+    if (!doc || !linkModal.solicitationId) return;
+    
+    setRows(prev => ({
+      ...prev,
+      [linkModal.solicitationId]: prev[linkModal.solicitationId].map(r =>
+        r.rowKey === linkModal.rowKey ? {
+          ...r,
+          id: doc.id,
+          documentTypeId: doc.documentModelId || r.documentTypeId,
+          invoiceNumber: doc.invoiceNumber || 0,
+          invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : r.invoiceDate,
+          invoiceValue: doc.invoiceValue || 0
+        } : r
+      ),
+    }));
+    
+    handleLinkClose();
+  };
+
+  const handleUnlink = (solicitationId, rowKey) => {
+    setRows(prev => ({
+      ...prev,
+      [solicitationId]: prev[solicitationId].map(r =>
+        r.rowKey === rowKey ? {
+          ...r,
+          id: null,
+          invoiceNumber: 0,
+          invoiceDate: new Date().toISOString().split('T')[0],
+          invoiceValue: 0
+        } : r
+      ),
+    }));
   };
 
   const hasAnySelected = Object.values(rows).some(solRows => solRows.some(r => r.checked));
@@ -290,6 +503,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
                   onToggle={handleToggle}
                   onChangeType={handleChangeType}
                   onEdit={handleEdit}
+                  onLinkClick={handleLinkClick}
+                  onUnlink={handleUnlink}
                 />
               ))}
             </TableBody>
@@ -327,6 +542,13 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
         onSave={handleSaveEdit}
         documentTypes={documentTypes}
         initialData={editModal.initialData}
+      />
+
+      {/* Link Document Modal */}
+      <LinkDocumentModal
+        open={linkModal.open}
+        onClose={handleLinkClose}
+        onSelect={handleLinkSelect}
       />
 
     </Drawer>

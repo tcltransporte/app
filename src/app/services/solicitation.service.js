@@ -426,7 +426,6 @@ export async function saveDocuments(solicitationId, documents = []) {
         if (doc.id) {
           await documentRepository.update({ db, transaction }, { where: { id: doc.id } }, payload)
         } else {
-
           const createdDoc = await documentRepository.create({ db, transaction }, {
             ...payload,
             solicitationId,
@@ -436,13 +435,14 @@ export async function saveDocuments(solicitationId, documents = []) {
             createdAt: new Date(),
             systemDate: new Date(),
           })
-
-          await db.SolicitationDocument.create({
-            solicitationId,
-            documentId: createdDoc.id
-          }, { transaction })
-
+          doc.id = createdDoc.id
         }
+
+        // Always ensure relationship exists in solicitationDocument
+        await db.SolicitationDocument.findOrCreate({
+          where: { solicitationId, documentId: doc.id },
+          transaction
+        })
       }
     })
 
