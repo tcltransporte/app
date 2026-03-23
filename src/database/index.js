@@ -21,6 +21,7 @@ import { SolicitationStatusWorkflow } from './models/solicitationStatusWorkflow.
 import { SolicitationStatusTipo } from './models/solicitationStatusTipo.model.js'
 import { Document } from './models/document.model.js'
 import { DocumentType } from './models/documentType.model.js'
+import { SolicitationDocument } from './models/solicitationDocument.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -72,6 +73,7 @@ export class AppContext extends Sequelize {
     this.UserMember = this.define('userMember', new UserMember(), { tableName: 'aspnet_Membership' })
     this.Document = this.define('document', new Document(), { tableName: 'Compras' })
     this.DocumentType = this.define('documentType', new DocumentType(), { tableName: 'TipoModeloDocumento' })
+    this.SolicitationDocument = this.define('solicitationDocument', new SolicitationDocument(), { tableName: 'solicitationDocument' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -119,6 +121,9 @@ export class AppContext extends Sequelize {
     this.Document.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
     this.Document.belongsTo(this.DocumentType, { as: 'documentType', foreignKey: 'documentModelId' })
 
+    this.SolicitationDocument.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
+    this.SolicitationDocument.belongsTo(this.Document, { as: 'document', foreignKey: 'documentId' })
+
     this.Company.addHook('afterFind', afterFind)
     this.CompanyBusiness.addHook('afterFind', afterFind)
     this.CompanyUser.addHook('afterFind', afterFind)
@@ -136,6 +141,7 @@ export class AppContext extends Sequelize {
     this.Product.addHook('afterFind', afterFind)
     this.Document.addHook('afterFind', afterFind)
     this.DocumentType.addHook('afterFind', afterFind)
+    this.SolicitationDocument.addHook('afterFind', afterFind)
 
   }
 

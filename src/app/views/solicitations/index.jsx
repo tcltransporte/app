@@ -282,6 +282,18 @@ export default function SolicitationView({
         })
       },
     ] : []),
+    ...(table.selecteds.some(s => !!s.solicitationStatus?.generateDocumentTypeId) ? [
+      {
+        label: 'Gerar documentos',
+        icon: <GenerateIcon />,
+        variant: 'outlined',
+        color: 'primary',
+        onClick: () => setGenerateDocumentDrawer({
+          open: true,
+          solicitations: table.selecteds.filter(s => !!s.solicitationStatus?.generateDocumentTypeId)
+        })
+      },
+    ] : []),
     ...(table.selecteds.length === 1 ? [
       { label: 'Editar', icon: <EditIcon />, variant: 'outlined', color: 'primary', onClick: () => navigation.setSelectedId(table.selecteds[0].id) },
     ] : []),

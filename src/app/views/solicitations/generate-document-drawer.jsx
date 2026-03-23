@@ -57,7 +57,7 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
               <TableHead>
                 <TableRow>
                   <TableCell padding="checkbox" />
-                  <TableCell>Tipo de Documento</TableCell>
+                  <TableCell>Tipo</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -73,11 +73,11 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
                     <TableCell sx={{ minWidth: 200 }}>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                         <SelectField
+                          label="Modelo"
                           value={row.documentTypeId || ''}
                           onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
                           disabled={!row.checked}
                           options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
-                          variant="outlined"
                         />
                         <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
                           <EditIcon fontSize="small" />
@@ -216,10 +216,14 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
   const hasAnySelected = Object.values(rows).some(solRows => solRows.some(r => r.checked));
 
   const handleConfirm = async () => {
-    setSubmitting(true);
     try {
+
+      setSubmitting(true);
+
       for (const solicitation of solicitations) {
+
         const solRows = rows[solicitation.id] || [];
+
         const docs = solRows
           .filter(r => r.checked && r.documentTypeId)
           .map(r => ({
@@ -239,10 +243,14 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
 
         if (result.status !== ServiceStatus.SUCCESS)
           throw new Error(result.message || 'Erro ao gerar documento.');
+
       }
+
       alert.success('Documentos gerados com sucesso!');
+
       onSave?.();
       onClose();
+
     } catch (error) {
       alert.error('Erro ao gerar documentos', error?.message || 'Ocorreu um erro inesperado.');
     } finally {

@@ -3,6 +3,7 @@
 import { Op } from 'sequelize'
 import * as solicitationRepository from "@/app/repositories/solicitation.repository"
 import * as typeRepository from "@/app/repositories/solicitationType.repository"
+import * as documentRepository from "@/app/repositories/document.repository.js"
 import { AppContext } from "@/database"
 import { ServiceResponse, ServiceStatus, sanitize } from "@/libs/service"
 import { getSession } from "@/libs/session"
@@ -213,12 +214,15 @@ export async function update(id, data) {
   }
 }
 
-export async function toStatus(id, statusId, documents = [], description = null) {
+export async function toStatus(id, statusId, description = null) {
   try {
+
     const session = await getSession()
+
     const db = new AppContext()
 
     await db.transaction(async (transaction) => {
+
       const existing = await solicitationRepository.findOne({ db, transaction }, {
         attributes: ['id', 'partnerId', 'companyId', 'statusId'],
         where: {
@@ -230,29 +234,12 @@ export async function toStatus(id, statusId, documents = [], description = null)
       if (!existing)
         throw ServiceResponse.badRequest("SOLICITATION_NOT_FOUND", "Solicitação não encontrada!")
 
-      const statusChanged = statusId && String(statusId) !== String(existing.statusId);
-
-      if (documents && documents.length > 0 && statusChanged) {
-        for (const doc of documents) {
-          await db.Document.create({
-            partnerId: existing.partnerId,
-            invoiceNumber: doc.invoiceNumber || 0,
-            invoiceDate: doc.invoiceDate || new Date(),
-            invoiceValue: doc.invoiceValue || 0,
-            companyId: session.company.id,
-            solicitationId: id,
-            documentModelId: doc.documentTypeId,
-            createdById: session.user.id,
-            createdAt: new Date(),
-            systemDate: new Date()
-          }, { transaction });
-        }
-      }
-
       const updateData = { statusId };
+
       if (description !== null) updateData.description = description;
 
       await solicitationRepository.update({ db, transaction }, { where: { id: id } }, updateData)
+
     })
 
     return ServiceResponse.success({ id })
@@ -263,10 +250,13 @@ export async function toStatus(id, statusId, documents = [], description = null)
 
 export async function destroy(id) {
   try {
+
     const session = await getSession()
+
     const db = new AppContext()
 
     await db.transaction(async (transaction) => {
+
       const existing = await solicitationRepository.findOne({ db, transaction }, {
         attributes: ['id'],
         where: {
@@ -288,6 +278,7 @@ export async function destroy(id) {
   }
 }
 
+/*
 export async function findAllStatuses() {
   try {
     const db = new AppContext()
@@ -300,6 +291,7 @@ export async function findAllStatuses() {
     return ServiceResponse.error(error)
   }
 }
+*/
 
 export async function findAllowedTransitions(fromStatusIds) {
   try {
@@ -339,6 +331,7 @@ export async function findAllowedTransitions(fromStatusIds) {
   }
 }
 
+/*
 export async function findAllStatusRelationships() {
   try {
     const db = new AppContext()
@@ -382,36 +375,48 @@ export async function updateStatusRelationships(fromStatusId, toStatusIds) {
     return ServiceResponse.error(error)
   }
 }
+*/
 
+/*
 export async function findDocuments(solicitationId) {
   try {
+
     const session = await getSession()
+
     const db = new AppContext()
+
     const documents = await db.Document.findAll({
       attributes: ['id', 'documentModelId', 'invoiceNumber', 'invoiceDate', 'invoiceValue'],
       where: { solicitationId, companyId: session.company.id },
       include: [{ association: 'documentType', attributes: ['id', 'description', 'initials'] }],
       order: [['id', 'ASC']]
     })
+
     return ServiceResponse.success({ items: documents.map(d => d.get({ plain: true })) })
   } catch (error) {
     return ServiceResponse.error(error)
   }
 }
+*/
 
 export async function saveDocuments(solicitationId, documents = []) {
   try {
+
     const session = await getSession()
+
     const db = new AppContext()
 
     await db.transaction(async (transaction) => {
+
       const solicitation = await db.Solicitation.findOne({
         attributes: ['id', 'partnerId'],
         where: { id: solicitationId, companyId: session.company.id }
       })
+
       if (!solicitation) throw ServiceResponse.badRequest('SOLICITATION_NOT_FOUND', 'Solicitação não encontrada!')
 
       for (const doc of documents) {
+
         const payload = {
           documentModelId: doc.documentModelId,
           invoiceNumber: doc.invoiceNumber || 0,
@@ -419,9 +424,10 @@ export async function saveDocuments(solicitationId, documents = []) {
           invoiceValue: doc.invoiceValue || 0,
         }
         if (doc.id) {
-          await db.Document.update(payload, { where: { id: doc.id }, transaction })
+          await documentRepository.update({ db, transaction }, { where: { id: doc.id } }, payload)
         } else {
-          await db.Document.create({
+
+          const createdDoc = await documentRepository.create({ db, transaction }, {
             ...payload,
             solicitationId,
             partnerId: solicitation.partnerId,
@@ -429,7 +435,13 @@ export async function saveDocuments(solicitationId, documents = []) {
             createdById: session.user.id,
             createdAt: new Date(),
             systemDate: new Date(),
+          })
+
+          await db.SolicitationDocument.create({
+            solicitationId,
+            documentId: createdDoc.id
           }, { transaction })
+
         }
       }
     })
