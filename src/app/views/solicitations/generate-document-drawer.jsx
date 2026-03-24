@@ -17,6 +17,7 @@ import {
   Checkbox,
   Collapse,
   Tooltip,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -102,84 +103,95 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
       <TableRow>
         <TableCell colSpan={3} sx={{ p: 0 }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  {/*<TableCell padding="checkbox" />*/}
-                  <TableCell>Tipo / Modelo</TableCell>
-                  <TableCell align="right" sx={{ width: 140 }}>Valor (R$)</TableCell>
-                  <TableCell sx={{ width: 80 }} />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {solRows.map((row) => (
-                  <TableRow key={row.rowKey} hover>
-                    {/*
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        size="small"
-                        checked={row.checked}
-                        onChange={() => onToggle(solicitation.id, row.rowKey)}
-                      />
-                    </TableCell>*/}
-                    <TableCell sx={{ minWidth: 200 }}>
-                      <SelectField
-                        label="Tipo"
-                        value={row.documentTypeId || ''}
-                        onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
-                        disabled={!row.checked}
-                        options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ width: 140 }}>
-                      <NumericField
-                        label="Valor"
-                        value={row.invoiceValue || 0}
-                        onChange={(val) => onChangeValue(solicitation.id, row.rowKey, val)}
-                        disabled={!row.checked}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ width: 80 }}>
-                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                        {row.id ? (
-                          <Tooltip title="Vínculo realizado. Clique para opções.">
-                            <IconButton size="small" color="success" onClick={(e) => handleUnlinkOpen(e, row.rowKey)} disabled={!row.checked}>
-                              <CheckCircleIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="Vincular documento existente">
-                            <IconButton size="small" onClick={(e) => onLinkClick(e, solicitation.id, row.rowKey)} disabled={!row.checked}>
-                              <LinkIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-
-                      <Menu
-                        anchorEl={unlinkMenu.anchorEl}
-                        open={Boolean(unlinkMenu.anchorEl)}
-                        onClose={handleUnlinkClose}
-                      >
-                        <MenuItem onClick={handleUnlinkClick} sx={{ color: 'error.main' }}>
-                          Desvincular documento
-                        </MenuItem>
-                      </Menu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {solRows.length === 0 && (
+            {solRows.some(r => r.id) ? (
+              <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'success.lighter', borderRadius: 1, m: 1 }}>
+                <Typography variant="body2" color="success.main" fontWeight={600}>
+                  Os documentos para esta solicitação já foram gerados.
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Utilize a visualização detalhada na tabela para editar ou visualizar.
+                </Typography>
+              </Box>
+            ) : (
+              <Table size="small">
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={2}>
-                      <Typography variant="caption" color="text.secondary">Nenhum documento configurado.</Typography>
-                    </TableCell>
+                    {/*<TableCell padding="checkbox" />*/}
+                    <TableCell>Tipo / Modelo</TableCell>
+                    <TableCell align="right" sx={{ width: 140 }}>Valor (R$)</TableCell>
+                    <TableCell sx={{ width: 80 }} />
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {solRows.map((row) => (
+                    <TableRow key={row.rowKey} hover>
+                      {/*
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          size="small"
+                          checked={row.checked}
+                          onChange={() => onToggle(solicitation.id, row.rowKey)}
+                        />
+                      </TableCell>*/}
+                      <TableCell sx={{ minWidth: 200 }}>
+                        <SelectField
+                          label="Tipo"
+                          value={row.documentTypeId || ''}
+                          onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
+                          disabled={!row.checked}
+                          options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ width: 140 }}>
+                        <NumericField
+                          label="Valor"
+                          value={row.invoiceValue || 0}
+                          onChange={(val) => onChangeValue(solicitation.id, row.rowKey, val)}
+                          disabled={!row.checked}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ width: 80 }}>
+                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                          {row.id ? (
+                            <Tooltip title="Vínculo realizado. Clique para opções.">
+                              <IconButton size="small" color="success" onClick={(e) => handleUnlinkOpen(e, row.rowKey)} disabled={!row.checked}>
+                                <CheckCircleIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip title="Vincular documento existente">
+                              <IconButton size="small" onClick={(e) => onLinkClick(e, solicitation.id, row.rowKey)} disabled={!row.checked}>
+                                <LinkIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+
+                        <Menu
+                          anchorEl={unlinkMenu.anchorEl}
+                          open={Boolean(unlinkMenu.anchorEl)}
+                          onClose={handleUnlinkClose}
+                        >
+                          <MenuItem onClick={handleUnlinkClick} sx={{ color: 'error.main' }}>
+                            Desvincular documento
+                          </MenuItem>
+                        </Menu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {solRows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={2}>
+                        <Typography variant="caption" color="text.secondary">Nenhum documento configurado.</Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </Collapse>
         </TableCell>
       </TableRow>

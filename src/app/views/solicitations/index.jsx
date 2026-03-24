@@ -14,12 +14,14 @@ import {
   Autorenew as StatusIcon,
   MoreVert as MoreIcon,
   NoteAdd as GenerateIcon,
+  Description as DocumentIcon,
 } from '@mui/icons-material';
 
 import SolicitationDetail from './solicitation.detail';
 import SolicitationFilter from './filter';
 import { StatusDrawer } from './status-drawer';
 import { GenerateDocumentDrawer } from './generate-document-drawer';
+import { SolicitationDocumentViewerDrawer } from './document-viewer-drawer';
 import { useTable, useNavigation, useRangeFilter, useFilter, useExport } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import { Container, Table, Toolbar, RangeModal, LoadingOverlay } from '@/components/common';
@@ -56,33 +58,69 @@ export default function SolicitationView({
     };
 
     const hasGenerate = !!row.solicitationStatus?.generateDocumentTypeId;
-
-    if (!hasGenerate) return null;
+    const count = row.documents?.length || 0;
+    const hasActions = hasGenerate; // Only action currently is Generate
 
     return (
-      <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-        <Tooltip title="Ações">
-          <MuiIconButton size="small" onClick={handleClick}>
-            <MoreIcon fontSize="small" />
+      <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex', alignItems: 'center', height: '100%', gap: 0.5 }}>
+        <Tooltip title="Ver documentos">
+          <MuiIconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (count > 0) setDocumentViewerDrawer({ open: true, solicitation: row });
+            }}
+            disabled={count === 0}
+            sx={{
+              width: 24,
+              height: 24,
+              fontSize: 12,
+              fontWeight: 600,
+              bgcolor: count > 0 ? 'primary.main' : 'action.disabledBackground',
+              color: count > 0 ? 'primary.contrastText' : 'text.disabled',
+              '&:hover': {
+                bgcolor: count > 0 ? 'primary.dark' : 'action.disabledBackground',
+              },
+              '&.Mui-disabled': {
+                bgcolor: 'transparent',
+                color: 'text.disabled',
+                border: '1px solid',
+                borderColor: 'divider',
+              }
+            }}
+          >
+            {count}
           </MuiIconButton>
         </Tooltip>
-        <Menu
-          anchorEl={anchorEl}
-          open={openMenu}
-          onClose={handleClose}
-          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        >
-          <MenuItem
-            onClick={handleGenerateDocument}
-            sx={{ gap: 1 }}
-          >
-            <ListItemIcon sx={{ minWidth: 'auto !important' }}>
-              <GenerateIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Gerar documento" primaryTypographyProps={{ variant: 'body2' }} />
-          </MenuItem>
-        </Menu>
+
+        {hasActions && (
+          <>
+            <Tooltip title="Ações">
+              <MuiIconButton size="small" onClick={handleClick}>
+                <MoreIcon fontSize="small" />
+              </MuiIconButton>
+            </Tooltip>
+            <Menu
+              anchorEl={anchorEl}
+              open={openMenu}
+              onClose={handleClose}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+              {hasGenerate && (
+                <MenuItem
+                  onClick={handleGenerateDocument}
+                  sx={{ gap: 1 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 'auto !important' }}>
+                    <GenerateIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary="Gerar documento" primaryTypographyProps={{ variant: 'body2' }} />
+                </MenuItem>
+              )}
+            </Menu>
+          </>
+        )}
       </Box>
     );
   };
@@ -91,6 +129,7 @@ export default function SolicitationView({
 
   const [statusDrawer, setStatusDrawer] = React.useState({ open: false, selectedIds: [], fromStatusIds: [] });
   const [generateDocumentDrawer, setGenerateDocumentDrawer] = React.useState({ open: false, solicitations: [] });
+  const [documentViewerDrawer, setDocumentViewerDrawer] = React.useState({ open: false, solicitation: null });
 
   const table = useTable({ initialTable })
   const filter = useFilter(initialFilters)
@@ -210,7 +249,7 @@ export default function SolicitationView({
   const columns = [
     { field: 'number', headerName: 'Número', width: 100 },
     {
-      field: 'partnerId', headerName: 'Fornecedor', width: 500,
+      field: 'partnerId', headerName: 'Fornecedor',
       renderCell: (val, row) => row.partner?.surname || row.partner?.name || ''
     },
     { field: 'description', headerName: 'Descrição', fontWeight: 200 },
@@ -251,7 +290,7 @@ export default function SolicitationView({
     {
       field: 'actions',
       headerName: '',
-      width: 50,
+      width: 80,
       sortable: false,
       sx: { py: 0 },
       renderCell: (val, row) => <RowActions row={row} />
@@ -414,6 +453,13 @@ export default function SolicitationView({
           solicitations={generateDocumentDrawer.solicitations}
           onClose={() => setGenerateDocumentDrawer({ open: false, solicitations: [] })}
           onSave={() => fetchTable()}
+        />
+
+        <SolicitationDocumentViewerDrawer
+          open={documentViewerDrawer.open}
+          solicitation={documentViewerDrawer.solicitation}
+          onClose={() => setDocumentViewerDrawer({ ...documentViewerDrawer, open: false })}
+          onRefresh={() => fetchTable()}
         />
 
       </Container.Content>

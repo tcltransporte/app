@@ -482,9 +482,12 @@ export async function generateDocuments(solicitationIds = []) {
 
       const s = sRow.toJSON()
 
-      if (!s.documents || s.documents.length === 0) {
+      if (s.documents && s.documents.length > 0) {
+        // Solicitation already has documents, don't generate more
+        return s;
+      }
 
-        s.documents = [];
+      s.documents = [];
 
         const hasProducts = (s.products || []).length > 0;
         const hasServices = (s.services || []).length > 0;
@@ -505,7 +508,6 @@ export async function generateDocuments(solicitationIds = []) {
           s.documents.push({ id: null, documentModelId: defaultType.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
         }
 
-      }
 
       return s;
 
