@@ -32,10 +32,11 @@ import {
   Edit as EditIcon,
   Link as LinkIcon,
   CheckCircle as CheckCircleIcon,
-  Search as SearchIcon
+  Search as SearchIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { DocumentDetail } from '../documents/document-detail';
-import { SelectField } from '@/components/controls/SelectField';
+import { SelectField, NumericField } from '@/components/controls';
 // No longer using AutoComplete here as we have manual filters in modal
 import * as documentTypeService from '@/app/services/documentType.service';
 import * as solicitationService from '@/app/services/solicitation.service';
@@ -46,7 +47,7 @@ import { alert } from '@/libs/alert';
  * rowItems[solicitationId] = Array<{ rowKey: string, checked: boolean, documentTypeId: number }>
  */
 
-function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChangeType, onEdit, onLinkClick, onUnlink }) {
+function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChangeType, onChangeValue, onEdit, onLinkClick, onUnlink }) {
   const [expanded, setExpanded] = React.useState(true);
   const [unlinkMenu, setUnlinkMenu] = React.useState({ anchorEl: null, rowKey: null });
 
@@ -64,11 +65,15 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
   };
 
   const solRows = rows[solicitation.id] || [];
+  const totalDocuments = solRows.filter(r => r.checked).reduce((sum, r) => sum + (Number(r.invoiceValue) || 0), 0);
+  const totalPayments = (solicitation.payments || []).reduce((sum, p) => sum + (Number(p.value) || 0), 0);
+
+  const isDivergent = Math.abs(totalDocuments - totalPayments) > 0.01;
 
   return (
     <>
       <TableRow sx={{ backgroundColor: 'action.hover' }}>
-        <TableCell colSpan={3} sx={{ py: 1 }}>
+        <TableCell colSpan={2} sx={{ py: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconButton size="small" onClick={() => setExpanded(prev => !prev)}>
               {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
@@ -81,6 +86,18 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
             </Typography>
           </Box>
         </TableCell>
+        <TableCell align="right" sx={{ py: 1, pr: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+            {isDivergent && (
+              <Tooltip title={`Divergência: Documentos (R$ ${totalDocuments.toFixed(2)}) ≠ Pagamentos (R$ ${totalPayments.toFixed(2)})`}>
+                <WarningIcon color="warning" fontSize="small" />
+              </Tooltip>
+            )}
+            <Typography variant="body2" fontWeight={700} color="primary">
+              R$ {totalPayments.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Typography>
+          </Box>
+        </TableCell>
       </TableRow>
       <TableRow>
         <TableCell colSpan={3} sx={{ p: 0 }}>
@@ -89,7 +106,9 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
               <TableHead>
                 <TableRow>
                   {/*<TableCell padding="checkbox" />*/}
-                  <TableCell>Tipo</TableCell>
+                  <TableCell>Tipo / Modelo</TableCell>
+                  <TableCell align="right" sx={{ width: 140 }}>Valor (R$)</TableCell>
+                  <TableCell sx={{ width: 80 }} />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -104,43 +123,51 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
                       />
                     </TableCell>*/}
                     <TableCell sx={{ minWidth: 200 }}>
-                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                        <SelectField
-                          label="Modelo"
-                          value={row.documentTypeId || ''}
-                          onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
-                          disabled={!row.checked}
-                          options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
-                        />
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          {row.id ? (
-                            <Tooltip title="Vínculo realizado. Clique para opções.">
-                              <IconButton size="small" color="success" onClick={(e) => handleUnlinkOpen(e, row.rowKey)} disabled={!row.checked}>
-                                <CheckCircleIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          ) : (
-                            <Tooltip title="Vincular documento existente">
-                              <IconButton size="small" onClick={(e) => onLinkClick(e, solicitation.id, row.rowKey)} disabled={!row.checked}>
-                                <LinkIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-
-                        <Menu
-                          anchorEl={unlinkMenu.anchorEl}
-                          open={Boolean(unlinkMenu.anchorEl)}
-                          onClose={handleUnlinkClose}
-                        >
-                          <MenuItem onClick={handleUnlinkClick} sx={{ color: 'error.main' }}>
-                            Desvincular documento
-                          </MenuItem>
-                        </Menu>
+                      <SelectField
+                        label="Tipo"
+                        value={row.documentTypeId || ''}
+                        onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
+                        disabled={!row.checked}
+                        options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ width: 140 }}>
+                      <NumericField
+                        label="Valor"
+                        value={row.invoiceValue || 0}
+                        onChange={(val) => onChangeValue(solicitation.id, row.rowKey, val)}
+                        disabled={!row.checked}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ width: 80 }}>
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                        {row.id ? (
+                          <Tooltip title="Vínculo realizado. Clique para opções.">
+                            <IconButton size="small" color="success" onClick={(e) => handleUnlinkOpen(e, row.rowKey)} disabled={!row.checked}>
+                              <CheckCircleIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Vincular documento existente">
+                            <IconButton size="small" onClick={(e) => onLinkClick(e, solicitation.id, row.rowKey)} disabled={!row.checked}>
+                              <LinkIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
                       </Box>
+
+                      <Menu
+                        anchorEl={unlinkMenu.anchorEl}
+                        open={Boolean(unlinkMenu.anchorEl)}
+                        onClose={handleUnlinkClose}
+                      >
+                        <MenuItem onClick={handleUnlinkClick} sx={{ color: 'error.main' }}>
+                          Desvincular documento
+                        </MenuItem>
+                      </Menu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -186,7 +213,16 @@ function LinkDocumentModal({ open, onClose, onSelect }) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Vincular Documento Existente</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700, pb: 1, pr: 6 }}>
+        Vincular Documento Existente
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ position: 'absolute', right: 12, top: 12, color: 'text.secondary' }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
       <DialogContent dividers>
         <Box sx={{ display: 'flex', gap: 1, mb: 3, mt: 1 }}>
           <TextField
@@ -358,6 +394,15 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
       ...prev,
       [solicitationId]: prev[solicitationId].map(r =>
         r.rowKey === rowKey ? { ...r, documentTypeId } : r
+      ),
+    }));
+  };
+
+  const handleChangeValue = (solicitationId, rowKey, invoiceValue) => {
+    setRows(prev => ({
+      ...prev,
+      [solicitationId]: prev[solicitationId].map(r =>
+        r.rowKey === rowKey ? { ...r, invoiceValue } : r
       ),
     }));
   };
@@ -583,6 +628,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
                   rows={rows}
                   onToggle={handleToggle}
                   onChangeType={handleChangeType}
+                  onChangeValue={handleChangeValue}
                   onEdit={handleEdit}
                   onLinkClick={handleLinkClick}
                   onUnlink={handleUnlink}

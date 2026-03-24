@@ -10,13 +10,16 @@ import {
   Divider,
   Typography,
   Grid,
+  IconButton,
 } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import { Formik, Form, Field } from 'formik';
-import { 
-  TextField, 
-  NumericField, 
-  DateField, 
-  SelectField 
+import {
+  TextField,
+  NumericField,
+  DateField,
+  SelectField,
+  DateTimeField
 } from '@/components/controls';
 
 export function DocumentDetail({ open, onClose, onSave, documentTypes, initialData }) {
@@ -67,8 +70,17 @@ export function DocumentDetail({ open, onClose, onSave, documentTypes, initialDa
   });
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Detalhamento do Documento</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle sx={{ fontWeight: 700, pb: 1, pr: 6 }}>
+        Documento
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ position: 'absolute', right: 12, top: 12, color: 'text.secondary' }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
       <Formik
         initialValues={getValues(initialData)}
         enableReinitialize
@@ -78,170 +90,175 @@ export function DocumentDetail({ open, onClose, onSave, documentTypes, initialDa
           <>
             <DialogContent dividers>
               <Form>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="subtitle2" color="primary">Informações Básicas</Typography>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Field
-                  name="documentTypeId"
-                  component={SelectField}
-                  label="Modelo do Documento"
-                  options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
-                />
-              </Grid>
-              <Grid size={{ xs: 8, sm: 4 }}>
-                <Field
-                  name="invoiceNumber"
-                  component={TextField}
-                  label="Número da NF"
-                  type="number"
-                />
-              </Grid>
-              <Grid size={{ xs: 4, sm: 2 }}>
-                <Field
-                  name="invoiceSeries"
-                  component={TextField}
-                  label="Série"
-                  transform="uppercase"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Field
-                  name="invoiceKey"
-                  component={TextField}
-                  label="Chave da NF-e"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="invoiceDate"
-                  component={DateField}
-                  label="Data Emissão"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="receiptDate"
-                  component={DateField}
-                  label="Data Entrada"
-                />
-              </Grid>
-
-              <Grid size={{ xs: 12 }}>
+                {/*
+                <Grid container>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Field
+                      name="documentTypeId"
+                      component={SelectField}
+                      label="Tipo"
+                      options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
+                    />
+                  </Grid>
+                </Grid>
                 <Divider sx={{ my: 1 }} />
-                <Typography variant="subtitle2" color="primary">Valores e Totais</Typography>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="invoiceValue"
-                  component={NumericField}
-                  label="Valor Total (R$)"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="totalProductsValue"
-                  component={NumericField}
-                  label="Total Produtos"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="discountValue"
-                  component={NumericField}
-                  label="Descontos"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="freightValue"
-                  component={NumericField}
-                  label="Frete"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="insuranceValue"
-                  component={NumericField}
-                  label="Seguro"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="otherValues"
-                  component={NumericField}
-                  label="Outras Despesas"
-                />
-              </Grid>
+                */}
+                <Grid container spacing={1}>
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="subtitle2" color="primary">Informações Básicas</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 8, sm: 1.5 }}>
+                    <Field
+                      name="invoiceNumber"
+                      component={TextField}
+                      label="Número"
+                      type="number"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 4, sm: 1.1 }}>
+                    <Field
+                      name="invoiceSeries"
+                      component={TextField}
+                      label="Série"
+                      transform="uppercase"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 5.4 }}>
+                    <Field
+                      name="invoiceKey"
+                      component={TextField}
+                      label="Chave de acesso"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2.2 }}>
+                    <Field
+                      name="invoiceDate"
+                      component={DateTimeField}
+                      label="Data Emissão"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.8 }}>
+                    <Field
+                      name="receiptDate"
+                      component={DateField}
+                      label="Data Entrada"
+                    />
+                  </Grid>
 
-              <Grid size={{ xs: 12 }}>
-                <Divider sx={{ my: 1 }} />
-                <Typography variant="subtitle2" color="primary">Impostos</Typography>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="icmsBaseValue"
-                  component={NumericField}
-                  label="Base ICMS"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="icmsValue"
-                  component={NumericField}
-                  label="Valor ICMS"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="ipiValue"
-                  component={NumericField}
-                  label="Valor IPI"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="pisValue"
-                  component={NumericField}
-                  label="Valor PIS"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="cofinsValue"
-                  component={NumericField}
-                  label="Valor COFINS"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="icmsstBaseValue"
-                  component={NumericField}
-                  label="Base ICMS ST"
-                />
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Field
-                  name="icmsstValue"
-                  component={NumericField}
-                  label="Valor ICMS ST"
-                />
-              </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Divider sx={{ my: 1 }} />
+                    <Typography variant="subtitle2" color="primary">Valores e Totais</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="invoiceValue"
+                      component={NumericField}
+                      label="Valor Total (R$)"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="totalProductsValue"
+                      component={NumericField}
+                      label="Total Produtos"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="discountValue"
+                      component={NumericField}
+                      label="Descontos"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="freightValue"
+                      component={NumericField}
+                      label="Frete"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="insuranceValue"
+                      component={NumericField}
+                      label="Seguro"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="otherValues"
+                      component={NumericField}
+                      label="Outras Despesas"
+                    />
+                  </Grid>
 
-              <Grid size={{ xs: 12 }}>
-                <Divider sx={{ my: 1 }} />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Field
-                  name="description"
-                  component={TextField}
-                  label="Observações"
-                  multiline
-                  rows={2}
-                />
-              </Grid>
-            </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Divider sx={{ my: 1 }} />
+                    <Typography variant="subtitle2" color="primary">Impostos</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.8 }}>
+                    <Field
+                      name="icmsBaseValue"
+                      component={NumericField}
+                      label="Base ICMS"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="icmsValue"
+                      component={NumericField}
+                      label="Valor ICMS"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="ipiValue"
+                      component={NumericField}
+                      label="Valor IPI"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="pisValue"
+                      component={NumericField}
+                      label="Valor PIS"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="cofinsValue"
+                      component={NumericField}
+                      label="Valor COFINS"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="icmsstBaseValue"
+                      component={NumericField}
+                      label="Base ICMS ST"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="icmsstValue"
+                      component={NumericField}
+                      label="Valor ICMS ST"
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <Divider sx={{ my: 1 }} />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Field
+                      name="description"
+                      component={TextField}
+                      label="Observações"
+                      multiline
+                      rows={2}
+                    />
+                  </Grid>
+                </Grid>
               </Form>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>

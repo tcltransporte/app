@@ -47,9 +47,14 @@ async function publish() {
 
     await prepareBuildFolder()
 
+    await fs.rm(archivePath, { force: true })
+
     console.log('📦 Compressing build folder...')
 
-    execSync(`tar -czf ${archivePath} -C ${buildDir} .`, { stdio: 'inherit' })
+    execSync(
+      `tar -czf "${archivePath}" -C "${buildDir}" .`,
+      { stdio: 'inherit' }
+    )
 
     /*
     console.log('📤 Uploading archive via SCP...')

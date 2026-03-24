@@ -466,6 +466,7 @@ export async function generateDocuments(solicitationIds = []) {
         { association: 'products', attributes: ['id', 'value', 'quantity'] },
         { association: 'services', attributes: ['id', 'value', 'quantity'] },
         { association: 'documents' },
+        { association: 'payments', attributes: ['value'] },
         { association: 'solicitationStatus', attributes: ['id', 'generateDocumentTypeId'] }
       ]
     })
