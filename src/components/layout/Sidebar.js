@@ -205,7 +205,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         requestType: quickAddType
       });
 
-      if (resp.status === ServiceStatus.SUCCESS) {
+      if (resp.header.status === ServiceStatus.SUCCESS) {
         alert.success('Tipo criado com sucesso!');
         setShowQuickAddForm(false);
         setQuickAddDesc('');
@@ -213,13 +213,13 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
 
         // Manually refresh local list for immediate feedback
         const refreshResp = await solicitationTypeService.findAll({ limit: 100 });
-        if (refreshResp.status === ServiceStatus.SUCCESS) {
-          setSolicitationTypes(refreshResp.items || []);
+        if (refreshResp.header.status === ServiceStatus.SUCCESS) {
+          setSolicitationTypes(refreshResp.body.items || []);
         }
 
         router.refresh();
       } else {
-        alert.error('Erro ao criar tipo', resp.message);
+        alert.error('Erro ao criar tipo', resp.header.message);
       }
     } catch (err) {
       alert.error('Erro', 'Ocorreu um erro ao salvar');
@@ -248,12 +248,12 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       }));
 
       const resp = await solicitationTypeService.updateOrders(orderPairs);
-      if (resp.status === ServiceStatus.SUCCESS) {
+      if (resp.header.status === ServiceStatus.SUCCESS) {
         alert.success('Ordem salva com sucesso!');
         setIsReorderMode(false);
         router.refresh();
       } else {
-        alert.error('Erro ao salvar ordem', resp.message);
+        alert.error('Erro ao salvar ordem', resp.header.message);
       }
     } catch (error) {
       alert.error('Erro', 'Ocorreu um erro ao salvar a ordem');
@@ -273,12 +273,12 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
     setIsSavingEdit(true);
     try {
       const resp = await solicitationTypeService.update(id, { description: editingValue });
-      if (resp.status === ServiceStatus.SUCCESS) {
+      if (resp.header.status === ServiceStatus.SUCCESS) {
         setSolicitationTypes(prev => prev.map(t => t.id === id ? { ...t, description: editingValue } : t));
         setEditingId(null);
         router.refresh();
       } else {
-        alert.error('Erro ao atualizar', resp.message);
+        alert.error('Erro ao atualizar', resp.header.message);
       }
     } catch (err) {
       alert.error('Erro', 'Ocorreu um erro ao salvar');

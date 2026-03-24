@@ -52,11 +52,11 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
         sortOrder: table.sortOrder
       })
 
-      if (result.status !== ServiceStatus.SUCCESS)
+      if (result.header.status !== ServiceStatus.SUCCESS)
         throw result
 
-      table.setItems(result.items || [])
-      table.setTotal(result.total || 0)
+      table.setItems(result.body.items || [])
+      table.setTotal(result.body.total || 0)
       table.setSelecteds([])
 
     } catch (error) {

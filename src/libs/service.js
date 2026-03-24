@@ -5,25 +5,31 @@ export const ServiceStatus = Object.freeze({
   INTERNAL_SERVER_ERROR: 500
 })
 
-const createResponse = (status, body) => ({ status, ...body })
+const createResponse = (status, body, header = {}) => ({ 
+  header: { status, ...header }, 
+  body 
+})
 
 export const ServiceResponse = {
   success: (body) =>
     createResponse(ServiceStatus.SUCCESS, body),
 
   badRequest: (code, message, body) =>
-    createResponse(ServiceStatus.BAD_REQUEST, { code, message, body }),
+    createResponse(ServiceStatus.BAD_REQUEST, body, { code, message }),
 
   unauthorized: (code, message, body) =>
-    createResponse(ServiceStatus.UNAUTHORIZED, { code, message, body }),
+    createResponse(ServiceStatus.UNAUTHORIZED, body, { code, message }),
 
-  error: (err) => {
-    const status = err.status || ServiceStatus.INTERNAL_SERVER_ERROR
-    const message = err.message || "Ocorreu um erro interno."
-    const code = err.code || "INTERNAL_ERROR"
-    return createResponse(status, { code, message, ...err.body })
+  error: (err_or_code, message, body) => {
+    if (typeof err_or_code === 'object') {
+      const status = err_or_code.status || ServiceStatus.INTERNAL_SERVER_ERROR
+      const message = err_or_code.message || "Ocorreu um erro interno."
+      const code = err_or_code.code || "INTERNAL_ERROR"
+      return createResponse(status, { ...err_or_code.body }, { code, message })
+    }
+    
+    return createResponse(ServiceStatus.INTERNAL_SERVER_ERROR, body, { code: err_or_code, message })
   }
-
 }
 
 export function sanitize(data) {

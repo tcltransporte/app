@@ -38,15 +38,15 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
 
         console.log(result)
 
-        if (result.status !== ServiceStatus.SUCCESS) {
+        if (result.header.status !== ServiceStatus.SUCCESS) {
           throw result
         }
 
-        setData(result);
+        setData(result.body);
 
       })
       .catch((error) => {
-        alert.error('Erro ao buscar solicitação', error.message);
+        alert.error('Erro ao buscar solicitação', error?.header?.message || error.message);
       })
       .finally(() => setLoading(false))
   }, [solicitationId])
@@ -72,7 +72,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
         result = await solicitationService.create(payload)
       }
 
-      if (result.status !== ServiceStatus.SUCCESS) {
+      if (result.header.status !== ServiceStatus.SUCCESS) {
         throw result
       }
 
@@ -81,7 +81,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
       onClose?.();
 
     } catch (error) {
-      alert.error('Erro ao salvar', error.message);
+      alert.error('Erro ao salvar', error?.header?.message || error.message);
     } finally {
       setLoading(false)
     }

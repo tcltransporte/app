@@ -25,8 +25,8 @@ export default async function DocumentPage({ params }) {
     limit: 50
   });
 
-  const initialTable = initialTableResp.status === ServiceStatus.SUCCESS 
-    ? initialTableResp 
+  const initialTable = initialTableResp.header.status === ServiceStatus.SUCCESS 
+    ? initialTableResp.body 
     : { items: [], total: 0 };
 
   return (

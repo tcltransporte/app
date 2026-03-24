@@ -66,26 +66,26 @@ export function LoginView() {
     try {
       const loginResult = await loginService.signIn(values)
 
-      if (loginResult.status !== ServiceStatus.SUCCESS) {
+      if (loginResult.header.status !== ServiceStatus.SUCCESS) {
         throw loginResult
       }
 
-      if (loginResult.token) {
+      if (loginResult.body.token) {
         const redirectUrl = redirectParam || "/"
         window.location.href = redirectUrl
       }
     } catch (err) {
-      if (err.code === "SELECT_COMPANY_BUSINESS") {
-        setCompanyBusinesses(err.companyBusinesses || [])
+      if (err.header?.code === "SELECT_COMPANY_BUSINESS") {
+        setCompanyBusinesses(err.body.companyBusinesses || [])
         setStep('selection')
-      } else if (err.code === "SELECT_COMPANY") {
-        setCompanies(err.companies || [])
+      } else if (err.header?.code === "SELECT_COMPANY") {
+        setCompanies(err.body.companies || [])
         setStep('selection')
-      } else if (err.code === "ACTIVE_SESSION_EXISTS") {
+      } else if (err.header?.code === "ACTIVE_SESSION_EXISTS") {
         setSessionConflict(true)
         setCurrentValues(values)
       } else {
-        setError(err.message || "Erro ao realizar login")
+        setError(err.header?.message || err.message || "Erro ao realizar login")
       }
     } finally {
       setLoading(false)

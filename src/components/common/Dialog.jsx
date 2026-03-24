@@ -20,6 +20,11 @@ export function Dialog({ open, loading, title, onClose, children, maxWidth = 'sm
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const breakpointKeys = ['xs', 'sm', 'md', 'lg', 'xl'];
+  const isBreakpoint = width && breakpointKeys.includes(width);
+  const effectiveMaxWidth = isBreakpoint ? width : maxWidth;
+  const customWidth = width && !isBreakpoint ? width : null;
+
   if (!open) return null;
 
   if (loading) return (
@@ -33,12 +38,12 @@ export function Dialog({ open, loading, title, onClose, children, maxWidth = 'sm
       open 
       onClose={onClose} 
       fullWidth 
-      maxWidth={maxWidth}
+      maxWidth={customWidth ? false : effectiveMaxWidth}
       fullScreen={isMobile}
       PaperProps={{ 
         sx: { 
           borderRadius: isMobile ? 0 : 3,
-          ...(width && !isMobile && { width, maxWidth: 'none' })
+          ...(customWidth && !isMobile && { width: customWidth, maxWidth: 'none' })
         } 
       }}
     >

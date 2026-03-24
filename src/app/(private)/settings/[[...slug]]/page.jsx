@@ -18,28 +18,28 @@ export default async ({ params }) => {
   try {
     const companyResult = await companyService.findOne()
 
-    if (companyResult.status !== ServiceStatus.SUCCESS) {
+    if (companyResult.header.status !== ServiceStatus.SUCCESS) {
       throw companyResult
     }
 
     let initialStatusesConfig = null;
     if (activeSlug === 'status') {
       const result = await companyService.getStatusesConfig();
-      if (result.status === ServiceStatus.SUCCESS) {
-        initialStatusesConfig = result;
+      if (result.header.status === ServiceStatus.SUCCESS) {
+        initialStatusesConfig = result.body;
       }
     }
 
     return (
       <SettingsView 
-        initialCompany={companyResult.company} 
-        initialUser={companyResult.user} 
+        initialCompany={companyResult.body.company} 
+        initialUser={companyResult.body.user} 
         activeSlug={activeSlug}
         initialStatusesConfig={initialStatusesConfig}
       />
     )
   
   } catch (error) {
-    return <h1>Erro: {error.message}</h1>
+    return <h1>Erro: {error?.header?.message || error.message}</h1>
   }
 }

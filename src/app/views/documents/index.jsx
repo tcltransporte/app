@@ -36,12 +36,12 @@ export default function DocumentView({
         filters: filter.filters
       })
 
-      if (result.status !== ServiceStatus.SUCCESS) throw result
+      if (result.header.status !== ServiceStatus.SUCCESS) throw result
 
-      table.setItems(result.items || [])
-      table.setTotal(result.total || 0)
+      table.setItems(result.body.items || [])
+      table.setTotal(result.body.total || 0)
     } catch (error) {
-      alert.error('Erro ao carregar', error?.message || 'Ocorreu um erro ao buscar documentos.')
+      alert.error('Erro ao carregar', error?.header?.message || 'Ocorreu um erro ao buscar documentos.')
     } finally {
       table.setLoading(false)
     }

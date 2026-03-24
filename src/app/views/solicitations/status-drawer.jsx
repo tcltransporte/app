@@ -25,8 +25,8 @@ export function StatusDrawer({
       // Fetch allowed transitions for the "Change Status" tab
       solicitationService.findAllowedTransitions(fromStatusIds)
         .then(result => {
-          if (result.status === ServiceStatus.SUCCESS) {
-            setStatuses(result.items || []);
+          if (result.header.status === ServiceStatus.SUCCESS) {
+            setStatuses(result.body.items || []);
           }
         })
         .finally(() => setLoading(false));
@@ -41,13 +41,13 @@ export function StatusDrawer({
           statusId: values.statusId,
           description: values.observation
         });
-        if (result.status !== ServiceStatus.SUCCESS) throw result;
+        if (result.header.status !== ServiceStatus.SUCCESS) throw result;
       }
       alert.success('Status alterado com sucesso!');
       onSave();
       onClose();
     } catch (error) {
-      alert.error('Erro ao alterar status', error.message);
+      alert.error('Erro ao alterar status', error?.header?.message || error.message);
     } finally {
       setSubmitting(false);
     }

@@ -17,8 +17,8 @@ export default async function SolicitationPage({ params }) {
   let solicitationType = null;
   if (typeHash) {
     const typeResp = await findTypeAll({ filters: { hash: typeHash } });
-    if (typeResp.status === ServiceStatus.SUCCESS && typeResp.items.length > 0) {
-      solicitationType = typeResp.items[0];
+    if (typeResp.header.status === ServiceStatus.SUCCESS && typeResp.body.items.length > 0) {
+      solicitationType = typeResp.body.items[0];
     }
   }
 
@@ -40,10 +40,10 @@ export default async function SolicitationPage({ params }) {
     sortOrder: 'DESC'
   });
 
-  const isSuccess = solicitationsResp.status === ServiceStatus.SUCCESS;
-  const initialTable = isSuccess ? solicitationsResp : { items: [], total: 0 };
-  const resolvedFilters = isSuccess ? solicitationsResp.filters : initialFilters;
-  const resolvedRange = isSuccess ? solicitationsResp.range : initialRange;
+  const isSuccess = solicitationsResp.header.status === ServiceStatus.SUCCESS;
+  const initialTable = isSuccess ? solicitationsResp.body : { items: [], total: 0 };
+  const resolvedFilters = isSuccess ? solicitationsResp.body.filters : initialFilters;
+  const resolvedRange = isSuccess ? solicitationsResp.body.range : initialRange;
 
   return (
     <SolicitationView

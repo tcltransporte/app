@@ -34,11 +34,10 @@ export function DocumentDetail({ documentId, onClose, onSave, initialData, docum
     setLoading(true);
     documentService.findOne(documentId)
       .then(result => {
-        console.log(result)
-        if (result.status === ServiceStatus.SUCCESS) {
-          setData(result);
+        if (result.header.status === ServiceStatus.SUCCESS) {
+          setData(result.body);
         } else {
-          alert.error('Erro', result.message || 'Erro ao carregar documento');
+          alert.error('Erro', result.header.message || 'Erro ao carregar documento');
         }
       })
       .catch(err => alert.error('Erro', 'Ocorreu um erro inesperado'))
@@ -61,12 +60,12 @@ export function DocumentDetail({ documentId, onClose, onSave, initialData, docum
         result = await documentService.create(payload);
       }
 
-      if (result.status === ServiceStatus.SUCCESS) {
+      if (result.header.status === ServiceStatus.SUCCESS) {
         alert.success(documentId ? 'Documento atualizado com sucesso' : 'Documento criado com sucesso');
-        onSave?.(result);
+        onSave?.(result.body);
         onClose?.();
       } else {
-        alert.error('Erro ao salvar', result.message);
+        alert.error('Erro ao salvar', result.header.message);
       }
     } catch (err) {
       alert.error('Erro', 'Erro ao salvar documento');
@@ -103,8 +102,8 @@ export function DocumentDetail({ documentId, onClose, onSave, initialData, docum
     ...initialValues,
     ...data,
     id: data?.id || null,
-    invoiceDate: data?.invoiceDate ? data.invoiceDate.split('T')[0] : '',
-    receiptDate: data?.receiptDate ? data.receiptDate.split('T')[0] : '',
+    invoiceDate: data?.invoiceDate ? new Date(data.invoiceDate).toISOString().split('T')[0] : '',
+    receiptDate: data?.receiptDate ? new Date(data.receiptDate).toISOString().split('T')[0] : '',
     invoiceNumber: data?.invoiceNumber || 0,
     invoiceValue: data?.invoiceValue || 0,
     totalProductsValue: data?.totalProductsValue || 0,
@@ -133,7 +132,7 @@ export function DocumentDetail({ documentId, onClose, onSave, initialData, docum
           onClose={onClose}
           title="Documento"
           loading={loading && !Object.keys(data).length}
-          width="1000px"
+          width="lg"
         >
           <Dialog.Content>
             <Form>
@@ -141,7 +140,7 @@ export function DocumentDetail({ documentId, onClose, onSave, initialData, docum
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="subtitle2" color="primary">Informações Básicas</Typography>
                 </Grid>
-                <Grid size={{ xs: 8, sm: 1.5 }}>
+                <Grid size={{ xs: 8, sm: 1.8 }}>
                   <Field
                     name="invoiceNumber"
                     component={TextField}
@@ -149,7 +148,7 @@ export function DocumentDetail({ documentId, onClose, onSave, initialData, docum
                     type="number"
                   />
                 </Grid>
-                <Grid size={{ xs: 4, sm: 1.1 }}>
+                <Grid size={{ xs: 4, sm: 1.4 }}>
                   <Field
                     name="invoiceSeries"
                     component={TextField}
@@ -157,14 +156,14 @@ export function DocumentDetail({ documentId, onClose, onSave, initialData, docum
                     transform="uppercase"
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 5.4 }}>
+                <Grid size={{ xs: 12, sm: 4.6 }}>
                   <Field
                     name="invoiceKey"
                     component={TextField}
                     label="Chave de acesso"
                   />
                 </Grid>
-                <Grid size={{ xs: 6, sm: 2.2 }}>
+                <Grid size={{ xs: 6, sm: 2.4 }}>
                   <Field
                     name="invoiceDate"
                     component={DateTimeField}

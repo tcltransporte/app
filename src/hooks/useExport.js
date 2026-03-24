@@ -19,13 +19,13 @@ export const useExport = () => {
    */
   const processResponse = async (result, { fileName = 'export', format = ExportFormat.EXCEL } = {}) => {
     try {
-      if (result.status !== ServiceStatus.SUCCESS) {
+      if (result.header.status !== ServiceStatus.SUCCESS) {
         throw result;
       }
 
       // Handle Server-side Excel Download (Base64)
-      if (format === ExportFormat.EXCEL && result.base64) {
-        const byteCharacters = atob(result.base64);
+      if (format === ExportFormat.EXCEL && result.body.base64) {
+        const byteCharacters = atob(result.body.base64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -43,7 +43,7 @@ export const useExport = () => {
       }
 
       // Handle Google Sheets URL
-      if (format === ExportFormat.GOOGLE_SHEETS && result.url) {
+      if (format === ExportFormat.GOOGLE_SHEETS && result.body.url) {
         alert.success('Planilha criada com sucesso!');
         const confirmed = await alert.confirm(
           'Abrir Google Sheets?',
@@ -51,7 +51,7 @@ export const useExport = () => {
           'question'
         );
         if (confirmed) {
-          window.open(result.url, '_blank');
+          window.open(result.body.url, '_blank');
         }
         return;
       }
@@ -65,7 +65,7 @@ export const useExport = () => {
       await handleAuthError(error, () => processResponse(result, { fileName, format }));
       
       if (error && error.code !== 'GOOGLE_AUTH_REQUIRED') {
-        alert.error('Erro ao exportar', error.message || 'Ocorreu um problema ao processar o arquivo.');
+        alert.error('Erro ao exportar', error?.header?.message || error.message || 'Ocorreu um problema ao processar o arquivo.');
       }
     }
   };

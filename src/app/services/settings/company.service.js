@@ -142,10 +142,10 @@ export async function getStatusesConfig() {
             findAllStatusTypes()
         ]);
         return ServiceResponse.success({
-            allStatuses: statusesRes.status === ServiceStatus.SUCCESS ? statusesRes.items : [],
-            allTypes: typesRes.status === ServiceStatus.SUCCESS ? typesRes.items : [],
-            relationships: workflowRes.status === ServiceStatus.SUCCESS ? workflowRes.items : [],
-            typeRelationships: statusTypesRes.status === ServiceStatus.SUCCESS ? statusTypesRes.items : []
+            allStatuses: statusesRes.header.status === ServiceStatus.SUCCESS ? statusesRes.body.items : [],
+            allTypes: typesRes.header.status === ServiceStatus.SUCCESS ? typesRes.body.items : [],
+            relationships: workflowRes.header.status === ServiceStatus.SUCCESS ? workflowRes.body.items : [],
+            typeRelationships: statusTypesRes.header.status === ServiceStatus.SUCCESS ? statusTypesRes.body.items : []
         });
     } catch (error) {
         return ServiceResponse.error(error);

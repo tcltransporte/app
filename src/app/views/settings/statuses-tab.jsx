@@ -39,15 +39,15 @@ export function StatusesTab({ initialStatusesConfig }) {
     if (showLoading) setLoading(true);
     try {
       const result = await companyService.getStatusesConfig();
-      if (result.status === ServiceStatus.SUCCESS) {
-        setAllStatuses(result.allStatuses || []);
-        setAllTypes(result.allTypes || []);
-        setRelationships(result.relationships || []);
-        setTypeRelationships(result.typeRelationships || []);
-        setItems(result.allStatuses || []);
+      if (result.header.status === ServiceStatus.SUCCESS) {
+        setAllStatuses(result.body.allStatuses || []);
+        setAllTypes(result.body.allTypes || []);
+        setRelationships(result.body.relationships || []);
+        setTypeRelationships(result.body.typeRelationships || []);
+        setItems(result.body.allStatuses || []);
       }
     } catch (error) {
-      alert.error('Erro ao recarregar configuração', error.message);
+      alert.error('Erro ao recarregar configuração', error?.header?.message || error.message);
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -87,13 +87,13 @@ export function StatusesTab({ initialStatusesConfig }) {
         isInitialOption: values.isInitialOption
       });
 
-      if (result.status !== ServiceStatus.SUCCESS) throw result;
+      if (result.header.status !== ServiceStatus.SUCCESS) throw result;
 
       alert.success(drawer.item ? 'Status atualizado com sucesso!' : 'Status criado com sucesso!');
       handleCloseDrawer(false);
       fetchConfig(true);
     } catch (error) {
-      alert.error('Erro ao salvar', error.message);
+      alert.error('Erro ao salvar', error?.header?.message || error.message);
     }
   };
 
@@ -103,12 +103,12 @@ export function StatusesTab({ initialStatusesConfig }) {
     table.setLoading(true);
     try {
       const result = await companyService.destroyStatus(id);
-      if (result.status !== ServiceStatus.SUCCESS) throw result;
+      if (result.header.status !== ServiceStatus.SUCCESS) throw result;
       alert.success('Status excluído!');
       fetchTable();
       fetchConfig();
     } catch (error) {
-      alert.error('Erro ao excluir', error.message);
+      alert.error('Erro ao excluir', error?.header?.message || error.message);
     } finally {
       table.setLoading(false);
     }

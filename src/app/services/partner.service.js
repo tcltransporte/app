@@ -19,10 +19,10 @@ export async function exportTable({
 
   const result = await findAll({ filters, range, sortBy, sortOrder, page: 1, limit: 10000 });
 
-  if (result.status !== ServiceStatus.SUCCESS) return result;
+  if (result.header.status !== ServiceStatus.SUCCESS) return result;
 
   // Convert to plain objects to ensure all properties are accessible by helpers
-  const plainItems = (result.items || []).map(item =>
+  const plainItems = (result.body.items || []).map(item =>
     typeof item.get === 'function' ? item.get({ plain: true }) : item
   );
 

@@ -326,13 +326,13 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
       documentTypeService.findAll(),
       solicitationService.generateDocuments(solicitations.map(s => s.id))
     ]).then(([typesResult, docsResult]) => {
-      if (typesResult.status === ServiceStatus.SUCCESS) {
-        setDocumentTypes(typesResult.items || []);
+      if (typesResult.header.status === ServiceStatus.SUCCESS) {
+        setDocumentTypes(typesResult.body.items || []);
       }
 
-      if (docsResult.status === ServiceStatus.SUCCESS) {
+      if (docsResult.header.status === ServiceStatus.SUCCESS) {
         const initial = {};
-        const hydratedSolicitations = docsResult.items || [];
+        const hydratedSolicitations = docsResult.body.items || [];
 
         hydratedSolicitations.forEach(s => {
           const autoRows = [];
@@ -580,8 +580,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
           docs
         );
 
-        if (result.status !== ServiceStatus.SUCCESS)
-          throw new Error(result.message || 'Erro ao gerar documento.');
+        if (result.header.status !== ServiceStatus.SUCCESS)
+          throw new Error(result.header.message || 'Erro ao gerar documento.');
 
       }
 
@@ -591,7 +591,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
       onClose();
 
     } catch (error) {
-      alert.error('Erro ao gerar documentos', error?.message || 'Ocorreu um erro inesperado.');
+      alert.error('Erro ao gerar documentos', error?.header?.message || error.message || 'Ocorreu um erro inesperado.');
     } finally {
       setSubmitting(false);
     }
