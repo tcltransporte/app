@@ -664,11 +664,10 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
 
       {/* Edit Modal */}
       <DocumentDetail
-        open={editModal.open}
+        document={editModal.open ? { ...editModal.initialData, id: editModal.initialData?.id || null } : undefined}
         onClose={() => setEditModal({ open: false, rowKey: null, solicitationId: null, initialData: null })}
         onSave={handleSaveEdit}
-        documentTypes={documentTypes}
-        initialData={editModal.initialData}
+        manual
       />
 
       {/* Link Document Modal */}

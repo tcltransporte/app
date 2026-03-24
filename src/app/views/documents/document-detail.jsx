@@ -16,52 +16,65 @@ import {
   TextField,
   NumericField,
   DateField,
-  SelectField,
   DateTimeField
 } from '@/components/controls';
 
-export function DocumentDetail({ documentId, onClose, onSave, initialData, documentType }) {
+export function DocumentDetail({ document, onClose, onSave, documentType, manual = false }) {
 
-  const [data, setData] = React.useState(initialData || {});
+  const [data, setData] = React.useState(document || {});
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (!documentId) {
-      setData(initialData || {});
+
+    if (document === undefined) return;
+
+    if (document.id === null) {
+      setData(document || {});
       return;
     }
 
     setLoading(true);
-    documentService.findOne(documentId)
+
+    documentService.findOne(document.id)
       .then(result => {
         if (result.header.status === ServiceStatus.SUCCESS) {
-          setData(result.body);
+          // Merge fetched data with current document prop to preserve local edits
+          setData({ ...result.body, ...document });
         } else {
           alert.error('Erro', result.header.message || 'Erro ao carregar documento');
         }
       })
       .catch(err => alert.error('Erro', 'Ocorreu um erro inesperado'))
       .finally(() => setLoading(false));
-  }, [documentId, initialData]);
 
+  }, [document]);
 
   const handleSubmit = async (values) => {
+
+    if (manual) {
+      onSave?.(values);
+      onClose?.();
+      return;
+    }
+
     setLoading(true);
+
     try {
+
       let result;
       const payload = {
         ...values,
-        documentModelId: values.documentTypeId || documentId ? undefined : documentType?.id
+        documentModelId: values.documentTypeId || document?.id ? undefined : documentType?.id
       };
 
-      if (documentId) {
-        result = await documentService.update(documentId, values);
+      if (document?.id) {
+        result = await documentService.update(document.id, values);
       } else {
         result = await documentService.create(payload);
       }
 
       if (result.header.status === ServiceStatus.SUCCESS) {
-        alert.success(documentId ? 'Documento atualizado com sucesso' : 'Documento criado com sucesso');
+        alert.success(document?.id ? 'Documento atualizado com sucesso' : 'Documento criado com sucesso');
         onSave?.(result.body);
         onClose?.();
       } else {
@@ -128,7 +141,7 @@ export function DocumentDetail({ documentId, onClose, onSave, initialData, docum
     >
       {({ submitForm }) => (
         <Dialog
-          open={documentId !== undefined}
+          open={document !== undefined}
           onClose={onClose}
           title="Documento"
           loading={loading && !Object.keys(data).length}

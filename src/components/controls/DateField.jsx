@@ -15,9 +15,12 @@ export const DateField = React.forwardRef(({ field, form, onChange, ...props }, 
 
     const d = new Date(date);
     if (isNaN(d.getTime())) return '';
+
+    // CENTER THE DATE: Add 12 hours to avoid timezone serialization shifts 
+    // that might push the time to 23:00 of the previous day or 03:00 of the same day.
+    const safeDate = new Date(d.getTime() + (12 * 3600000));
     const pad = (n) => String(n).padStart(2, '0');
-    // For actual Date objects, use UTC to match database literal intent
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+    return `${safeDate.getUTCFullYear()}-${pad(safeDate.getUTCMonth() + 1)}-${pad(safeDate.getUTCDate())}`;
   };
 
   const handleChange = (e) => {

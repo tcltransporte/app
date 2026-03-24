@@ -113,7 +113,7 @@ export default function DocumentView({
           loading={table.loading}
         />
         <DocumentDetail 
-          documentId={navigation.selectedId}
+          document={navigation.selectedId !== undefined ? { id: navigation.selectedId } : undefined}
           documentType={documentType}
           onClose={() => navigation.setSelectedId(undefined)}
           onSave={() => {
