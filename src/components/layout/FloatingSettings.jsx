@@ -33,7 +33,7 @@ export default function FloatingSettings() {
             height: 40,
             minHeight: 40,
             borderRadius: '12px 0 0 12px',
-            zIndex: (theme) => theme.zIndex.drawer + 2,
+            zIndex: (theme) => theme.zIndex.drawer - 1,
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             transition: 'all 0.3s ease',
             paddingRight: '12px',

@@ -1,6 +1,7 @@
 import MainLayout from '@/components/layout/MainLayout';
 import { getSession } from '@/libs/session';
 import { findAll as findSolicitationTypes } from '@/app/services/solicitationType.service';
+import { findAll as findDocumentTypes } from '@/app/services/documentType.service';
 import { parseSitemap } from '@/libs/sitemapParser';
 import { SessionContextProvider } from '@/context/SessionContext';
 import { redirect } from 'next/navigation';
@@ -26,13 +27,24 @@ export default async function PublicLayout({ children }) {
     }
   }
 
-  const typesResp = await findSolicitationTypes({ limit: 100 });
+  const [typesResp, docTypesResp] = await Promise.all([
+    findSolicitationTypes({ limit: 100 }),
+    findDocumentTypes()
+  ]);
+
   const solicitationTypes = typesResp.items || [];
+  const documentTypes = docTypesResp.items || [];
   const sitemapMenuItems = await parseSitemap();
 
   return (
     <SessionContextProvider initialSession={session}>
-      <MainLayout solicitationTypes={solicitationTypes} sitemapMenuItems={sitemapMenuItems}>{children}</MainLayout>
+      <MainLayout 
+        solicitationTypes={solicitationTypes} 
+        documentTypes={documentTypes}
+        sitemapMenuItems={sitemapMenuItems}
+      >
+        {children}
+      </MainLayout>
     </SessionContextProvider>
   );
 }

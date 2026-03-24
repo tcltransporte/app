@@ -36,4 +36,11 @@ export class DocumentType {
     allowNull: true,
     type: DataTypes.STRING(2)
   }
+
+  surname = {
+    field: 'Apelido',
+    allowNull: true,
+    type: DataTypes.STRING(50)
+  }
+
 }

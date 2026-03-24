@@ -76,6 +76,7 @@ import { SessionContext } from '@/context/SessionContext';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter, usePathname } from 'next/navigation';
 import * as solicitationTypeService from '@/app/services/solicitationType.service';
+import * as documentTypeService from '@/app/services/documentType.service';
 import { ServiceStatus } from '@/libs/service';
 
 const EMPTY_ARRAY = [];
@@ -106,6 +107,9 @@ const menuItems = [
       { text: 'Gestão de Tipos', path: '/solicitations/types' }
     ]
   },
+  {
+    text: 'Documentos', icon: <ReceiptLong />, subMenu: []
+  },
   /*{ text: 'Finanças', icon: <Category /> },
   { text: 'Contabilidade', icon: <ReceiptLong /> },
   {
@@ -121,7 +125,7 @@ const menuItems = [
   },*/
 ];
 
-export default function Sidebar({ mobileOpen, onMobileClose, session: propSession, initialSolicitationTypes = EMPTY_ARRAY, sitemapMenuItems }) {
+export default function Sidebar({ mobileOpen, onMobileClose, session: propSession, initialSolicitationTypes = EMPTY_ARRAY, initialDocumentTypes = EMPTY_ARRAY, sitemapMenuItems }) {
   const router = useRouter();
   const pathname = usePathname();
   const { menu, setMenu, primaryColor, mode, semiDark } = useContext(ThemeContext);
@@ -133,6 +137,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
   const activeSession = propSession || contextSession;
 
   const [solicitationTypes, setSolicitationTypes] = useState(initialSolicitationTypes);
+  const [documentTypes, setDocumentTypes] = useState(initialDocumentTypes);
   const [showQuickAddForm, setShowQuickAddForm] = useState(false);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [originalSolicitationTypes, setOriginalSolicitationTypes] = useState([]);
@@ -162,6 +167,12 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       setSolicitationTypes(initialSolicitationTypes);
     }
   }, [initialSolicitationTypes]);
+
+  React.useEffect(() => {
+    if (initialDocumentTypes && JSON.stringify(initialDocumentTypes) !== JSON.stringify(documentTypes)) {
+      setDocumentTypes(initialDocumentTypes);
+    }
+  }, [initialDocumentTypes]);
 
   const { isMobile } = useLayout();
   const theme = useTheme();
@@ -326,9 +337,29 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
           ].filter(Boolean)
         };
       }
+      if (item.text === 'Documentos') {
+        return {
+          ...item,
+          subMenu: [
+            ...documentTypes.map(type => ({
+              id: type.id,
+              text: type.surname || type.description,
+              icon: <Description />,
+              path: `/documents/${type.initials?.toLowerCase() || type.id}`,
+              hideEdit: true
+            })),
+            documentTypes.length === 0 && {
+              text: 'Nenhum tipo cadastrado',
+              icon: <Info />,
+              disabled: true,
+              sx: { opacity: 0.5, fontStyle: 'italic' }
+            }
+          ].filter(Boolean)
+        };
+      }
       return item;
     });
-  }, [solicitationTypes, primaryColor, isDarkMenu, sidebarText, showQuickAddForm, quickAddDesc, quickAddType, isSavingTipo, isReorderMode, isSavingOrders]);
+  }, [solicitationTypes, documentTypes, primaryColor, isDarkMenu, sidebarText, showQuickAddForm, quickAddDesc, quickAddType, isSavingTipo, isReorderMode, isSavingOrders]);
 
   // Map icon strings from web.sitemap to MUI Icons
   const iconMap = {
@@ -493,7 +524,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
           ) : (
             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
               <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 15, fontWeight: subItem.action ? 700 : 500 }} />
-              {!isReorderMode && subItem.id && (
+              {!isReorderMode && subItem.id && !subItem.hideEdit && (
                 <IconButton
                   className="edit-btn"
                   size="small"
@@ -746,7 +777,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
                     ) : (
                       <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
                         <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 15, fontWeight: subItem.action ? 700 : 500 }} />
-                        {subItem.id && (
+                        {subItem.id && !subItem.hideEdit && (
                           <IconButton
                             className="edit-btn"
                             size="small"

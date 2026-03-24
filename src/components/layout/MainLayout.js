@@ -6,7 +6,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { useLayout } from '@/context/LayoutContext';
 
-function LayoutContent({ children, solicitationTypes, sitemapMenuItems }) {
+function LayoutContent({ children, solicitationTypes, documentTypes, sitemapMenuItems }) {
   const { mobileOpen, toggleDrawer } = useLayout();
 
   return (
@@ -15,6 +15,7 @@ function LayoutContent({ children, solicitationTypes, sitemapMenuItems }) {
         mobileOpen={mobileOpen} 
         onMobileClose={toggleDrawer} 
         initialSolicitationTypes={solicitationTypes}
+        initialDocumentTypes={documentTypes}
         sitemapMenuItems={sitemapMenuItems}
       />
 
@@ -36,9 +37,9 @@ function LayoutContent({ children, solicitationTypes, sitemapMenuItems }) {
   );
 }
 
-export default function MainLayout({ children, solicitationTypes, sitemapMenuItems }) {
+export default function MainLayout({ children, solicitationTypes, documentTypes, sitemapMenuItems }) {
   return (
-    <LayoutContent solicitationTypes={solicitationTypes} sitemapMenuItems={sitemapMenuItems}>
+    <LayoutContent solicitationTypes={solicitationTypes} documentTypes={documentTypes} sitemapMenuItems={sitemapMenuItems}>
       {children}
     </LayoutContent>
   );
