@@ -8,11 +8,11 @@ export async function findAll() {
     try {
         const db = new AppContext()
         const items = await db.DocumentType.findAll({
-            attributes: ['id', 'description', 'initials', 'surname'],
+            attributes: ['id', 'surname', 'initials'],
             where: {
                 surname: { [Op.ne]: null }
             },
-            order: [['description', 'ASC']],
+            order: [['surname', 'ASC']],
         })
         return ServiceResponse.success({ items: items.map(i => i.get({ plain: true })) })
     } catch (error) {

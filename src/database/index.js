@@ -96,7 +96,7 @@ export class AppContext extends Sequelize {
     this.Solicitation.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
     this.Solicitation.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId' })
     this.Solicitation.belongsTo(this.SolicitationType, { as: 'type', foreignKey: 'typeId' })
-    this.Solicitation.belongsTo(this.SolicitationStatus, { as: 'solicitationStatus', foreignKey: 'statusId' })
+    this.Solicitation.belongsTo(this.SolicitationStatus, { as: 'status', foreignKey: 'statusId' })
     this.Solicitation.hasMany(this.SolicitationProduct, { as: 'products', foreignKey: 'solicitationId' })
     this.Solicitation.hasMany(this.SolicitationService, { as: 'services', foreignKey: 'solicitationId' })
     this.Solicitation.hasMany(this.SolicitationFinance, { as: 'payments', foreignKey: 'solicitationId' })

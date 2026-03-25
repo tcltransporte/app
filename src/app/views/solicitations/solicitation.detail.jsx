@@ -235,7 +235,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
                       label="Status"
                       fullWidth
                       readOnly
-                      value={data?.solicitationStatus?.description || 'Pendente'}
+                      value={data?.status?.description || 'Pendente'}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start" sx={{ mr: 1.5, mt: 0.5 }}>

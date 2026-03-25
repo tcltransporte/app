@@ -2,6 +2,7 @@
 
 import React from 'react';
 import {
+  Box,
   Button,
   Divider,
   Typography,
@@ -16,9 +17,12 @@ import {
   TextField,
   NumericField,
   DateField,
-  DateTimeField
+  DateTimeField,
+  AutoComplete
 } from '@/components/controls';
 import { useLoading } from '@/hooks';
+import { SectionTable } from '@/components/common';
+import { DocumentProductDrawer } from './document-product.drawer';
 
 export function DocumentDetail({ document, onClose, onSave, documentType, manual = false }) {
 
@@ -29,6 +33,8 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
   React.useEffect(() => {
     setData(document || {});
   }, [document]);
+
+  const [productDrawer, setProductDrawer] = React.useState({ open: false, data: null, index: -1 });
 
   const handleSubmit = async (values) => {
 
@@ -90,6 +96,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     icmsstBaseValue: 0,
     icmsstValue: 0,
     description: '',
+    items: [],
   };
 
   const getValues = (data) => ({
@@ -112,6 +119,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     cofinsValue: data?.cofinsValue || 0,
     icmsstBaseValue: data?.icmsstBaseValue || 0,
     icmsstValue: data?.icmsstValue || 0,
+    items: data?.items || [],
   });
 
   return (
@@ -120,186 +128,235 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
       enableReinitialize
       onSubmit={handleSubmit}
     >
-      {({ submitForm }) => (
-        <Dialog
-          open={document !== undefined}
-          onClose={onClose}
-          title="Documento"
-          width="lg"
-        >
-          <Dialog.Content>
-            <Form>
-              <Grid container spacing={1}>
-                <Grid size={{ xs: 12 }}>
-                  <Typography variant="subtitle2" color="primary">Informações Básicas</Typography>
-                </Grid>
-                <Grid size={{ xs: 8, sm: 1.8 }}>
-                  <Field
-                    name="invoiceNumber"
-                    component={TextField}
-                    label="Número"
-                    type="number"
-                  />
-                </Grid>
-                <Grid size={{ xs: 4, sm: 1.4 }}>
-                  <Field
-                    name="invoiceSeries"
-                    component={TextField}
-                    label="Série"
-                    transform="uppercase"
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 4.6 }}>
-                  <Field
-                    name="invoiceKey"
-                    component={TextField}
-                    label="Chave de acesso"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 2.4 }}>
-                  <Field
-                    name="invoiceDate"
-                    component={DateTimeField}
-                    label="Data Emissão"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 1.8 }}>
-                  <Field
-                    name="receiptDate"
-                    component={DateField}
-                    label="Data Entrada"
-                  />
+      {({ submitForm, values, setFieldValue }) => {
+        const handleSaveProduct = (product) => {
+          const newItems = [...values.items];
+          if (productDrawer.index >= 0) {
+            newItems[productDrawer.index] = product;
+          } else {
+            newItems.push({ ...product, tempId: Date.now() });
+          }
+          setFieldValue('items', newItems);
+
+          // Auto-calculate Total Products
+          const total = newItems.reduce((acc, item) => acc + (Number(item.quantity || 0) * Number(item.value || 0)), 0);
+          setFieldValue('totalProductsValue', total);
+        };
+
+        const handleDeleteProduct = (index) => {
+          const newItems = values.items.filter((_, i) => i !== index);
+          setFieldValue('items', newItems);
+
+          const total = newItems.reduce((acc, item) => acc + (Number(item.quantity || 0) * Number(item.value || 0)), 0);
+          setFieldValue('totalProductsValue', total);
+        };
+
+        return (
+          <Dialog
+            open={document !== undefined}
+            onClose={onClose}
+            title="Documento"
+            width="lg"
+          >
+            <Dialog.Content>
+              <Form>
+                <Grid container spacing={1}>
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="subtitle2" color="primary">Informações Básicas</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 8, sm: 1.8 }}>
+                    <Field
+                      name="invoiceNumber"
+                      component={TextField}
+                      label="Número"
+                      type="number"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 4, sm: 1.4 }}>
+                    <Field
+                      name="invoiceSeries"
+                      component={TextField}
+                      label="Série"
+                      transform="uppercase"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4.6 }}>
+                    <Field
+                      name="invoiceKey"
+                      component={TextField}
+                      label="Chave de acesso"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2.4 }}>
+                    <Field
+                      name="invoiceDate"
+                      component={DateTimeField}
+                      label="Data Emissão"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.8 }}>
+                    <Field
+                      name="receiptDate"
+                      component={DateField}
+                      label="Data Entrada"
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <Divider sx={{ my: 1 }} />
+                    <Typography variant="subtitle2" color="primary">Valores e Totais</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="invoiceValue"
+                      component={NumericField}
+                      label="Valor Total (R$)"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="totalProductsValue"
+                      component={NumericField}
+                      label="Total Produtos"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="discountValue"
+                      component={NumericField}
+                      label="Descontos"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="freightValue"
+                      component={NumericField}
+                      label="Frete"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="insuranceValue"
+                      component={NumericField}
+                      label="Seguro"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 2 }}>
+                    <Field
+                      name="otherValues"
+                      component={NumericField}
+                      label="Outras Despesas"
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <Divider sx={{ my: 1 }} />
+                    <Typography variant="subtitle2" color="primary">Impostos</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.8 }}>
+                    <Field
+                      name="icmsBaseValue"
+                      component={NumericField}
+                      label="Base ICMS"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="icmsValue"
+                      component={NumericField}
+                      label="Valor ICMS"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="ipiValue"
+                      component={NumericField}
+                      label="Valor IPI"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="pisValue"
+                      component={NumericField}
+                      label="Valor PIS"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="cofinsValue"
+                      component={NumericField}
+                      label="Valor COFINS"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="icmsstBaseValue"
+                      component={NumericField}
+                      label="Base ICMS ST"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 1.7 }}>
+                    <Field
+                      name="icmsstValue"
+                      component={NumericField}
+                      label="Valor ICMS ST"
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <Divider sx={{ my: 1 }} />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Field
+                      name="description"
+                      component={TextField}
+                      label="Observações"
+                      multiline
+                      rows={2}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12 }}>
+                    <Box sx={{ mt: 2 }}>
+                      <SectionTable
+                        title="Itens do Documento / Produtos"
+                        columns={[
+                          { field: 'description', headerName: 'Descrição / Produto', renderCell: (val, row) => row.product?.description || val },
+                          { field: 'quantity', headerName: 'Qtd.', renderCell: (val) => Number(val || 0).toLocaleString('pt-BR') },
+                          { field: 'value', headerName: 'Vlr. Unit.', renderCell: (val) => Number(val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) },
+                          { field: 'total', headerName: 'Total', renderCell: (_, row) => (Number(row.quantity || 0) * Number(row.value || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) },
+                        ]}
+                        items={values.items || []}
+                        onAdd={() => setProductDrawer({ open: true, data: null, index: -1 })}
+                        onEdit={(item, index) => setProductDrawer({ open: true, data: item, index })}
+                        onDelete={(_, index) => handleDeleteProduct(index)}
+                      />
+                    </Box>
+                  </Grid>
                 </Grid>
 
-                <Grid size={{ xs: 12 }}>
-                  <Divider sx={{ my: 1 }} />
-                  <Typography variant="subtitle2" color="primary">Valores e Totais</Typography>
-                </Grid>
-                <Grid size={{ xs: 6, sm: 2 }}>
-                  <Field
-                    name="invoiceValue"
-                    component={NumericField}
-                    label="Valor Total (R$)"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 2 }}>
-                  <Field
-                    name="totalProductsValue"
-                    component={NumericField}
-                    label="Total Produtos"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 2 }}>
-                  <Field
-                    name="discountValue"
-                    component={NumericField}
-                    label="Descontos"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 2 }}>
-                  <Field
-                    name="freightValue"
-                    component={NumericField}
-                    label="Frete"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 2 }}>
-                  <Field
-                    name="insuranceValue"
-                    component={NumericField}
-                    label="Seguro"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 2 }}>
-                  <Field
-                    name="otherValues"
-                    component={NumericField}
-                    label="Outras Despesas"
-                  />
-                </Grid>
-
-                <Grid size={{ xs: 12 }}>
-                  <Divider sx={{ my: 1 }} />
-                  <Typography variant="subtitle2" color="primary">Impostos</Typography>
-                </Grid>
-                <Grid size={{ xs: 6, sm: 1.8 }}>
-                  <Field
-                    name="icmsBaseValue"
-                    component={NumericField}
-                    label="Base ICMS"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 1.7 }}>
-                  <Field
-                    name="icmsValue"
-                    component={NumericField}
-                    label="Valor ICMS"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 1.7 }}>
-                  <Field
-                    name="ipiValue"
-                    component={NumericField}
-                    label="Valor IPI"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 1.7 }}>
-                  <Field
-                    name="pisValue"
-                    component={NumericField}
-                    label="Valor PIS"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 1.7 }}>
-                  <Field
-                    name="cofinsValue"
-                    component={NumericField}
-                    label="Valor COFINS"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 1.7 }}>
-                  <Field
-                    name="icmsstBaseValue"
-                    component={NumericField}
-                    label="Base ICMS ST"
-                  />
-                </Grid>
-                <Grid size={{ xs: 6, sm: 1.7 }}>
-                  <Field
-                    name="icmsstValue"
-                    component={NumericField}
-                    label="Valor ICMS ST"
-                  />
-                </Grid>
-
-                <Grid size={{ xs: 12 }}>
-                  <Divider sx={{ my: 1 }} />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <Field
-                    name="description"
-                    component={TextField}
-                    label="Observações"
-                    multiline
-                    rows={2}
-                  />
-                </Grid>
-              </Grid>
-            </Form>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onClick={onClose} variant="outlined" sx={{ textTransform: 'none', fontWeight: 600 }}>Cancelar</Button>
-            <Button
-              onClick={submitForm}
-              variant="contained"
-              disabled={loading.isLoading}
-              sx={{ textTransform: 'none', fontWeight: 600, px: 3 }}
-            >
-              {loading.isLoading && Object.keys(data).length ? 'Salvando...' : 'Salvar'}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      )}
+                <DocumentProductDrawer
+                  open={productDrawer.open}
+                  initialData={productDrawer.data}
+                  onClose={() => setProductDrawer({ open: false, data: null, index: -1 })}
+                  onSave={handleSaveProduct}
+                />
+              </Form>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onClick={onClose} variant="outlined" sx={{ textTransform: 'none', fontWeight: 600 }}>Cancelar</Button>
+              <Button
+                onClick={submitForm}
+                variant="contained"
+                disabled={loading.isLoading}
+                sx={{ textTransform: 'none', fontWeight: 600, px: 3 }}
+              >
+                {loading.isLoading && Object.keys(data).length ? 'Salvando...' : 'Salvar'}
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+        );
+      }}
     </Formik>
   );
 }

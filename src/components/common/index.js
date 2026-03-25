@@ -1,3 +1,4 @@
+export { SectionTable } from './SectionTable';
 export * from './Container';
 export * from './Dialog';
 export * from './Footer';
@@ -10,3 +11,5 @@ export * from './FilterDrawer';
 export * from './RangeModal';
 export * from './SplitButton';
 export * from './Loading';
+
+

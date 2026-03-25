@@ -116,42 +116,19 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    {/*<TableCell padding="checkbox" />*/}
+                    <TableCell sx={{ width: 80 }}>Ações</TableCell>
                     <TableCell>Tipo / Modelo</TableCell>
                     <TableCell align="right" sx={{ width: 140 }}>Valor (R$)</TableCell>
-                    <TableCell sx={{ width: 80 }} />
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {solRows.map((row) => (
                     <TableRow key={row.rowKey} hover>
-                      {/*
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          size="small"
-                          checked={row.checked}
-                          onChange={() => onToggle(solicitation.id, row.rowKey)}
-                        />
-                      </TableCell>*/}
-                      <TableCell sx={{ minWidth: 200 }}>
-                        <SelectField
-                          label="Tipo"
-                          value={row.documentTypeId || ''}
-                          onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
-                          disabled={!row.checked}
-                          options={documentTypes.map(dt => ({ value: dt.id, label: dt.description }))}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ width: 140 }}>
-                        <NumericField
-                          label="Valor"
-                          value={row.invoiceValue || 0}
-                          onChange={(val) => onChangeValue(solicitation.id, row.rowKey, val)}
-                          disabled={!row.checked}
-                        />
-                      </TableCell>
                       <TableCell sx={{ width: 80 }}>
-                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
                           {row.id ? (
                             <Tooltip title="Vínculo realizado. Clique para opções.">
                               <IconButton size="small" color="success" onClick={(e) => handleUnlinkOpen(e, row.rowKey)} disabled={!row.checked}>
@@ -165,9 +142,6 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
                               </IconButton>
                             </Tooltip>
                           )}
-                          <IconButton size="small" onClick={() => onEdit(solicitation.id, row.rowKey)} disabled={!row.checked}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
                         </Box>
 
                         <Menu
@@ -180,11 +154,28 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
                           </MenuItem>
                         </Menu>
                       </TableCell>
+                      <TableCell sx={{ minWidth: 200 }}>
+                        <SelectField
+                          label="Tipo"
+                          value={row.documentTypeId || ''}
+                          onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
+                          disabled={!row.checked}
+                          options={documentTypes.map(dt => ({ value: dt.id, label: dt.surname }))}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ width: 140 }}>
+                        <NumericField
+                          label="Valor"
+                          value={row.invoiceValue || 0}
+                          onChange={(val) => onChangeValue(solicitation.id, row.rowKey, val)}
+                          disabled={!row.checked}
+                        />
+                      </TableCell>
                     </TableRow>
                   ))}
                   {solRows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={2}>
+                      <TableCell colSpan={3}>
                         <Typography variant="caption" color="text.secondary">Nenhum documento configurado.</Typography>
                       </TableCell>
                     </TableRow>
@@ -355,7 +346,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
               autoRows.push({
                 rowKey: doc.id ? `existing-${doc.id}` : `new-${s.id}-${idx}`,
                 checked: true,
-                documentTypeId: doc.documentModelId || doc.documentTypeId,
+                documentTypeId: doc.documentTypeId,
                 invoiceNumber: doc.invoiceNumber || 0,
                 invoiceSeries: doc.invoiceSeries || '',
                 invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : defaultInvoiceDate,

@@ -8,7 +8,7 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
   const initialValues = {
     number: filters.number || '',
     description: filters.description || '',
-    status: filters.status || filters.solicitationStatus || null,
+    status: filters.status || null,
     partner: filters.partner || null,
   };
 

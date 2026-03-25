@@ -83,9 +83,47 @@ export async function update(id, data) {
         const item = await db.Document.findByPk(id)
         if (!item) return ServiceResponse.error("NOT_FOUND", "Documento não encontrado")
 
-        await item.update(data)
+        const { items, ...documentData } = data
 
-        return ServiceResponse.success(item.get({ plain: true }))
+        await db.transaction(async (transaction) => {
+            await item.update(documentData, { transaction })
+
+            if (items) {
+                const existingItems = await db.DocumentProduct.findAll({ 
+                    where: { documentId: id },
+                    transaction 
+                })
+                
+                const existingIds = existingItems.map(i => i.id)
+                const payloadIds = items.filter(i => i.id).map(i => i.id)
+
+                // Delete removed items
+                const toDelete = existingIds.filter(eid => !payloadIds.includes(eid))
+                if (toDelete.length > 0) {
+                    await db.DocumentProduct.destroy({ 
+                        where: { id: { [Op.in]: toDelete } },
+                        transaction 
+                    })
+                }
+
+                // Update or Create items
+                for (const row of items) {
+                    if (row.id) {
+                        await db.DocumentProduct.update(row, { 
+                            where: { id: row.id }, 
+                            transaction 
+                        })
+                    } else {
+                        await db.DocumentProduct.create({ 
+                            ...row, 
+                            documentId: id 
+                        }, { transaction })
+                    }
+                }
+            }
+        })
+
+        return findOne(id)
     } catch (error) {
         return ServiceResponse.error(error)
     }
@@ -96,14 +134,26 @@ export async function create(data) {
         const session = await getSession()
         const db = new AppContext()
 
-        const payload = {
-            ...data,
-            companyId: session.company.id
-        }
+        const { items, ...documentData } = data
 
-        const item = await db.Document.create(payload)
+        const result = await db.transaction(async (transaction) => {
+            const item = await db.Document.create({
+                ...documentData,
+                companyId: session.company.id
+            }, { transaction })
 
-        return ServiceResponse.success(item.get({ plain: true }))
+            if (items && items.length > 0) {
+                for (const row of items) {
+                    await db.DocumentProduct.create({
+                        ...row,
+                        documentId: item.id
+                    }, { transaction })
+                }
+            }
+            return item
+        })
+
+        return findOne(result.id)
     } catch (error) {
         return ServiceResponse.error(error)
     }

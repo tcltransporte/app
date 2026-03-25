@@ -57,7 +57,7 @@ export default function SolicitationView({
       setGenerateDocumentDrawer({ open: true, solicitations: [row] });
     };
 
-    const hasGenerate = !!row.solicitationStatus?.generateDocumentTypeId;
+    const hasGenerate = !!row.status?.generateDocumentTypeId;
     const count = row.documents?.length || 0;
     const hasActions = hasGenerate; // Only action currently is Generate
 
@@ -259,7 +259,7 @@ export default function SolicitationView({
       sx: { py: 0 },
       renderCell: (value, row) => (
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: 32 }}>
-          <Typography variant="body2" sx={{ lineHeight: 1 }}>{row.solicitationStatus?.description || 'Pendente'}</Typography>
+          <Typography variant="body2" sx={{ lineHeight: 1 }}>{row.status?.description || 'Pendente'}</Typography>
           <Tooltip title="Alterar status">
             <MuiIconButton
               size="small"
@@ -309,7 +309,7 @@ export default function SolicitationView({
         })
       },
     ] : []),
-    ...(table.selecteds.some(s => !!s.solicitationStatus?.generateDocumentTypeId) ? [
+    ...(table.selecteds.some(s => !!s.status?.generateDocumentTypeId) ? [
       {
         label: 'Gerar documentos',
         icon: <GenerateIcon />,
@@ -317,7 +317,7 @@ export default function SolicitationView({
         color: 'primary',
         onClick: () => setGenerateDocumentDrawer({
           open: true,
-          solicitations: table.selecteds.filter(s => !!s.solicitationStatus?.generateDocumentTypeId)
+          solicitations: table.selecteds.filter(s => !!s.status?.generateDocumentTypeId)
         })
       },
     ] : []),
