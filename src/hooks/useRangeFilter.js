@@ -4,13 +4,20 @@ import React, { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { PRESETS } from '@/components/common/RangeModal';
 
-export function useRangeFilter(initialRange, dateFieldOptions = []) {
+export function useRangeFilter({ initialRange = null, dateFieldOptions = [] }) {
   const [range, setRange] = useState(initialRange || {
     start: '',
     end: '',
     field: dateFieldOptions?.[0]?.value || ''
   });
   const [open, setOpen] = useState(false);
+
+  // Sync with props
+  React.useEffect(() => {
+    if (initialRange) {
+      setRange(initialRange);
+    }
+  }, [JSON.stringify(initialRange)]);
 
   const label = useMemo(() => {
     if (!range.start && !range.end) return 'Hoje';

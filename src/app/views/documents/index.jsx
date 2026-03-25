@@ -23,7 +23,7 @@ export default function DocumentView({
   selectedId
 }) {
   const table = useTable({ initialTable })
-  const filter = useFilter(initialFilters)
+  const filter = useFilter({ initialFilters })
   const navigation = useNavigation(`/documents/${documentType?.initials?.toLowerCase() || ''}`, selectedId)
 
   const fetchTable = React.useCallback(async (overrides = {}) => {
@@ -31,17 +31,22 @@ export default function DocumentView({
     try {
       const result = await documentService.findAll({
         slug: documentType?.initials,
-        page: overrides.page ?? table.page,
-        limit: overrides.rowsPerPage ?? table.rowsPerPage,
-        filters: overrides.filters ?? filter.filters
+        page: overrides.page || table.page,
+        limit: overrides.rowsPerPage || table.rowsPerPage,
+        filters: overrides.filters || filter.filters,
+        sortBy: overrides.sortBy || table.sortBy || undefined,
+        sortOrder: overrides.sortOrder || table.sortOrder || undefined
       })
 
       if (result.header.status !== ServiceStatus.SUCCESS) throw result
 
       table.setItems(result.body.items || [])
       table.setTotal(result.body.total || 0)
+      return true
     } catch (error) {
+      console.error('Erro ao buscar documentos:', error?.body?.message || error)
       alert.error('Erro ao carregar', error?.body?.message || 'Ocorreu um erro ao buscar documentos.')
+      return false
     } finally {
       table.setLoading(false)
     }
@@ -110,6 +115,18 @@ export default function DocumentView({
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}
           onRowDoubleClick={(row) => navigation.setSelectedId(row.id)}
+          onSort={async (property) => {
+            const isAsc = table.sortBy === property && table.sortOrder === 'ASC';
+            const newOrder = isAsc ? 'DESC' : 'ASC';
+            const ok = await fetchTable({ sortBy: property, sortOrder: newOrder, page: 1 });
+            if (ok) {
+              table.setSortOrder(newOrder);
+              table.setSortBy(property);
+              table.setPage(1);
+            }
+          }}
+          sortBy={table.sortBy}
+          sortOrder={table.sortOrder}
           loading={table.loading}
         />
         <DocumentDetail 
@@ -126,15 +143,17 @@ export default function DocumentView({
         total={table.total}
         page={table.page}
         rowsPerPage={table.rowsPerPage}
-        onPageChange={(e, p) => {
-          table.setPage(p);
-          fetchTable({ page: p });
+        onPageChange={async (e, p) => {
+          const ok = await fetchTable({ page: p });
+          if (ok) table.setPage(p);
         }}
-        onRowsPerPageChange={(e) => {
+        onRowsPerPageChange={async (e) => {
           const l = Number(e.target.value);
-          table.setRowsPerPage(l);
-          table.setPage(1);
-          fetchTable({ page: 1, rowsPerPage: l });
+          const ok = await fetchTable({ page: 1, rowsPerPage: l });
+          if (ok) {
+            table.setRowsPerPage(l);
+            table.setPage(1);
+          }
         }}
       />
     </Container>

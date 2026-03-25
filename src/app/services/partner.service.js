@@ -73,12 +73,12 @@ export async function findAll({ page = 1, limit = 50, filters = {}, sortBy = 'su
         where,
         limit,
         offset,
-        order: [[sortBy || 'surname', sortOrder || 'ASC']]
+        order: [[sortBy, sortOrder]]
       })
 
     })
 
-    return ServiceResponse.success({ items: result.rows, total: result.count, page, limit })
+    return ServiceResponse.success({ items: result.rows, total: result.count, page, limit, filters, sortBy, sortOrder })
 
   } catch (error) {
     return ServiceResponse.error(error)

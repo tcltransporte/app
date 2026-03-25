@@ -132,8 +132,8 @@ export default function SolicitationView({
   const [documentViewerDrawer, setDocumentViewerDrawer] = React.useState({ open: false, solicitation: null });
 
   const table = useTable({ initialTable })
-  const filter = useFilter(initialFilters)
-  const rangeFilter = useRangeFilter(initialRange, dateFieldOptions)
+  const filter = useFilter({ initialFilters })
+  const rangeFilter = useRangeFilter({ initialRange, dateFieldOptions })
   const exporter = useExport()
 
   const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id)
@@ -148,12 +148,12 @@ export default function SolicitationView({
     table.setLoading(true)
     try {
       const result = await solicitationService.findAll({
-        page: overrides.page ?? table.page,
-        limit: overrides.rowsPerPage ?? table.rowsPerPage,
-        filters: overrides.filters ?? filter.filters,
-        range: overrides.range ?? rangeFilter.range,
-        sortBy: overrides.sortBy ?? table.sortBy,
-        sortOrder: overrides.sortOrder ?? table.sortOrder
+        page: overrides.page || table.page,
+        limit: overrides.rowsPerPage || table.rowsPerPage,
+        filters: overrides.filters || filter.filters,
+        range: overrides.range || rangeFilter.range,
+        sortBy: overrides.sortBy || table.sortBy || undefined,
+        sortOrder: overrides.sortOrder || table.sortOrder || undefined
       })
 
       if (result.header.status !== ServiceStatus.SUCCESS)
@@ -162,9 +162,12 @@ export default function SolicitationView({
       table.setItems(result.body.items || [])
       table.setTotal(result.body.total || 0)
       table.setSelecteds([])
+      return true
 
     } catch (error) {
+      console.error('Erro ao buscar solicitações:', error?.body?.message || error)
       alert.error('Erro ao carregar', error?.body?.message || 'Ocorreu um erro ao buscar solicitações.')
+      return false
     } finally {
       table.setLoading(false)
     }
@@ -401,13 +404,15 @@ export default function SolicitationView({
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}
           onRowDoubleClick={handleRowDoubleClick}
-          onSort={(property) => {
+          onSort={async (property) => {
             const isAsc = table.sortBy === property && table.sortOrder === 'ASC';
             const newOrder = isAsc ? 'DESC' : 'ASC';
-            table.setSortOrder(newOrder);
-            table.setSortBy(property);
-            table.setPage(1);
-            fetchTable({ sortBy: property, sortOrder: newOrder, page: 1 });
+            const ok = await fetchTable({ sortBy: property, sortOrder: newOrder, page: 1 });
+            if (ok) {
+              table.setSortOrder(newOrder);
+              table.setSortBy(property);
+              table.setPage(1);
+            }
           }}
           sortBy={table.sortBy}
           sortOrder={table.sortOrder}
@@ -428,11 +433,13 @@ export default function SolicitationView({
           open={filter.open}
           filters={filter.filters}
           onClose={filter.handleClose}
-          onApply={(vals) => {
-            filter.handleApply(vals, (updatedFilters) => {
+          onApply={async (vals) => {
+            const ok = await fetchTable({ filters: vals, page: 1 });
+            if (ok) {
+              filter.setFilters(vals);
+              filter.setOpen(false);
               table.setPage(1);
-              fetchTable({ filters: updatedFilters, page: 1 });
-            })
+            }
           }}
         />
 
@@ -444,11 +451,13 @@ export default function SolicitationView({
           initialStart={rangeFilter.range.start}
           initialEnd={rangeFilter.range.end}
           fieldOptions={dateFieldOptions}
-          onApply={(vals) => {
-            rangeFilter.handleApply(vals, (updatedRange) => {
+          onApply={async (vals) => {
+            const ok = await fetchTable({ range: vals, page: 1 });
+            if (ok) {
+              rangeFilter.setRange(vals);
+              rangeFilter.setOpen(false);
               table.setPage(1);
-              fetchTable({ range: updatedRange, page: 1 });
-            })
+            }
           }}
         />
 
@@ -481,15 +490,17 @@ export default function SolicitationView({
         page={table.page}
         rowsPerPage={table.rowsPerPage}
         selectedCount={table.selecteds.length}
-        onPageChange={(e, p) => {
-          table.setPage(p);
-          fetchTable({ page: p });
+        onPageChange={async (e, p) => {
+          const ok = await fetchTable({ page: p });
+          if (ok) table.setPage(p);
         }}
-        onRowsPerPageChange={(e) => {
+        onRowsPerPageChange={async (e) => {
           const l = Number(e.target.value);
-          table.setRowsPerPage(l);
-          table.setPage(1);
-          fetchTable({ page: 1, rowsPerPage: l });
+          const ok = await fetchTable({ page: 1, rowsPerPage: l });
+          if (ok) {
+            table.setRowsPerPage(l);
+            table.setPage(1);
+          }
         }}
       />
 

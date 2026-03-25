@@ -28,7 +28,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
 
   const table = useTable({ initialTable })
 
-  const filter = useFilter(initialFilters)
+  const filter = useFilter({ initialFilters })
   const exporter = useExport()
 
   const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id)
@@ -43,11 +43,11 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
     table.setLoading(true)
     try {
       const result = await partnerService.findAll({
-        page: overrides.page ?? table.page,
-        limit: overrides.rowsPerPage ?? table.rowsPerPage,
-        filters: overrides.filters ?? filter.filters,
-        sortBy: overrides.sortBy ?? table.sortBy,
-        sortOrder: overrides.sortOrder ?? table.sortOrder
+        page: overrides.page || table.page,
+        limit: overrides.rowsPerPage || table.rowsPerPage,
+        filters: overrides.filters || filter.filters,
+        sortBy: overrides.sortBy || table.sortBy || undefined,
+        sortOrder: overrides.sortOrder || table.sortOrder || undefined
       })
 
       if (result.header.status !== ServiceStatus.SUCCESS)
@@ -56,9 +56,11 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
       table.setItems(result.body.items || [])
       table.setTotal(result.body.total || 0)
       table.setSelecteds([])
+      return true
 
     } catch (error) {
-      console.error('Erro ao buscar parceiros:', error)
+      alert.error('Ops!', error?.body?.message)
+      return false
     } finally {
       table.setLoading(false)
     }
@@ -217,13 +219,15 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}
           onRowDoubleClick={handleRowDoubleClick}
-          onSort={(property) => {
+          onSort={async (property) => {
             const isAsc = table.sortBy === property && table.sortOrder === 'ASC';
             const newOrder = isAsc ? 'DESC' : 'ASC';
-            table.setSortOrder(newOrder);
-            table.setSortBy(property);
-            table.setPage(1);
-            fetchTable({ sortBy: property, sortOrder: newOrder, page: 1 });
+            const ok = await fetchTable({ sortBy: property, sortOrder: newOrder, page: 1 });
+            if (ok) {
+              table.setSortOrder(newOrder);
+              table.setSortBy(property);
+              table.setPage(1);
+            }
           }}
           sortBy={table.sortBy}
           sortOrder={table.sortOrder}
@@ -243,11 +247,13 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
           open={filter.open}
           filters={filter.filters}
           onClose={filter.handleClose}
-          onApply={(vals) => {
-            filter.handleApply(vals, (updatedFilters) => {
+          onApply={async (vals) => {
+            const ok = await fetchTable({ filters: vals, page: 1 });
+            if (ok) {
+              filter.setFilters(vals);
+              filter.setOpen(false);
               table.setPage(1);
-              fetchTable({ filters: updatedFilters, page: 1 });
-            })
+            }
           }}
         />
 
@@ -258,15 +264,17 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
         page={table.page}
         rowsPerPage={table.rowsPerPage}
         selectedCount={table.selecteds.length}
-        onPageChange={(e, p) => {
-          table.setPage(p);
-          fetchTable({ page: p });
+        onPageChange={async (e, p) => {
+          const ok = await fetchTable({ page: p });
+          if (ok) table.setPage(p);
         }}
-        onRowsPerPageChange={(e) => {
+        onRowsPerPageChange={async (e) => {
           const l = Number(e.target.value);
-          table.setRowsPerPage(l);
-          table.setPage(1);
-          fetchTable({ page: 1, rowsPerPage: l });
+          const ok = await fetchTable({ page: 1, rowsPerPage: l });
+          if (ok) {
+            table.setRowsPerPage(l);
+            table.setPage(1);
+          }
         }}
       />
 

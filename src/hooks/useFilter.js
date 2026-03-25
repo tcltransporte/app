@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 
-export function useFilter(initialFilters = {}) {
+export function useFilter({ initialFilters = {} }) {
   const [filters, setFilters] = useState(initialFilters);
   const [open, setOpen] = useState(false);
+
+  // Sync with props
+  useEffect(() => {
+    if (initialFilters) {
+      setFilters(initialFilters);
+    }
+  }, [JSON.stringify(initialFilters)]);
+
 
   const activeCount = useMemo(() => {
     return Object.entries(filters).filter(([key, value]) => {

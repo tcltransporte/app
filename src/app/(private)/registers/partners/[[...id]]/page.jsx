@@ -1,27 +1,35 @@
 import { RegistersPartners } from "@/app/views/registers/partners"
 import * as partnerService from "@/app/services/partner.service"
+import { ServiceStatus } from "@/libs/service";
 
 export default async ({ params }) => {
+  try {
 
-  const { id } = await params;
+    const { id } = await params;
 
-  const initialFilters = {};
+    const initialFilters = {};
 
-  const result = await partnerService.findAll({
-    page: 1,
-    limit: 50,
-    filters: initialFilters
-  })
+    const partnerResult = await partnerService.findAll({
+      page: 1,
+      limit: 50,
+      filters: initialFilters
+    })
 
-  const initialTable = result.header.status === 200
-    ? result.body
-    : { items: [], total: 0 }
+    if (partnerResult.header.status !== ServiceStatus.SUCCESS) {
+      throw partnerResult
+    }
 
-  return (
-    <RegistersPartners
-      partnerId={id?.[0]}
-      initialTable={initialTable}
-      initialFilters={initialFilters}
-    />
-  )
+    const initialTable = partnerResult.body
+
+    return (
+      <RegistersPartners
+        partnerId={id?.[0]}
+        initialTable={initialTable}
+        initialFilters={initialFilters}
+      />
+    )
+
+  } catch (error) {
+    return error.body.message
+  }
 }

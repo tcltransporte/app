@@ -41,7 +41,7 @@ export async function exportTable({
   });
 }
 
-export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'id', sortOrder = 'DESC' } = {}) {
+export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'id', sortOrder = 'DESC' }) {
   try {
     const session = await getSession()
     const db = new AppContext()
@@ -99,7 +99,7 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
       })
     })
 
-    return ServiceResponse.success({ items: result.rows, total: result.count, page, limit, sortBy, sortOrder, filters, range })
+    return ServiceResponse.success({ items: result.rows, total: result.count, page, limit, filters, range, sortBy, sortOrder })
 
   } catch (error) {
     return ServiceResponse.error(error)
@@ -489,24 +489,24 @@ export async function generateDocuments(solicitationIds = []) {
 
       s.documents = [];
 
-        const hasProducts = (s.products || []).length > 0;
-        const hasServices = (s.services || []).length > 0;
-        const defaultInvoiceDate = new Date().toISOString();
+      const hasProducts = (s.products || []).length > 0;
+      const hasServices = (s.services || []).length > 0;
+      const defaultInvoiceDate = new Date().toISOString();
 
-        if (hasProducts && type55) {
-          const total = (s.products || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
-          s.documents.push({ id: null, documentModelId: type55.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
-        }
-        if (hasServices && type99) {
-          const total = (s.services || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
-          s.documents.push({ id: null, documentModelId: type99.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
-        }
-        if (s.documents.length === 0 && s.solicitationStatus?.generateDocumentTypeId) {
-          s.documents.push({ id: null, documentModelId: s.solicitationStatus.generateDocumentTypeId, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
-        }
-        if (s.documents.length === 0 && defaultType) {
-          s.documents.push({ id: null, documentModelId: defaultType.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
-        }
+      if (hasProducts && type55) {
+        const total = (s.products || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
+        s.documents.push({ id: null, documentModelId: type55.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
+      }
+      if (hasServices && type99) {
+        const total = (s.services || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
+        s.documents.push({ id: null, documentModelId: type99.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
+      }
+      if (s.documents.length === 0 && s.solicitationStatus?.generateDocumentTypeId) {
+        s.documents.push({ id: null, documentModelId: s.solicitationStatus.generateDocumentTypeId, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
+      }
+      if (s.documents.length === 0 && defaultType) {
+        s.documents.push({ id: null, documentModelId: defaultType.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
+      }
 
 
       return s;

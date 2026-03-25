@@ -5,7 +5,7 @@ import { ServiceResponse, ServiceStatus } from "@/libs/service"
 import { getSession } from "@/libs/session"
 import { Op } from "sequelize"
 
-export async function findAll({ slug, page = 1, limit = 50, filters = {} } = {}) {
+export async function findAll({ slug, page = 1, limit = 50, filters = {}, sortBy = 'invoiceDate', sortOrder = 'DESC' } = {}) {
     try {
         const session = await getSession()
         const db = new AppContext()
@@ -37,14 +37,18 @@ export async function findAll({ slug, page = 1, limit = 50, filters = {} } = {})
             ],
             limit,
             offset: (page - 1) * limit,
-            order: [['invoiceDate', 'DESC']]
+            order: [[sortBy, sortOrder]]
         })
 
         return ServiceResponse.success({
             items: rows.map(r => r.get({ plain: true })),
             total: count,
+            slug,
             page,
-            limit
+            limit,
+            filters,
+            sortBy,
+            sortOrder
         })
 
     } catch (error) {
