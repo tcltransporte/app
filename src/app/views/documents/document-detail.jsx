@@ -41,7 +41,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
           // Merge fetched data with current document prop to preserve local edits
           setData({ ...result.body, ...document });
         } else {
-          alert.error('Erro', result.header.message || 'Erro ao carregar documento');
+          alert.error('Erro', result.body.message || 'Erro ao carregar documento');
         }
       })
       .catch(err => alert.error('Erro', 'Ocorreu um erro inesperado'))
@@ -78,7 +78,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
         onSave?.(result.body);
         onClose?.();
       } else {
-        alert.error('Erro ao salvar', result.header.message);
+        alert.error('Erro ao salvar', result.body.message);
       }
     } catch (err) {
       alert.error('Erro', 'Erro ao salvar documento');

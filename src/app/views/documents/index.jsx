@@ -41,7 +41,7 @@ export default function DocumentView({
       table.setItems(result.body.items || [])
       table.setTotal(result.body.total || 0)
     } catch (error) {
-      alert.error('Erro ao carregar', error?.header?.message || 'Ocorreu um erro ao buscar documentos.')
+      alert.error('Erro ao carregar', error?.body?.message || 'Ocorreu um erro ao buscar documentos.')
     } finally {
       table.setLoading(false)
     }

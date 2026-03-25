@@ -75,17 +75,20 @@ export function LoginView() {
         window.location.href = redirectUrl
       }
     } catch (err) {
-      if (err.header?.code === "SELECT_COMPANY_BUSINESS") {
+
+      console.log(err)
+
+      if (err.body?.code === "SELECT_COMPANY_BUSINESS") {
         setCompanyBusinesses(err.body.companyBusinesses || [])
         setStep('selection')
-      } else if (err.header?.code === "SELECT_COMPANY") {
+      } else if (err.body?.code === "SELECT_COMPANY") {
         setCompanies(err.body.companies || [])
         setStep('selection')
-      } else if (err.header?.code === "ACTIVE_SESSION_EXISTS") {
+      } else if (err.body?.code === "ACTIVE_SESSION_EXISTS") {
         setSessionConflict(true)
         setCurrentValues(values)
       } else {
-        setError(err.header?.message || err.message || "Erro ao realizar login")
+        setError(err.body?.message || err.message || "Erro ao realizar login")
       }
     } finally {
       setLoading(false)

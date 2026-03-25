@@ -165,7 +165,7 @@ export default function SolicitationView({
       table.setSelecteds([])
 
     } catch (error) {
-      alert.error('Erro ao carregar', error?.header?.message || 'Ocorreu um erro ao buscar solicitações.')
+      alert.error('Erro ao carregar', error?.body?.message || 'Ocorreu um erro ao buscar solicitações.')
     } finally {
       table.setLoading(false)
     }

@@ -41,7 +41,7 @@ export function SettingsView({ initialCompany, initialUser, activeSlug = 'empres
                 setCompany(companyResult.body.company)
                 setUser(companyResult.body.user)
             } catch (error) {
-                alert(error?.header?.message || error.message)
+                alert(error?.body?.message || error.message)
             }
         }
 
@@ -51,7 +51,7 @@ export function SettingsView({ initialCompany, initialUser, activeSlug = 'empres
                 router.push("/sign-in")
                 router.refresh()
             } catch (error) {
-                alert(error?.header?.message || error.message)
+                alert(error?.body?.message || error.message)
             }
         }
 
@@ -134,6 +134,6 @@ export function SettingsView({ initialCompany, initialUser, activeSlug = 'empres
         )
 
     } catch (error) {
-        return <h1>Erro: {error?.header?.message || error.message}</h1>
+        return <h1>Erro: {error?.body?.message || error.message}</h1>
     }
 }

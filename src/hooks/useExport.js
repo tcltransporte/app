@@ -65,7 +65,7 @@ export const useExport = () => {
       await handleAuthError(error, () => processResponse(result, { fileName, format }));
       
       if (error && error.code !== 'GOOGLE_AUTH_REQUIRED') {
-        alert.error('Erro ao exportar', error?.header?.message || error.message || 'Ocorreu um problema ao processar o arquivo.');
+        alert.error('Erro ao exportar', error?.body?.message || error.message || 'Ocorreu um problema ao processar o arquivo.');
       }
     }
   };

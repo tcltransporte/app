@@ -40,6 +40,6 @@ export default async ({ params }) => {
     )
   
   } catch (error) {
-    return <h1>Erro: {error?.header?.message || error.message}</h1>
+    return <h1>Erro: {error?.body?.message || error.message}</h1>
   }
 }

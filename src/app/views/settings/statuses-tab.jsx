@@ -47,7 +47,7 @@ export function StatusesTab({ initialStatusesConfig }) {
         setItems(result.body.allStatuses || []);
       }
     } catch (error) {
-      alert.error('Erro ao recarregar configuração', error?.header?.message || error.message);
+      alert.error('Erro ao recarregar configuração', error?.body?.message || error.message);
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -93,7 +93,7 @@ export function StatusesTab({ initialStatusesConfig }) {
       handleCloseDrawer(false);
       fetchConfig(true);
     } catch (error) {
-      alert.error('Erro ao salvar', error?.header?.message || error.message);
+      alert.error('Erro ao salvar', error?.body?.message || error.message);
     }
   };
 
@@ -108,7 +108,7 @@ export function StatusesTab({ initialStatusesConfig }) {
       fetchTable();
       fetchConfig();
     } catch (error) {
-      alert.error('Erro ao excluir', error?.header?.message || error.message);
+      alert.error('Erro ao excluir', error?.body?.message || error.message);
     } finally {
       table.setLoading(false);
     }

@@ -5,34 +5,32 @@ export const ServiceStatus = Object.freeze({
   INTERNAL_SERVER_ERROR: 500
 })
 
-const createResponse = (status, body, header = {}) => ({ 
-  header: { status, ...header }, 
-  body 
+const createResponse = (header, body) => ({
+  header,
+  body
 })
 
 export const ServiceResponse = {
   success: (body) =>
-    createResponse(ServiceStatus.SUCCESS, body),
+    createResponse({ status: ServiceStatus.SUCCESS }, body),
 
   badRequest: (code, message, body) =>
-    createResponse(ServiceStatus.BAD_REQUEST, body, { code, message }),
+    createResponse({ status: ServiceStatus.BAD_REQUEST }, { ...body, code, message }),
 
   unauthorized: (code, message, body) =>
-    createResponse(ServiceStatus.UNAUTHORIZED, body, { code, message }),
+    createResponse({ status: ServiceStatus.UNAUTHORIZED }, { ...body, code, message }),
 
-  error: (err_or_code, message, body) => {
-    if (typeof err_or_code === 'object') {
-      // If it's already a formatted response, return it as is
-      if (err_or_code.header) return err_or_code;
+  error: (error) => {
 
-      const status = err_or_code.status || ServiceStatus.INTERNAL_SERVER_ERROR;
-      const message = err_or_code.message || "Ocorreu um erro interno.";
-      const code = err_or_code.code || "INTERNAL_ERROR";
-      return createResponse(status, { ...err_or_code.body }, { code, message });
-    }
+    const status = error.header?.status || ServiceStatus.INTERNAL_SERVER_ERROR;
 
-    return createResponse(ServiceStatus.INTERNAL_SERVER_ERROR, body, { code: err_or_code, message });
+    const code = error.body?.code || "INTERNAL_ERROR";
+    const message = error.body?.message || error.message || "Ocorreu um erro interno!";
+
+    return createResponse({ status }, { ...error.body, code, message });
+
   }
+
 }
 
 export function sanitize(data) {

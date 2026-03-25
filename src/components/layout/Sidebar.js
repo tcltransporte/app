@@ -219,7 +219,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
 
         router.refresh();
       } else {
-        alert.error('Erro ao criar tipo', resp.header.message);
+        alert.error('Erro ao criar tipo', resp.body.message);
       }
     } catch (err) {
       alert.error('Erro', 'Ocorreu um erro ao salvar');
@@ -253,7 +253,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         setIsReorderMode(false);
         router.refresh();
       } else {
-        alert.error('Erro ao salvar ordem', resp.header.message);
+        alert.error('Erro ao salvar ordem', resp.body.message);
       }
     } catch (error) {
       alert.error('Erro', 'Ocorreu um erro ao salvar a ordem');
@@ -278,7 +278,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         setEditingId(null);
         router.refresh();
       } else {
-        alert.error('Erro ao atualizar', resp.header.message);
+        alert.error('Erro ao atualizar', resp.body.message);
       }
     } catch (err) {
       alert.error('Erro', 'Ocorreu um erro ao salvar');

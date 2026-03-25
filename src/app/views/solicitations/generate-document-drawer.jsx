@@ -593,7 +593,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
         );
 
         if (result.header.status !== ServiceStatus.SUCCESS)
-          throw new Error(result.header.message || 'Erro ao gerar documento.');
+          throw new Error(result.body.message || 'Erro ao gerar documento.');
 
       }
 
@@ -603,7 +603,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
       onClose();
 
     } catch (error) {
-      alert.error('Erro ao gerar documentos', error?.header?.message || error.message || 'Ocorreu um erro inesperado.');
+      alert.error('Erro ao gerar documentos', error?.body?.message || error.message || 'Ocorreu um erro inesperado.');
     } finally {
       setSubmitting(false);
     }

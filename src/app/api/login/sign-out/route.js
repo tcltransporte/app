@@ -18,8 +18,6 @@ export async function POST() {
 
   const loginResult = await loginService.signOut()
 
-  const { status, ...body } = loginResult
-
-  return NextResponse.json(body, { status })
+  return NextResponse.json(loginResult.body, { status: loginResult.header.status })
 
 }

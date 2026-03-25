@@ -59,11 +59,9 @@ export async function GET(request) {
     console.error('Erro ao processar parâmetros da API:', error)
   }
 
-  const result = await partnerService.findAll({ page, limit, filters, range })
+  const partnerResult = await partnerService.findAll({ page, limit, filters, range })
 
-  const { status, ...body } = result
-
-  return NextResponse.json(body, { status })
+  return NextResponse.json(partnerResult.body, { status: partnerResult.header.status })
 
 }
 
@@ -93,10 +91,8 @@ export async function POST(request) {
 
   const data = await request.json()
 
-  const result = await partnerService.create(data)
+  const partnerResult = await partnerService.create(data)
 
-  const { status, ...body } = result
-
-  return NextResponse.json(body, { status })
+  return NextResponse.json(partnerResult.body, { status: partnerResult.header.status })
 
 }
