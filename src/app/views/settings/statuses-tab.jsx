@@ -59,8 +59,8 @@ export function StatusesTab({ initialStatusesConfig }) {
       isFirstMount.current = false;
       return;
     }
-    fetchConfig();
-  }, [fetchConfig, initialStatusesConfig]);
+    // Auto-fetch removed to avoid unwanted triggers on route change
+  }, [initialStatusesConfig]);
 
   const handleOpenDrawer = (item = null, tab = 0) => {
     setConfigFromType('');

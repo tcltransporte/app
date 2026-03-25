@@ -144,17 +144,16 @@ export default function SolicitationView({
     handleCloseModal()
   }
 
-  const fetchTable = React.useCallback(async () => {
+  const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
-
       const result = await solicitationService.findAll({
-        page: table.page,
-        limit: table.rowsPerPage,
-        filters: filter.filters,
-        range: rangeFilter.range,
-        sortBy: table.sortBy,
-        sortOrder: table.sortOrder
+        page: overrides.page ?? table.page,
+        limit: overrides.rowsPerPage ?? table.rowsPerPage,
+        filters: overrides.filters ?? filter.filters,
+        range: overrides.range ?? rangeFilter.range,
+        sortBy: overrides.sortBy ?? table.sortBy,
+        sortOrder: overrides.sortOrder ?? table.sortOrder
       })
 
       if (result.header.status !== ServiceStatus.SUCCESS)
@@ -177,8 +176,8 @@ export default function SolicitationView({
       isFirstMount.current = false
       return
     }
-    fetchTable()
-  }, [fetchTable])
+    // Auto-fetch removed to avoid unwanted triggers on route change
+  }, [])
 
   React.useEffect(() => {
     filter.setFilters(prev => {
@@ -402,7 +401,14 @@ export default function SolicitationView({
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}
           onRowDoubleClick={handleRowDoubleClick}
-          onSort={table.handleSort}
+          onSort={(property) => {
+            const isAsc = table.sortBy === property && table.sortOrder === 'ASC';
+            const newOrder = isAsc ? 'DESC' : 'ASC';
+            table.setSortOrder(newOrder);
+            table.setSortBy(property);
+            table.setPage(1);
+            fetchTable({ sortBy: property, sortOrder: newOrder, page: 1 });
+          }}
           sortBy={table.sortBy}
           sortOrder={table.sortOrder}
           onColumnsReorder={table.setOrderedColumns}
@@ -423,7 +429,10 @@ export default function SolicitationView({
           filters={filter.filters}
           onClose={filter.handleClose}
           onApply={(vals) => {
-            filter.handleApply(vals, () => table.setPage(1))
+            filter.handleApply(vals, (updatedFilters) => {
+              table.setPage(1);
+              fetchTable({ filters: updatedFilters, page: 1 });
+            })
           }}
         />
 
@@ -436,7 +445,10 @@ export default function SolicitationView({
           initialEnd={rangeFilter.range.end}
           fieldOptions={dateFieldOptions}
           onApply={(vals) => {
-            rangeFilter.handleApply(vals, () => table.setPage(1))
+            rangeFilter.handleApply(vals, (updatedRange) => {
+              table.setPage(1);
+              fetchTable({ range: updatedRange, page: 1 });
+            })
           }}
         />
 
@@ -469,8 +481,16 @@ export default function SolicitationView({
         page={table.page}
         rowsPerPage={table.rowsPerPage}
         selectedCount={table.selecteds.length}
-        onPageChange={table.handlePageChange}
-        onRowsPerPageChange={table.handleRowsPerPageChange}
+        onPageChange={(e, p) => {
+          table.setPage(p);
+          fetchTable({ page: p });
+        }}
+        onRowsPerPageChange={(e) => {
+          const l = Number(e.target.value);
+          table.setRowsPerPage(l);
+          table.setPage(1);
+          fetchTable({ page: 1, rowsPerPage: l });
+        }}
       />
 
     </Container>

@@ -26,14 +26,14 @@ export default function DocumentView({
   const filter = useFilter(initialFilters)
   const navigation = useNavigation(`/documents/${documentType?.initials?.toLowerCase() || ''}`, selectedId)
 
-  const fetchTable = React.useCallback(async () => {
+  const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
       const result = await documentService.findAll({
         slug: documentType?.initials,
-        page: table.page,
-        limit: table.rowsPerPage,
-        filters: filter.filters
+        page: overrides.page ?? table.page,
+        limit: overrides.rowsPerPage ?? table.rowsPerPage,
+        filters: overrides.filters ?? filter.filters
       })
 
       if (result.header.status !== ServiceStatus.SUCCESS) throw result
@@ -53,8 +53,8 @@ export default function DocumentView({
       isFirstMount.current = false
       return
     }
-    fetchTable()
-  }, [table.page, table.rowsPerPage, filter.filters])
+    // Auto-fetch removed to avoid unwanted triggers
+  }, [])
 
   const columns = [
     { field: 'id', headerName: 'ID', width: 80 },
@@ -126,8 +126,16 @@ export default function DocumentView({
         total={table.total}
         page={table.page}
         rowsPerPage={table.rowsPerPage}
-        onPageChange={table.handlePageChange}
-        onRowsPerPageChange={table.handleRowsPerPageChange}
+        onPageChange={(e, p) => {
+          table.setPage(p);
+          fetchTable({ page: p });
+        }}
+        onRowsPerPageChange={(e) => {
+          const l = Number(e.target.value);
+          table.setRowsPerPage(l);
+          table.setPage(1);
+          fetchTable({ page: 1, rowsPerPage: l });
+        }}
       />
     </Container>
   )

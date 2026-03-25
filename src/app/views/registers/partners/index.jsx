@@ -15,21 +15,20 @@ import { Badge } from '@mui/material';
 
 import { PartnerDetail } from './partner.detail';
 import { PartnerFilter } from './filter';
-import { useTable, useNavigation, useRangeFilter, useFilter, useExport } from '@/hooks';
+import { useTable, useNavigation, useFilter, useExport } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
-import { Container, Table, Toolbar, RangeModal, SplitButton, LoadingOverlay } from '@/components/common';
+import { Container, Table, Toolbar, LoadingOverlay } from '@/components/common';
 import * as partnerService from '@/app/services/partner.service';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
-export function RegistersPartners({ partnerId, initialTable, initialFilters, initialRange, dateFieldOptions = [] }) {
+export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
 
   const navigation = useNavigation('/registers/partners', partnerId)
 
   const table = useTable({ initialTable })
 
   const filter = useFilter(initialFilters)
-  const rangeFilter = useRangeFilter(initialRange, dateFieldOptions)
   const exporter = useExport()
 
   const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id)
@@ -40,16 +39,15 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
     handleCloseModal()
   }
 
-  const fetchTable = React.useCallback(async () => {
+  const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
       const result = await partnerService.findAll({
-        page: table.page,
-        limit: table.rowsPerPage,
-        filters: filter.filters,
-        range: rangeFilter.range,
-        sortBy: table.sortBy,
-        sortOrder: table.sortOrder
+        page: overrides.page ?? table.page,
+        limit: overrides.rowsPerPage ?? table.rowsPerPage,
+        filters: overrides.filters ?? filter.filters,
+        sortBy: overrides.sortBy ?? table.sortBy,
+        sortOrder: overrides.sortOrder ?? table.sortOrder
       })
 
       if (result.header.status !== ServiceStatus.SUCCESS)
@@ -64,7 +62,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
     } finally {
       table.setLoading(false)
     }
-  }, [table.page, table.rowsPerPage, filter.filters, rangeFilter.range, table.sortBy, table.sortOrder])
+  }, [table.page, table.rowsPerPage, filter.filters, table.sortBy, table.sortOrder])
 
   const isFirstMount = React.useRef(true)
   React.useEffect(() => {
@@ -72,8 +70,8 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
       isFirstMount.current = false
       return
     }
-    fetchTable()
-  }, [fetchTable])
+    // Auto-fetch removed
+  }, [])
 
   const handleDelete = async () => {
     if (!table.selecteds.length) return
@@ -106,7 +104,6 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
     try {
       const params = {
         filters: filter.filters,
-        range: rangeFilter.range,
         sortBy: table.sortBy,
         sortOrder: table.sortOrder,
         columns: displayColumns
@@ -166,11 +163,6 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
 
   const secondaryActions = [
     {
-      label: rangeFilter.label,
-      icon: <EventIcon fontSize="small" />,
-      onClick: rangeFilter.handleOpen
-    },
-    {
       label: 'Filtros',
       icon: (
         <Badge badgeContent={filter.activeCount} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16, top: 2, right: 2 } }}>
@@ -225,7 +217,14 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}
           onRowDoubleClick={handleRowDoubleClick}
-          onSort={table.handleSort}
+          onSort={(property) => {
+            const isAsc = table.sortBy === property && table.sortOrder === 'ASC';
+            const newOrder = isAsc ? 'DESC' : 'ASC';
+            table.setSortOrder(newOrder);
+            table.setSortBy(property);
+            table.setPage(1);
+            fetchTable({ sortBy: property, sortOrder: newOrder, page: 1 });
+          }}
           sortBy={table.sortBy}
           sortOrder={table.sortOrder}
           onColumnsReorder={table.setOrderedColumns}
@@ -245,20 +244,10 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
           filters={filter.filters}
           onClose={filter.handleClose}
           onApply={(vals) => {
-            filter.handleApply(vals, () => table.setPage(1))
-          }}
-        />
-
-        <RangeModal
-          open={rangeFilter.open}
-          onClose={rangeFilter.handleClose}
-          title="Filtro de Período"
-          initialStart={rangeFilter.range.start}
-          initialEnd={rangeFilter.range.end}
-          initialField={rangeFilter.range.field}
-          fieldOptions={dateFieldOptions}
-          onApply={(vals) => {
-            rangeFilter.handleApply(vals, () => table.setPage(1))
+            filter.handleApply(vals, (updatedFilters) => {
+              table.setPage(1);
+              fetchTable({ filters: updatedFilters, page: 1 });
+            })
           }}
         />
 
@@ -269,8 +258,16 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters, ini
         page={table.page}
         rowsPerPage={table.rowsPerPage}
         selectedCount={table.selecteds.length}
-        onPageChange={table.handlePageChange}
-        onRowsPerPageChange={table.handleRowsPerPageChange}
+        onPageChange={(e, p) => {
+          table.setPage(p);
+          fetchTable({ page: p });
+        }}
+        onRowsPerPageChange={(e) => {
+          const l = Number(e.target.value);
+          table.setRowsPerPage(l);
+          table.setPage(1);
+          fetchTable({ page: 1, rowsPerPage: l });
+        }}
       />
 
     </Container>

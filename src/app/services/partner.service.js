@@ -40,7 +40,7 @@ export async function exportTable({
   });
 }
 
-export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'surname', sortOrder = 'ASC' } = {}) {
+export async function findAll({ page = 1, limit = 50, filters = {}, sortBy = 'surname', sortOrder = 'ASC' } = {}) {
   try {
 
     const session = await getSession()
@@ -67,19 +67,6 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
       if (filters.isSupplier) where.isSupplier = true
       if (filters.isEmployee) where.isEmployee = true
       if (filters.isSeller) where.isSeller = true
-
-      // Range Filter
-      if (range.field && (range.start || range.end)) {
-        let dateCondition = {}
-        if (range.start && range.end) {
-          dateCondition = { [Op.between]: [`${range.start} 00:00:00.000`, `${range.end} 23:59:59.999`] }
-        } else if (range.start) {
-          dateCondition = { [Op.gte]: `${range.start} 00:00:00.000` }
-        } else if (range.end) {
-          dateCondition = { [Op.lte]: `${range.end} 23:59:59.999` }
-        }
-        where[range.field] = dateCondition
-      }
 
       return partnerRepository.findAll({ db, transaction }, {
         attributes: ['id', 'cpfCnpj', 'name', 'surname', 'typeId', 'isCustomer', 'isSupplier', 'isEmployee', 'isSeller', 'isActive', 'birthDate'],
