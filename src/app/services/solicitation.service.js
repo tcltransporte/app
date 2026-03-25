@@ -467,8 +467,16 @@ export async function generateDocuments(solicitationIds = []) {
       where: { id: solicitationIds, companyId: session.company.id },
       include: [
         { association: 'partner', attributes: ['name', 'surname'] },
-        { association: 'products', attributes: ['id', 'value', 'quantity'] },
-        { association: 'services', attributes: ['id', 'value', 'quantity'] },
+        { 
+          association: 'products', 
+          attributes: ['id', 'itemId', 'value', 'quantity'],
+          include: [{ association: 'product', attributes: ['name'] }]
+        },
+        { 
+          association: 'services', 
+          attributes: ['id', 'itemId', 'value', 'quantity', 'description'],
+          include: [{ association: 'service', attributes: ['name'] }]
+        },
         { association: 'documents' },
         { association: 'type', attributes: ['id', 'description'] },
         { association: 'status', attributes: ['id', 'generateDocumentTypeId'] }
@@ -499,11 +507,37 @@ export async function generateDocuments(solicitationIds = []) {
 
       if (hasProducts && type55) {
         const total = (s.products || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
-        s.documents.push({ id: null, documentTypeId: type55.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
+        const docItems = (s.products || []).map(p => ({
+          itemId: p.itemId,
+          quantity: p.quantity,
+          value: p.value,
+          description: p.description || p.product?.name || ''
+        }));
+        s.documents.push({
+          id: null,
+          documentTypeId: type55.id,
+          invoiceNumber: 0,
+          invoiceDate: defaultInvoiceDate,
+          invoiceValue: total,
+          items: docItems
+        });
       }
       if (hasServices && type99) {
         const total = (s.services || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
-        s.documents.push({ id: null, documentTypeId: type99.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: total });
+        const docItems = (s.services || []).map(p => ({
+          itemId: p.itemId,
+          quantity: p.quantity,
+          value: p.value,
+          description: p.description || p.service?.name || ''
+        }));
+        s.documents.push({ 
+          id: null, 
+          documentTypeId: type99.id, 
+          invoiceNumber: 0, 
+          invoiceDate: defaultInvoiceDate, 
+          invoiceValue: total,
+          services: docItems
+        });
       }
       if (s.documents.length === 0 && s.status?.generateDocumentTypeId) {
         s.documents.push({ id: null, documentTypeId: s.status.generateDocumentTypeId, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });

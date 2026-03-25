@@ -63,7 +63,8 @@ export async function findOne(id) {
             include: [
                 { association: 'partner' },
                 { association: 'documentType' },
-                { association: 'items', include: ['product'] }
+                { association: 'items', include: ['product'] },
+                { association: 'services', include: ['service'] }
             ]
         })
 
@@ -121,6 +122,40 @@ export async function update(id, data) {
                     }
                 }
             }
+
+            if (data.services) {
+                const existingServices = await db.DocumentService.findAll({ 
+                    where: { documentId: id },
+                    transaction 
+                })
+                
+                const existingIds = existingServices.map(i => i.id)
+                const payloadIds = data.services.filter(i => i.id).map(i => i.id)
+
+                // Delete removed items
+                const toDelete = existingIds.filter(eid => !payloadIds.includes(eid))
+                if (toDelete.length > 0) {
+                    await db.DocumentService.destroy({ 
+                        where: { id: { [Op.in]: toDelete } },
+                        transaction 
+                    })
+                }
+
+                // Update or Create items
+                for (const row of data.services) {
+                    if (row.id) {
+                        await db.DocumentService.update(row, { 
+                            where: { id: row.id }, 
+                            transaction 
+                        })
+                    } else {
+                        await db.DocumentService.create({ 
+                            ...row, 
+                            documentId: id 
+                        }, { transaction })
+                    }
+                }
+            }
         })
 
         return findOne(id)
@@ -145,6 +180,15 @@ export async function create(data) {
             if (items && items.length > 0) {
                 for (const row of items) {
                     await db.DocumentProduct.create({
+                        ...row,
+                        documentId: item.id
+                    }, { transaction })
+                }
+            }
+
+            if (data.services && data.services.length > 0) {
+                for (const row of data.services) {
+                    await db.DocumentService.create({
                         ...row,
                         documentId: item.id
                     }, { transaction })

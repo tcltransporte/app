@@ -23,6 +23,7 @@ import { Document } from './models/document.model.js'
 import { DocumentType } from './models/documentType.model.js'
 import { SolicitationDocument } from './models/solicitationDocument.model.js'
 import { DocumentProduct } from './models/documentProduct.model.js'
+import { DocumentService } from './models/documentService.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -76,6 +77,7 @@ export class AppContext extends Sequelize {
     this.DocumentType = this.define('documentType', new DocumentType(), { tableName: 'TipoModeloDocumento' })
     this.SolicitationDocument = this.define('solicitationDocument', new SolicitationDocument(), { tableName: 'solicitationDocument' })
     this.DocumentProduct = this.define('documentProduct', new DocumentProduct(), { tableName: 'ComprasItens' })
+    this.DocumentService = this.define('documentService', new DocumentService(), { tableName: 'ComprasServicos' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -130,6 +132,10 @@ export class AppContext extends Sequelize {
     this.DocumentProduct.belongsTo(this.Product, { as: 'product', foreignKey: 'itemId' })
     this.Document.hasMany(this.DocumentProduct, { as: 'items', foreignKey: 'documentId' })
 
+    this.DocumentService.belongsTo(this.Document, { as: 'document', foreignKey: 'documentId' })
+    this.DocumentService.belongsTo(this.Service, { as: 'service', foreignKey: 'itemId' })
+    this.Document.hasMany(this.DocumentService, { as: 'services', foreignKey: 'documentId' })
+
     this.Company.addHook('afterFind', afterFind)
     this.CompanyBusiness.addHook('afterFind', afterFind)
     this.CompanyUser.addHook('afterFind', afterFind)
@@ -148,6 +154,7 @@ export class AppContext extends Sequelize {
     this.Document.addHook('afterFind', afterFind)
     this.DocumentType.addHook('afterFind', afterFind)
     this.DocumentProduct.addHook('afterFind', afterFind)
+    this.DocumentService.addHook('afterFind', afterFind)
     this.SolicitationDocument.addHook('afterFind', afterFind)
 
   }

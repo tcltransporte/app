@@ -19,10 +19,10 @@ export function useLoading(initialState = {}) {
     }
     setActive(true);
     loadingId.current = contextShow(
-      title || initialState.title, 
-      subtitle !== undefined ? subtitle : initialState.subtitle
+      title || initialState?.title, 
+      subtitle !== undefined ? subtitle : initialState?.subtitle
     );
-  }, [contextShow, contextHide, initialState]);
+  }, [contextShow, contextHide]); // Removed initialState from dependencies
 
   const hide = useCallback(() => {
     if (loadingId.current) {

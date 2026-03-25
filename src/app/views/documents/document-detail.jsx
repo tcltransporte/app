@@ -23,6 +23,7 @@ import {
 import { useLoading } from '@/hooks';
 import { SectionTable } from '@/components/common';
 import { DocumentProductDrawer } from './document-product.drawer';
+import { DocumentServiceDrawer } from './document-service.drawer';
 
 export function DocumentDetail({ document, onClose, onSave, documentType, manual = false }) {
 
@@ -35,6 +36,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
   }, [document]);
 
   const [productDrawer, setProductDrawer] = React.useState({ open: false, data: null, index: -1 });
+  const [serviceDrawer, setServiceDrawer] = React.useState({ open: false, data: null, index: -1 });
 
   const handleSubmit = async (values) => {
 
@@ -97,6 +99,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     icmsstValue: 0,
     description: '',
     items: [],
+    services: [],
   };
 
   const getValues = (data) => ({
@@ -120,6 +123,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     icmsstBaseValue: data?.icmsstBaseValue || 0,
     icmsstValue: data?.icmsstValue || 0,
     items: data?.items || [],
+    services: data?.services || [],
   });
 
   return (
@@ -149,6 +153,23 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
 
           const total = newItems.reduce((acc, item) => acc + (Number(item.quantity || 0) * Number(item.value || 0)), 0);
           setFieldValue('totalProductsValue', total);
+        };
+
+        const handleSaveService = (service) => {
+          const newServices = [...(values.services || [])];
+          if (serviceDrawer.index >= 0) {
+            newServices[serviceDrawer.index] = service;
+          } else {
+            newServices.push({ ...service, tempId: Date.now() });
+          }
+          setFieldValue('services', newServices);
+
+          // Update total value if needed, or just let the user specify it
+        };
+
+        const handleDeleteService = (index) => {
+          const newServices = (values.services || []).filter((_, i) => i !== index);
+          setFieldValue('services', newServices);
         };
 
         return (
@@ -332,6 +353,22 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
                         onDelete={(_, index) => handleDeleteProduct(index)}
                       />
                     </Box>
+
+                    <Box sx={{ mt: 2 }}>
+                      <SectionTable
+                        title="Itens do Documento / Serviços"
+                        columns={[
+                          { field: 'description', headerName: 'Descrição / Serviço', renderCell: (val, row) => row.service?.name || val },
+                          { field: 'quantity', headerName: 'Qtd.', renderCell: (val) => Number(val || 0).toLocaleString('pt-BR') },
+                          { field: 'value', headerName: 'Vlr. Unit.', renderCell: (val) => Number(val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) },
+                          { field: 'total', headerName: 'Total', renderCell: (_, row) => (Number(row.quantity || 0) * Number(row.value || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) },
+                        ]}
+                        items={values.services || []}
+                        onAdd={() => setServiceDrawer({ open: true, data: null, index: -1 })}
+                        onEdit={(item, index) => setServiceDrawer({ open: true, data: item, index })}
+                        onDelete={(_, index) => handleDeleteService(index)}
+                      />
+                    </Box>
                   </Grid>
                 </Grid>
 
@@ -340,6 +377,13 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
                   initialData={productDrawer.data}
                   onClose={() => setProductDrawer({ open: false, data: null, index: -1 })}
                   onSave={handleSaveProduct}
+                />
+
+                <DocumentServiceDrawer
+                  open={serviceDrawer.open}
+                  initialData={serviceDrawer.data}
+                  onClose={() => setServiceDrawer({ open: false, data: null, index: -1 })}
+                  onSave={handleSaveService}
                 />
               </Form>
             </Dialog.Content>

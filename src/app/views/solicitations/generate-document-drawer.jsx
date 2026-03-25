@@ -366,6 +366,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
                 icmsstBaseValue: doc.icmsstBaseValue || 0,
                 icmsstValue: doc.icmsstValue || 0,
                 description: doc.description || '',
+                items: doc.items || [],
+                services: doc.services || [],
                 id: doc.id
               });
             });
@@ -441,6 +443,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
           icmsstBaseValue: row.icmsstBaseValue || 0,
           icmsstValue: row.icmsstValue || 0,
           description: row.description || '',
+          items: row.items || [],
+          services: row.services || [],
         }
       });
     }
@@ -474,6 +478,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
           icmsstBaseValue: Number(editedForm.icmsstBaseValue),
           icmsstValue: Number(editedForm.icmsstValue),
           description: editedForm.description,
+          items: editedForm.items || [],
+          services: editedForm.services || [],
         } : r
       ),
     }));
@@ -574,6 +580,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
             icmsstBaseValue: r.icmsstBaseValue || 0,
             icmsstValue: r.icmsstValue || 0,
             description: r.description || '',
+            items: r.items || [],
+            services: r.services || [],
           }));
 
         if (docs.length === 0) continue;

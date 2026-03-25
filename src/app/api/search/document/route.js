@@ -33,6 +33,7 @@ export async function POST(request) {
         'icmsstValue', 'documentModelId', 'description'
       ],
       where: where,
+      include: [{ association: 'items' }],
       order: [['invoiceDate', 'DESC'], ['id', 'DESC']],
       limit: 20
     })
