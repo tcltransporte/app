@@ -134,7 +134,7 @@ export async function signIn({ username, password, companyBusinessId, companyId,
     return ServiceResponse.success(result);
 
   } catch (error) {
-
+    console.log(error)
     return ServiceResponse.error(error);
 
   }

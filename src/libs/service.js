@@ -22,13 +22,16 @@ export const ServiceResponse = {
 
   error: (err_or_code, message, body) => {
     if (typeof err_or_code === 'object') {
-      const status = err_or_code.status || ServiceStatus.INTERNAL_SERVER_ERROR
-      const message = err_or_code.message || "Ocorreu um erro interno."
-      const code = err_or_code.code || "INTERNAL_ERROR"
-      return createResponse(status, { ...err_or_code.body }, { code, message })
+      // If it's already a formatted response, return it as is
+      if (err_or_code.header) return err_or_code;
+
+      const status = err_or_code.status || ServiceStatus.INTERNAL_SERVER_ERROR;
+      const message = err_or_code.message || "Ocorreu um erro interno.";
+      const code = err_or_code.code || "INTERNAL_ERROR";
+      return createResponse(status, { ...err_or_code.body }, { code, message });
     }
-    
-    return createResponse(ServiceStatus.INTERNAL_SERVER_ERROR, body, { code: err_or_code, message })
+
+    return createResponse(ServiceStatus.INTERNAL_SERVER_ERROR, body, { code: err_or_code, message });
   }
 }
 

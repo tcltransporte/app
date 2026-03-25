@@ -152,7 +152,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
       field: 'itemId',
       headerName: 'Descrição',
       width: 250,
-      renderCell: (val, row) => row.product?.description || row.service?.name || row.description || val
+      renderCell: (val, row) => row.product?.name || row.service?.name
     },
     { field: 'quantity', headerName: 'Qtd', width: 80, align: 'center' },
     {
