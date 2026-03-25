@@ -8,10 +8,7 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
   const initialValues = {
     number: filters.number || '',
     description: filters.description || '',
-    statusId: filters.statusId || '',
-    solicitationStatus: filters.solicitationStatus || null,
-    typeId: filters.typeId || '',
-    partnerId: filters.partnerId || '',
+    status: filters.status || filters.solicitationStatus || null,
     partner: filters.partner || null,
   };
 
@@ -19,10 +16,7 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
     const clearedValues = {
       number: '',
       description: '',
-      statusId: '',
-      solicitationStatus: null,
-      typeId: '',
-      partnerId: '',
+      status: null,
       partner: null,
     };
     setValues(clearedValues);
@@ -48,9 +42,6 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
             size="small"
             text={(item) => item?.surname || ''}
             onSearch={(value, signal) => search.partner({ search: value, isSupplier: true }, signal)}
-            onChange={(val, form) => {
-              form.setFieldValue('partnerId', val?.id || '');
-            }}
             renderSuggestion={(item) => (
               <span>{item?.CpfCnpj} - {item?.surname}</span>
             )}
@@ -60,15 +51,12 @@ export default function SolicitationFilter({ open, onClose, filters, onApply }) 
         <Grid size={{ xs: 12 }}>
           <Field 
             component={AutoComplete} 
-            name="solicitationStatus" 
+            name="status" 
             label="Status" 
             fullWidth 
             size="small"
             text={(item) => item?.description || ''}
             onSearch={(value, signal) => search.solicitationStatus({ search: value }, signal)}
-            onChange={(val, form) => {
-              form.setFieldValue('statusId', val?.id || '');
-            }}
             renderSuggestion={(item) => (
               <span>{item?.description}</span>
             )}

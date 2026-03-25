@@ -9,10 +9,10 @@ import { format } from 'date-fns';
 export default async function SolicitationPage({ params }) {
   try {
 
-    const { hash } = await params;
+    const { slug } = await params;
 
-    const typeHash = Array.isArray(hash) ? hash[0] : hash;
-    const selectedId = Array.isArray(hash) && hash.length > 1 ? hash[1] : undefined;
+    const typeHash = Array.isArray(slug) ? slug[0] : slug;
+    const selectedId = Array.isArray(slug) && slug.length > 1 ? slug[1] : undefined;
 
     const session = await getSession();
 
@@ -33,7 +33,7 @@ export default async function SolicitationPage({ params }) {
     ];
 
     const today = format(new Date(), 'yyyy-MM-dd');
-    const initialFilters = { typeHash, number: '1' };
+    const initialFilters = { typeHash };
     const initialRange = { start: today, end: today, field: 'date' };
 
     const solicitationsResult = await solicitationService.findAll({

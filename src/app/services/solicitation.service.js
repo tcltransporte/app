@@ -41,7 +41,7 @@ export async function exportTable({
   });
 }
 
-export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'id', sortOrder = 'DESC' }) {
+export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'number', sortOrder = 'DESC' }) {
   try {
     const session = await getSession()
     const db = new AppContext()
@@ -57,20 +57,23 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
         where.description = { [Op.like]: `%${filters.description}%` }
       }
 
-      if (filters.typeId) {
-        where.typeId = filters.typeId
+      const statusId = filters.status?.id || filters.status || filters.statusId
+      if (statusId) {
+        where.statusId = statusId
       }
 
-      if (filters.statusId) {
-        where.statusId = filters.statusId
+      const partnerId = filters.partner?.id || filters.partner || filters.partnerId
+      if (partnerId) {
+        where.partnerId = partnerId
+      }
+
+      const typeId = filters.type?.id || filters.type || filters.typeId
+      if (typeId) {
+        where.typeId = typeId
       }
 
       if (filters.number) {
         where.number = filters.number
-      }
-
-      if (filters.partnerId) {
-        where.partnerId = filters.partnerId
       }
 
       if (filters.typeHash) {

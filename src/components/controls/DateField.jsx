@@ -25,17 +25,18 @@ export const DateField = React.forwardRef(({ field, form, onChange, ...props }, 
 
   const handleChange = (e) => {
     const val = e.target.value;
-    if (!val) {
-      form?.setFieldValue(field.name, null);
-    } else {
-      // Create a Date object at 00:00 local time for this date
-      const date = new Date(val + 'T00:00:00');
-      form?.setFieldValue(field.name, date);
+    if (field && form) {
+      if (!val) {
+        form.setFieldValue(field.name, null);
+      } else {
+        const date = new Date(val + 'T00:00:00');
+        form.setFieldValue(field.name, date);
+      }
     }
-    onChange?.(e.target.value);
+    onChange?.(val);
   };
 
-  const value = formatDate(field.value);
+  const value = formatDate(field?.value ?? props.value);
 
   return (
     <MuiTextField
