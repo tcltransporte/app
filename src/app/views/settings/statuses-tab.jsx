@@ -13,8 +13,8 @@ import {
 } from '@mui/icons-material';
 import { Formik, Form, Field } from 'formik';
 import { TextField, SelectField } from '@/components/controls';
-import { Table, LoadingOverlay } from '@/components/common';
-import { useTable } from '@/hooks';
+import { Table } from '@/components/common';
+import { useTable, useLoading } from '@/hooks';
 import * as companyService from '@/app/services/settings/company.service';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
@@ -24,6 +24,7 @@ export function StatusesTab({ initialStatusesConfig }) {
     items: initialStatusesConfig?.allStatuses || []
   }), [initialStatusesConfig]);
   const table = useTable({ initialTable });
+  const loading = useLoading();
   const [drawer, setDrawer] = React.useState({ open: false, item: null, tab: 0 });
 
   // Config state
@@ -36,7 +37,7 @@ export function StatusesTab({ initialStatusesConfig }) {
 
   const { setLoading, setItems } = table;
   const fetchConfig = React.useCallback(async (showLoading = false) => {
-    if (showLoading) setLoading(true);
+    if (showLoading) loading.show(); // Use loading.show()
     try {
       const result = await companyService.getStatusesConfig();
       if (result.header.status === ServiceStatus.SUCCESS) {
@@ -49,9 +50,9 @@ export function StatusesTab({ initialStatusesConfig }) {
     } catch (error) {
       alert.error('Erro ao recarregar configuração', error?.body?.message || error.message);
     } finally {
-      if (showLoading) setLoading(false);
+      if (showLoading) loading.hide(); // Use loading.hide()
     }
-  }, [setLoading, setItems]);
+  }, [setItems, loading]); // Add loading to dependencies
 
   const isFirstMount = React.useRef(true);
   React.useEffect(() => {
@@ -100,17 +101,16 @@ export function StatusesTab({ initialStatusesConfig }) {
   const handleDelete = async (id) => {
     const confirmed = await alert.confirm('Excluir Status', 'Deseja realmente excluir este status?');
     if (!confirmed) return;
-    table.setLoading(true);
+    loading.show(); // Use loading.show()
     try {
       const result = await companyService.destroyStatus(id);
       if (result.header.status !== ServiceStatus.SUCCESS) throw result;
       alert.success('Status excluído!');
-      fetchTable();
-      fetchConfig();
+      fetchConfig(); // Changed from fetchTable() to fetchConfig() as fetchTable is not defined
     } catch (error) {
       alert.error('Erro ao excluir', error?.body?.message || error.message);
     } finally {
-      table.setLoading(false);
+      loading.hide(); // Use loading.hide()
     }
   };
 
@@ -186,6 +186,7 @@ export function StatusesTab({ initialStatusesConfig }) {
         items={table.items}
         loading={table.loading}
       />
+
 
       {/* Drawer */}
       <Drawer

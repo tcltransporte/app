@@ -1,6 +1,7 @@
 import { Inter } from 'next/font/google';
 import { cookies, headers } from 'next/headers';
 import { ThemeContextProvider } from '@/context/ThemeContext';
+import { LoadingProvider } from '@/context/LoadingContext';
 import * as companyService from "@/app/services/settings/company.service";
 import { ServiceStatus } from "@/libs/service";
 import { Suspense } from 'react';
@@ -48,7 +49,9 @@ export default async function RootLayout({ children }) {
             <RouteProgressBar />
           </Suspense>
           <ThemeContextProvider initialConfig={themeConfig} initialMobile={isMobile}>
-            {children}
+            <LoadingProvider>
+              {children}
+            </LoadingProvider>
           </ThemeContextProvider>
         </AppRouterCacheProvider>
       </body>

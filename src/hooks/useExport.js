@@ -171,7 +171,7 @@ export const useExport = () => {
       alert.error('Erro de Conexão', 'Não foi possível preparar o login com Google.');
     }
   }
-};
+}
 
   return {
     processResponse,

@@ -18,35 +18,16 @@ import {
   DateField,
   DateTimeField
 } from '@/components/controls';
+import { useLoading } from '@/hooks';
 
 export function DocumentDetail({ document, onClose, onSave, documentType, manual = false }) {
 
   const [data, setData] = React.useState(document || {});
-  const [loading, setLoading] = React.useState(false);
+  const loading = useLoading();
 
+  // Synchronize data when document prop changes (data is already fetched by caller)
   React.useEffect(() => {
-
-    if (document === undefined) return;
-
-    if (document.id === null) {
-      setData(document || {});
-      return;
-    }
-
-    setLoading(true);
-
-    documentService.findOne(document.id)
-      .then(result => {
-        if (result.header.status === ServiceStatus.SUCCESS) {
-          // Merge fetched data with current document prop to preserve local edits
-          setData({ ...result.body, ...document });
-        } else {
-          alert.error('Erro', result.body.message || 'Erro ao carregar documento');
-        }
-      })
-      .catch(err => alert.error('Erro', 'Ocorreu um erro inesperado'))
-      .finally(() => setLoading(false));
-
+    setData(document || {});
   }, [document]);
 
   const handleSubmit = async (values) => {
@@ -57,7 +38,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
       return;
     }
 
-    setLoading(true);
+    loading.show('Salvando...', 'Aguarde um momento');
 
     try {
 
@@ -83,7 +64,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     } catch (err) {
       alert.error('Erro', 'Erro ao salvar documento');
     } finally {
-      setLoading(false);
+      loading.hide();
     }
   };
 
@@ -144,7 +125,6 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
           open={document !== undefined}
           onClose={onClose}
           title="Documento"
-          loading={loading && !Object.keys(data).length}
           width="lg"
         >
           <Dialog.Content>
@@ -312,10 +292,10 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
             <Button
               onClick={submitForm}
               variant="contained"
-              disabled={loading}
+              disabled={loading.isLoading}
               sx={{ textTransform: 'none', fontWeight: 600, px: 3 }}
             >
-              {loading && Object.keys(data).length ? 'Salvando...' : 'Salvar'}
+              {loading.isLoading && Object.keys(data).length ? 'Salvando...' : 'Salvar'}
             </Button>
           </Dialog.Actions>
         </Dialog>

@@ -7,13 +7,16 @@ import {
   FilterList as FilterIcon,
   Edit as EditIcon,
   Add as AddIcon,
+  Download as DownloadIcon,
+  Google as GoogleIcon,
 } from '@mui/icons-material';
 
-import { Container, Table, Toolbar, LoadingOverlay } from '@/components/common';
+import { Container, Table, Toolbar } from '@/components/common';
 import { DocumentDetail } from './document-detail';
-import { useTable, useNavigation, useFilter } from '@/hooks';
+import { useTable, useNavigation, useFilter, useExport, useLoading } from '@/hooks';
 import * as documentService from '@/app/services/document.service';
 import { ServiceStatus } from '@/libs/service';
+import { ExportFormat } from '@/hooks';
 import { alert } from '@/libs/alert';
 
 export default function DocumentView({
@@ -24,6 +27,8 @@ export default function DocumentView({
 }) {
   const table = useTable({ initialTable })
   const filter = useFilter({ initialFilters })
+  const exporter = useExport()
+  const loading = useLoading()
   const navigation = useNavigation(`/documents/${documentType?.initials?.toLowerCase() || ''}`, selectedId)
 
   const fetchTable = React.useCallback(async (overrides = {}) => {
@@ -49,8 +54,54 @@ export default function DocumentView({
       return false
     } finally {
       table.setLoading(false)
+      loading.hide()
     }
   }, [table.page, table.rowsPerPage, filter.filters, documentType?.initials])
+
+  const handleExport = async (format) => {
+    loading.show('Gerando arquivo...', 'Aguarde um momento')
+    try {
+      await exporter.exportData({
+        format,
+        service: documentService.findAll,
+        params: {
+          slug: documentType?.initials,
+          filters: filter.filters,
+          sortBy: table.sortBy,
+          sortOrder: table.sortOrder
+        },
+        columns: table.orderedColumns,
+        title: `Exportação de ${documentType?.description || 'Documentos'}`
+      })
+    } finally {
+      loading.hide()
+    }
+  }
+
+  const [editingDocument, setEditingDocument] = React.useState(undefined)
+
+  const handleEdit = React.useCallback(async (id) => {
+    if (id === null) {
+      setEditingDocument({ id: null })
+      return
+    }
+
+    loading.show('Carregando...', 'Aguarde um momento')
+    try {
+      const result = await documentService.findOne(id)
+      if (result.header.status === ServiceStatus.SUCCESS) {
+        setEditingDocument(result.body)
+      }
+    } finally {
+      loading.hide()
+    }
+  }, [loading])
+
+  React.useEffect(() => {
+    if (navigation.selectedId !== undefined && !editingDocument) {
+      handleEdit(navigation.selectedId)
+    }
+  }, [navigation.selectedId, editingDocument, handleEdit])
 
   const isFirstMount = React.useRef(true)
   React.useEffect(() => {
@@ -77,7 +128,7 @@ export default function DocumentView({
       renderCell: (val) => val ? Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
     },
     {
-        field: 'description', headerName: 'Descrição', flex: 1
+      field: 'description', headerName: 'Descrição', flex: 1
     }
   ]
 
@@ -102,9 +153,23 @@ export default function DocumentView({
           primary={primaryActions}
           secondary={[
             {
-               label: 'Pesquisar',
-               icon: <SearchIcon fontSize="small" />,
-               onClick: fetchTable
+              label: 'Pesquisar',
+              icon: <SearchIcon fontSize="small" />,
+              variant: 'outlined',
+              color: 'primary',
+              onClick: () => fetchTable(),
+              options: [
+                {
+                  label: 'Exportar para Excel',
+                  icon: <DownloadIcon fontSize="small" />,
+                  onClick: () => handleExport(ExportFormat.EXCEL)
+                },
+                {
+                  label: 'Exportar para Google Sheets',
+                  icon: <GoogleIcon fontSize="small" />,
+                  onClick: () => handleExport(ExportFormat.GOOGLE_SHEETS)
+                }
+              ]
             }
           ]}
         />
@@ -129,12 +194,16 @@ export default function DocumentView({
           sortOrder={table.sortOrder}
           loading={table.loading}
         />
-        <DocumentDetail 
-          document={navigation.selectedId !== undefined ? { id: navigation.selectedId } : undefined}
+        <DocumentDetail
+          document={editingDocument}
           documentType={documentType}
-          onClose={() => navigation.setSelectedId(undefined)}
+          onClose={() => {
+            setEditingDocument(undefined)
+            navigation.setSelectedId(undefined)
+          }}
           onSave={() => {
             fetchTable()
+            setEditingDocument(undefined)
             navigation.setSelectedId(undefined)
           }}
         />

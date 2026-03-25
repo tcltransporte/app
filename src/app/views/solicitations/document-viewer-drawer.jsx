@@ -21,9 +21,25 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { DocumentDetail } from '../documents/document-detail';
+import { useLoading } from '@/hooks';
+import * as documentService from '@/app/services/document.service';
+import { ServiceStatus } from '@/libs/service';
 
 export function SolicitationDocumentViewerDrawer({ open, solicitation, onClose, onRefresh }) {
   const [selectedDocument, setSelectedDocument] = React.useState(undefined);
+  const loading = useLoading();
+
+  const handleViewDocument = async (docId) => {
+    loading.show('Carregando...', 'Aguarde um momento');
+    try {
+      const result = await documentService.findOne(docId);
+      if (result.header.status === ServiceStatus.SUCCESS) {
+        setSelectedDocument(result.body);
+      }
+    } finally {
+      loading.hide();
+    }
+  };
 
   const documents = solicitation?.documents || [];
 
@@ -69,7 +85,7 @@ export function SolicitationDocumentViewerDrawer({ open, solicitation, onClose, 
               secondaryAction={
                 <Box>
                   <Tooltip title="Visualizar/Editar">
-                    <IconButton size="small" onClick={() => setSelectedDocument({ id: doc.id })}>
+                    <IconButton size="small" onClick={() => handleViewDocument(doc.id)}>
                       <ViewIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>

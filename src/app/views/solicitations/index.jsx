@@ -22,9 +22,9 @@ import SolicitationFilter from './filter';
 import { StatusDrawer } from './status-drawer';
 import { GenerateDocumentDrawer } from './generate-document-drawer';
 import { SolicitationDocumentViewerDrawer } from './document-viewer-drawer';
-import { useTable, useNavigation, useRangeFilter, useFilter, useExport } from '@/hooks';
+import { useTable, useNavigation, useRangeFilter, useFilter, useExport, useLoading } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
-import { Container, Table, Toolbar, RangeModal, LoadingOverlay } from '@/components/common';
+import { Container, Table, Toolbar, RangeModal } from '@/components/common';
 import * as solicitationService from '@/app/services/solicitation.service';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
@@ -135,6 +135,7 @@ export default function SolicitationView({
   const filter = useFilter({ initialFilters })
   const rangeFilter = useRangeFilter({ initialRange, dateFieldOptions })
   const exporter = useExport()
+  const loading = useLoading()
 
   const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id)
   const handleCloseModal = () => navigation.setSelectedId(undefined)
@@ -165,11 +166,11 @@ export default function SolicitationView({
       return true
 
     } catch (error) {
-      console.error('Erro ao buscar solicitações:', error?.body?.message || error)
-      alert.error('Erro ao carregar', error?.body?.message || 'Ocorreu um erro ao buscar solicitações.')
+      alert.error('Ops!', error?.body?.message || error.message)
       return false
     } finally {
       table.setLoading(false)
+      loading.hide()
     }
   }, [table.page, table.rowsPerPage, filter.filters, rangeFilter.range, table.sortBy, table.sortOrder])
 
@@ -191,60 +192,45 @@ export default function SolicitationView({
   }, [solicitationType?.hash])
 
   const handleDelete = async () => {
-
     if (!table.selecteds.length) return
-
     const confirmed = await alert.confirm(
       'Tem certeza?',
       `Deseja realmente excluir ${table.selecteds.length} solicitação(ões)?`,
       'warning'
     )
-
     if (!confirmed) return
-
-    table.setLoading(true)
-
+    loading.show('Excluindo...', 'Aguarde um momento')
     try {
-
       for (const item of table.selecteds) {
         await solicitationService.destroy(item.id)
       }
-
       await fetchTable()
       alert.success('Solicitação(ões) excluída(s) com sucesso!')
-
     } catch (error) {
-      alert.error('Erro ao excluir', 'Ocorreu um problema ao tentar excluir os registros.')
+      alert.error('Ops!', error?.body?.message || error.message)
     } finally {
-      table.setLoading(false)
+      loading.hide()
     }
-  }
+  };
 
-  const handleExport = async (format = ExportFormat.EXCEL) => {
+  const handleExport = async (format) => {
+    loading.show('Gerando arquivo...', 'Isso pode levar alguns segundos dependendo da quantidade de dados.')
     try {
-
-      exporter.setExporting(true)
-
-      const params = {
-        filters: filter.filters,
-        range: rangeFilter.range,
-        sortBy: table.sortBy,
-        sortOrder: table.sortOrder,
-        columns: displayColumns
-      };
-
-      const result = await solicitationService.exportTable({
-        ...params,
-        format
-      });
-
-      await exporter.processResponse(result, {
-        fileName: 'solicitacoes',
-        format
-      });
-
+      await exporter.exportData({
+        format,
+        service: solicitationService.findAll,
+        params: {
+          typeHash: solicitationType?.hash,
+          filters: filter.filters,
+          range: rangeFilter.range,
+          sortBy: table.sortBy,
+          sortOrder: table.sortOrder
+        },
+        columns: table.orderedColumns,
+        title: `Exportação de ${solicitationType?.description || 'Solicitações'}`
+      })
     } finally {
-      exporter.setExporting(false);
+      loading.hide()
     }
   };
 
@@ -391,11 +377,7 @@ export default function SolicitationView({
           secondary={secondaryActions}
         />
 
-        <LoadingOverlay
-          open={exporter.exporting}
-          title="Preparando Excel"
-          subtitle="Isso pode levar alguns segundos dependendo da quantidade de dados."
-        />
+
 
         <Table
           columns={displayColumns}

@@ -15,9 +15,9 @@ import { Badge } from '@mui/material';
 
 import { PartnerDetail } from './partner.detail';
 import { PartnerFilter } from './filter';
-import { useTable, useNavigation, useFilter, useExport } from '@/hooks';
+import { useTable, useNavigation, useFilter, useExport, useLoading } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
-import { Container, Table, Toolbar, LoadingOverlay } from '@/components/common';
+import { Container, Table, Toolbar } from '@/components/common';
 import * as partnerService from '@/app/services/partner.service';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
@@ -30,6 +30,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
 
   const filter = useFilter({ initialFilters })
   const exporter = useExport()
+  const loading = useLoading()
 
   const handleRowDoubleClick = (row) => navigation.setSelectedId(row.id)
   const handleCloseModal = () => navigation.setSelectedId(undefined)
@@ -63,6 +64,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
       return false
     } finally {
       table.setLoading(false)
+      loading.hide()
     }
   }, [table.page, table.rowsPerPage, filter.filters, table.sortBy, table.sortOrder])
 
@@ -77,16 +79,13 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
 
   const handleDelete = async () => {
     if (!table.selecteds.length) return
-
     const confirmed = await alert.confirm(
       'Tem certeza?',
       `Deseja realmente excluir ${table.selecteds.length} parceiro(s)?`,
       'warning'
     )
-
     if (!confirmed) return
-
-    table.setLoading(true)
+    loading.show('Excluindo...', 'Aguarde um momento')
     try {
       for (const item of table.selecteds) {
         await partnerService.destroy(item.id)
@@ -94,36 +93,30 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
       await fetchTable()
       alert.success('Parceiro(s) excluído(s) com sucesso!')
     } catch (error) {
-      console.error('Erro ao excluir:', error)
-      alert.error('Erro ao excluir', 'Ocorreu um problema ao tentar excluir os registros.')
+      alert.error('Ops!', error?.body?.message || error.message)
     } finally {
-      table.setLoading(false)
+      loading.hide()
     }
   }
 
-  const handleExport = async (format = ExportFormat.EXCEL) => {
-    exporter.setExporting(true);
+  const handleExport = async (format) => {
+    loading.show('Gerando arquivo...', 'Aguarde um momento')
     try {
-      const params = {
-        filters: filter.filters,
-        sortBy: table.sortBy,
-        sortOrder: table.sortOrder,
-        columns: displayColumns
-      };
-
-      const result = await partnerService.exportTable({
-        ...params,
-        format
-      });
-
-      await exporter.processResponse(result, {
-        fileName: 'parceiros',
-        format
-      });
+      await exporter.exportData({
+        format,
+        service: partnerService.findAll,
+        params: {
+          filters: filter.filters,
+          sortBy: table.sortBy,
+          sortOrder: table.sortOrder
+        },
+        columns: table.orderedColumns,
+        title: 'Exportação de Parceiros'
+      })
     } finally {
-      exporter.setExporting(false);
+      loading.hide()
     }
-  };
+  }
 
   const columns = [
     { field: 'id', headerName: 'Código', width: 90 },
@@ -204,12 +197,6 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
         <Toolbar
           primary={primaryActions}
           secondary={secondaryActions}
-        />
-
-        <LoadingOverlay
-          open={exporter.exporting}
-          title="Preparando Excel"
-          subtitle="Isso pode levar alguns segundos dependendo da quantidade de dados."
         />
 
         <Table
