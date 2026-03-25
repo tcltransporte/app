@@ -18,8 +18,10 @@ import {
   NumericField,
   DateField,
   DateTimeField,
-  AutoComplete
+  AutoComplete,
+  SelectField
 } from '@/components/controls';
+import * as search from '@/libs/search';
 import { useLoading } from '@/hooks';
 import { SectionTable } from '@/components/common';
 import { DocumentProductDrawer } from './document-product.drawer';
@@ -53,6 +55,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
       let result;
       const payload = {
         ...values,
+        partnerId: values.partner?.id || values.partnerId,
         documentModelId: values.documentTypeId || document?.id ? undefined : documentType?.id
       };
 
@@ -79,6 +82,9 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
   const initialValues = {
     id: null,
     documentTypeId: '',
+    invoiceTypeId: '',
+    partnerId: null,
+    partner: null,
     invoiceNumber: 0,
     invoiceSeries: '',
     invoiceDate: '',
@@ -106,6 +112,9 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     ...initialValues,
     ...data,
     id: data?.id || null,
+    partnerId: data?.partnerId || null,
+    partner: data?.partner || null,
+    invoiceTypeId: data?.invoiceTypeId || '',
     invoiceDate: data?.invoiceDate || '',
     receiptDate: data?.receiptDate || '',
     invoiceNumber: data?.invoiceNumber || 0,
@@ -182,7 +191,34 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
             <Dialog.Content>
               <Form>
                 <Grid container spacing={1}>
+                  <Grid size={{ xs: 12, sm: 2 }}>
+                    <Field
+                      name="invoiceTypeId"
+                      component={SelectField}
+                      label="Tipo"
+                      options={[
+                        { value: 1, label: '1 - Entrada' },
+                        { value: 2, label: '2 - Saída' },
+                      ]}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4.5 }}>
+                    <Field
+                      name="partner"
+                      component={AutoComplete}
+                      label={values.invoiceTypeId === 2 ? 'Cliente' : 'Fornecedor'}
+                      fullWidth
+                      size="small"
+                      text={(item) => item?.surname || item?.name || ''}
+                      onSearch={(val, signal) => search.partner({ search: val }, signal)}
+                      renderSuggestion={(item) => (
+                        <span>{item?.surname || item?.name} {item?.cpfCnpj ? `(${item.cpfCnpj})` : ''}</span>
+                      )}
+                    />
+                  </Grid>
+
                   <Grid size={{ xs: 12 }}>
+                    <Divider sx={{ my: 1 }} />
                     <Typography variant="subtitle2" color="primary">Informações Básicas</Typography>
                   </Grid>
                   <Grid size={{ xs: 8, sm: 1.8 }}>
