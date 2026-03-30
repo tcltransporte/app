@@ -28,7 +28,7 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
     }
 
     setLoading(true)
-    partnerService.findOne(partnerId)
+    partnerService.findOne({}, partnerId)
       .then(d => {
         setData(d ?? {});
       })
@@ -40,9 +40,9 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
     setLoading(true)
     try {
       if (partnerId) {
-        await partnerService.update(Number(partnerId), values)
+        await partnerService.update({}, Number(partnerId), values)
       } else {
-        await partnerService.create(values)
+        await partnerService.create({}, values)
       }
       alert.success('Salvo com sucesso!');
       onSave?.()

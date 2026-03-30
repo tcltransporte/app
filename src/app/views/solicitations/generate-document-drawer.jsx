@@ -329,8 +329,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
     setRows({});
 
     Promise.all([
-      documentTypeService.findAll(),
-      solicitationService.generateDocuments(solicitations.map(s => s.id))
+      documentTypeService.findAll({}),
+      solicitationService.generateDocuments({}, solicitations.map(s => s.id))
     ]).then(([typesResult, docsResult]) => {
       if (typesResult.header.status === ServiceStatus.SUCCESS) {
         setDocumentTypes(typesResult.body.items || []);
@@ -596,6 +596,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
         if (docs.length === 0) continue;
 
         const result = await solicitationService.saveDocuments(
+          {},
           solicitation.id,
           docs
         );

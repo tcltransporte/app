@@ -11,7 +11,7 @@ import { ServiceResponse } from "@/libs/service";
 
 import { cookies } from 'next/headers';
 
-export async function signIn({ username, password, companyBusinessId, companyId, forceCloseSession = false }) {
+export async function signIn({ db, transaction } = {}, { username, password, companyBusinessId, companyId, forceCloseSession = false }) {
   try {
 
     const db = new AppContext();
@@ -139,7 +139,7 @@ export async function signIn({ username, password, companyBusinessId, companyId,
   }
 }
 
-export async function signOut() {
+export async function signOut({ db, transaction } = {}) {
   try {
 
     const session = await getSession()

@@ -26,17 +26,15 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
 
   React.useEffect(() => {
 
-    if (solicitationId === undefined || solicitationId === null) {
+    if (!solicitationId || solicitationId === 'undefined' || solicitationId === 'null') {
       setData({});
       formikRef.current?.resetForm();
       return;
     }
 
     setLoading(true)
-    solicitationService.findOne(solicitationId)
+    solicitationService.findOne({}, solicitationId)
       .then(result => {
-
-        console.log(result)
 
         if (result.header.status !== ServiceStatus.SUCCESS) {
           throw result
@@ -46,7 +44,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
 
       })
       .catch((error) => {
-        alert.error('Erro ao buscar solicitação', error?.header?.message || error.message);
+        alert.error('Erro ao buscar solicitação', error.body?.message || error.message);
       })
       .finally(() => setLoading(false))
   }, [solicitationId])
@@ -67,9 +65,9 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
 
       let result
       if (solicitationId) {
-        result = await solicitationService.update(Number(solicitationId), payload)
+        result = await solicitationService.update({}, Number(solicitationId), payload)
       } else {
-        result = await solicitationService.create(payload)
+        result = await solicitationService.create({}, payload)
       }
 
       if (result.header.status !== ServiceStatus.SUCCESS) {

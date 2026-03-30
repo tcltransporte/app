@@ -43,7 +43,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
-      const result = await partnerService.findAll({
+      const result = await partnerService.findAll({}, {
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
         filters: overrides.filters || filter.filters,
@@ -88,7 +88,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
     loading.show('Excluindo...', 'Aguarde um momento')
     try {
       for (const item of table.selecteds) {
-        await partnerService.destroy(item.id)
+        await partnerService.destroy({}, item.id)
       }
       await fetchTable()
       alert.success('Parceiro(s) excluído(s) com sucesso!')

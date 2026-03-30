@@ -36,7 +36,7 @@ export default async function SolicitationPage({ params }) {
     const initialFilters = { typeHash };
     const initialRange = { start: today, end: today, field: 'date' };
 
-    const solicitationsResult = await solicitationService.findAll({
+    const solicitationsResult = await solicitationService.findAll({}, {
       page: 1,
       limit: 50,
       filters: initialFilters,
@@ -63,6 +63,6 @@ export default async function SolicitationPage({ params }) {
     );
 
   } catch (error) {
-    return error.body.message
+    return error.body?.message || error.message
   }
 }

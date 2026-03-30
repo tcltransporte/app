@@ -7,7 +7,7 @@ import { AppContext } from "@/database"
 import { ServiceResponse, ServiceStatus } from "@/libs/service"
 import { getSession } from "@/libs/session"
 
-export async function findOne() {
+export async function findOne({ db, transaction } = {}) {
     try {
 
         const session = await getSession()
@@ -47,7 +47,7 @@ export async function findOne() {
     }
 }
 
-export async function saveStatusConfig({ id, description, workflowIds, typeIds, isInitialOption }) {
+export async function saveStatusConfig({ db, transaction } = {}, { id, description, workflowIds, typeIds, isInitialOption }) {
     try {
         const session = await getSession();
         const db = new AppContext();
@@ -118,7 +118,7 @@ export async function saveStatusConfig({ id, description, workflowIds, typeIds, 
     }
 }
 
-export async function findAllStatuses() {
+export async function findAllStatuses({ db, transaction } = {}) {
     try {
         const session = await getSession()
         const db = new AppContext()
@@ -133,7 +133,7 @@ export async function findAllStatuses() {
     }
 }
 
-export async function getStatusesConfig() {
+export async function getStatusesConfig({ db, transaction } = {}) {
     try {
         const [statusesRes, typesRes, workflowRes, statusTypesRes] = await Promise.all([
             findAllStatuses(),
@@ -152,7 +152,7 @@ export async function getStatusesConfig() {
     }
 }
 
-export async function destroyStatus(id) {
+export async function destroyStatus({ db, transaction } = {}, id) {
     try {
         const session = await getSession()
         const db = new AppContext()
@@ -165,7 +165,7 @@ export async function destroyStatus(id) {
     }
 }
 
-export async function findAllowedTransitions(fromStatusIds, typeId) {
+export async function findAllowedTransitions({ db, transaction } = {}, fromStatusIds, typeId) {
     try {
         const db = new AppContext()
 
@@ -216,7 +216,7 @@ export async function findAllowedTransitions(fromStatusIds, typeId) {
     }
 }
 
-export async function findAllStatusTypes() {
+export async function findAllStatusTypes({ db, transaction } = {}) {
     try {
         const db = new AppContext()
         const items = await db.SolicitationStatusTipo.findAll({
@@ -231,7 +231,7 @@ export async function findAllStatusTypes() {
     }
 }
 
-export async function findAllStatusRelationships() {
+export async function findAllStatusRelationships({ db, transaction } = {}) {
     try {
         const db = new AppContext()
         const relationships = await db.SolicitationStatusWorkflow.findAll()
@@ -241,7 +241,7 @@ export async function findAllStatusRelationships() {
     }
 }
 
-export async function findAllTypes() {
+export async function findAllTypes({ db, transaction } = {}) {
     try {
         const session = await getSession()
         const db = new AppContext()

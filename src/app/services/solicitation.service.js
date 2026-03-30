@@ -113,6 +113,7 @@ export async function findAll({ db, transaction } = {}, { page = 1, limit = 50, 
 
 export async function findOne({ db, transaction } = {}, id) {
   try {
+
     const session = await getSession()
     const _db = db || new AppContext()
 

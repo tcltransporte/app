@@ -23,7 +23,7 @@ export function StatusDrawer({
       setStatuses([]);
       setLoading(true);
       // Fetch allowed transitions for the "Change Status" tab
-      solicitationService.findAllowedTransitions(fromStatusIds)
+      solicitationService.findAllowedTransitions({}, fromStatusIds)
         .then(result => {
           if (result.header.status === ServiceStatus.SUCCESS) {
             setStatuses(result.body.items || []);
@@ -37,7 +37,7 @@ export function StatusDrawer({
     setSubmitting(true);
     try {
       for (const id of selectedIds) {
-        const result = await solicitationService.update(id, {
+        const result = await solicitationService.update({}, id, {
           statusId: values.statusId,
           description: values.observation
         });

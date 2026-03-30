@@ -60,9 +60,9 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
       };
 
       if (document?.id) {
-        result = await documentService.update(document.id, values);
+        result = await documentService.update({}, document.id, values);
       } else {
-        result = await documentService.create(payload);
+        result = await documentService.create({}, payload);
       }
 
       if (result.header.status === ServiceStatus.SUCCESS) {
