@@ -24,6 +24,8 @@ import { DocumentType } from './models/documentType.model.js'
 import { SolicitationDocument } from './models/solicitationDocument.model.js'
 import { DocumentProduct } from './models/documentProduct.model.js'
 import { DocumentService } from './models/documentService.model.js'
+import { FinanceTitle } from './models/financeTitle.model.js'
+import { FinanceEntry } from './models/financeEntry.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -78,6 +80,8 @@ export class AppContext extends Sequelize {
     this.SolicitationDocument = this.define('solicitationDocument', new SolicitationDocument(), { tableName: 'solicitationDocument' })
     this.DocumentProduct = this.define('documentProduct', new DocumentProduct(), { tableName: 'ComprasItens' })
     this.DocumentService = this.define('documentService', new DocumentService(), { tableName: 'ComprasServicos' })
+    this.FinanceTitle = this.define('financeTitle', new FinanceTitle(), { tableName: 'movimentos' })
+    this.FinanceEntry = this.define('financeEntry', new FinanceEntry(), { tableName: 'movimentos_detalhe' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -124,6 +128,7 @@ export class AppContext extends Sequelize {
     this.Document.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
     this.Document.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
     this.Document.belongsTo(this.DocumentType, { as: 'documentType', foreignKey: 'documentModelId' })
+    this.Document.belongsTo(this.FinanceTitle, { as: 'financeTitle', foreignKey: 'financeTitleId' })
 
     this.SolicitationDocument.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
     this.SolicitationDocument.belongsTo(this.Document, { as: 'document', foreignKey: 'documentId' })
@@ -136,6 +141,14 @@ export class AppContext extends Sequelize {
     this.DocumentService.belongsTo(this.Service, { as: 'service', foreignKey: 'itemId' })
     this.Document.hasMany(this.DocumentService, { as: 'services', foreignKey: 'documentId' })
 
+    this.FinanceTitle.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId' })
+    this.FinanceTitle.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+    this.FinanceTitle.belongsTo(this.FinanceTitle, { as: 'parent', foreignKey: 'parentMovementId' })
+
+    this.FinanceTitle.hasMany(this.FinanceEntry, { as: 'entries', foreignKey: 'titleId' })
+    this.FinanceEntry.belongsTo(this.FinanceTitle, { as: 'title', foreignKey: 'titleId' })
+
+    /*
     this.Company.addHook('afterFind', afterFind)
     this.CompanyBusiness.addHook('afterFind', afterFind)
     this.CompanyUser.addHook('afterFind', afterFind)
@@ -155,7 +168,10 @@ export class AppContext extends Sequelize {
     this.DocumentType.addHook('afterFind', afterFind)
     this.DocumentProduct.addHook('afterFind', afterFind)
     this.DocumentService.addHook('afterFind', afterFind)
+    this.FinanceTitle.addHook('afterFind', afterFind)
+    this.FinanceEntry.addHook('afterFind', afterFind)
     this.SolicitationDocument.addHook('afterFind', afterFind)
+    */
 
   }
 

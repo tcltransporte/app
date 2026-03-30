@@ -48,7 +48,7 @@ import { alert } from '@/libs/alert';
  * rowItems[solicitationId] = Array<{ rowKey: string, checked: boolean, documentTypeId: number }>
  */
 
-function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChangeType, onChangeValue, onEdit, onLinkClick, onUnlink }) {
+function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChangeType, onChangeValue, onEdit, onLinkClick, onUnlink, alreadyGenerated }) {
   const [expanded, setExpanded] = React.useState(true);
   const [unlinkMenu, setUnlinkMenu] = React.useState({ anchorEl: null, rowKey: null });
 
@@ -103,7 +103,7 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
       <TableRow>
         <TableCell colSpan={3} sx={{ p: 0 }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
-            {solRows.some(r => r.id) ? (
+            {alreadyGenerated ? (
               <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'success.lighter', borderRadius: 1, m: 1 }}>
                 <Typography variant="body2" color="success.main" fontWeight={600}>
                   Os documentos para esta solicitação já foram gerados.
@@ -320,6 +320,9 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
   const [editModal, setEditModal] = React.useState({ open: false, rowKey: null, solicitationId: null, initialData: null });
   const [linkModal, setLinkModal] = React.useState({ open: false, solicitationId: null, rowKey: null });
 
+  // { [solicitationId]: boolean }
+  const [statusMap, setStatusMap] = React.useState({});
+
   React.useEffect(() => {
     if (!open || solicitations.length === 0) return;
     setLoading(true);
@@ -374,6 +377,12 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
           }
           initial[s.id] = autoRows;
         });
+
+        const initialStatus = {};
+        hydratedSolicitations.forEach(s => {
+          initialStatus[s.id] = !!s.alreadyGenerated;
+        });
+        setStatusMap(initialStatus);
 
         // Merge with existing array (just in case)
         solicitations.forEach(s => {
@@ -643,6 +652,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
                   onEdit={handleEdit}
                   onLinkClick={handleLinkClick}
                   onUnlink={handleUnlink}
+                  alreadyGenerated={statusMap[s.id]}
                 />
               ))}
             </TableBody>

@@ -85,7 +85,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     invoiceTypeId: '',
     partnerId: null,
     partner: null,
-    invoiceNumber: 0,
+    invoiceNumber: '',
     invoiceSeries: '',
     invoiceDate: '',
     receiptDate: '',
@@ -117,7 +117,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     invoiceTypeId: data?.invoiceTypeId || '',
     invoiceDate: data?.invoiceDate || '',
     receiptDate: data?.receiptDate || '',
-    invoiceNumber: data?.invoiceNumber || 0,
+    invoiceNumber: data?.invoiceNumber || '',
     invoiceValue: data?.invoiceValue || 0,
     totalProductsValue: data?.totalProductsValue || 0,
     discountValue: data?.discountValue || 0,
@@ -191,7 +191,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
             <Dialog.Content>
               <Form>
                 <Grid container spacing={1}>
-                  <Grid size={{ xs: 12, sm: 2 }}>
+                  <Grid size={{ xs: 12, sm: 1.8 }}>
                     <Field
                       name="invoiceTypeId"
                       component={SelectField}
@@ -202,7 +202,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
                       ]}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 4.5 }}>
+                  <Grid size={{ xs: 12, sm: 5 }}>
                     <Field
                       name="partner"
                       component={AutoComplete}
@@ -223,25 +223,23 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
                   </Grid>
                   <Grid size={{ xs: 8, sm: 1.8 }}>
                     <Field
+                      label="Número"
                       name="invoiceNumber"
                       component={TextField}
-                      label="Número"
-                      type="number"
                     />
                   </Grid>
                   <Grid size={{ xs: 4, sm: 1.4 }}>
                     <Field
+                      label="Série"
                       name="invoiceSeries"
                       component={TextField}
-                      label="Série"
-                      transform="uppercase"
                     />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 4.6 }}>
                     <Field
+                      label="Chave de acesso"
                       name="invoiceKey"
                       component={TextField}
-                      label="Chave de acesso"
                     />
                   </Grid>
                   <Grid size={{ xs: 6, sm: 2.4 }}>

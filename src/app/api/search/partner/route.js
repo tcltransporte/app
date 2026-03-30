@@ -13,12 +13,13 @@ export async function POST(request) {
         const db = new AppContext()
         const where = []
         const searchUpper = search.replace(/ /g, "%").toUpperCase()
+        const searchClean = search.replace(/[^a-zA-Z0-9]/g, "")
         const isNumeric = !isNaN(search) && search.trim() !== ''
 
         const searchConditions = [
             { '$nome$': { [Op.like]: `%${searchUpper}%` } },
             { '$RazaoSocial$': { [Op.like]: `%${searchUpper}%` } },
-            { '$CpfCnpj$': { [Op.like]: `%${searchUpper}%` } }
+            { '$CpfCnpj$': { [Op.like]: `%${searchClean}%` } }
         ]
 
         if (isNumeric) {

@@ -3,13 +3,13 @@
 import { Op } from 'sequelize'
 import * as solicitationRepository from "@/app/repositories/solicitation.repository"
 import * as typeRepository from "@/app/repositories/solicitationType.repository"
-import * as documentRepository from "@/app/repositories/document.repository.js"
+import * as documentService from "./document.service"
 import { AppContext } from "@/database"
 import { ServiceResponse, ServiceStatus, sanitize } from "@/libs/service"
 import { getSession } from "@/libs/session"
 import { handleGoogleSheetsExport, handleExcelExport } from "@/libs/export-helper"
 
-export async function exportTable({
+export async function exportTable({ db, transaction } = {}, {
   format = 'excel',
   filters = {},
   range = {},
@@ -18,7 +18,7 @@ export async function exportTable({
   columns = []
 } = {}) {
 
-  const result = await findAll({ filters, range, sortBy, sortOrder, page: 1, limit: 10000 });
+  const result = await findAll({ db, transaction }, { filters, range, sortBy, sortOrder, page: 1, limit: 10000 });
 
   if (result.header.status !== ServiceStatus.SUCCESS) return result;
 
@@ -41,12 +41,12 @@ export async function exportTable({
   });
 }
 
-export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, sortBy = 'number', sortOrder = 'DESC' }) {
+export async function findAll({ db, transaction } = {}, { page = 1, limit = 50, filters = {}, range = {}, sortBy = 'number', sortOrder = 'DESC' }) {
   try {
     const session = await getSession()
-    const db = new AppContext()
+    const _db = db || new AppContext()
 
-    const result = await db.transaction(async (transaction) => {
+    const execute = async (t) => {
       const offset = (page - 1) * limit
 
       const where = {
@@ -77,7 +77,7 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
       }
 
       if (filters.typeHash) {
-        const type = await typeRepository.findOne({ db, transaction }, {
+        const type = await typeRepository.findOne({ db: _db, transaction: t }, {
           where: { hash: filters.typeHash, companyId: session.company.id }
         })
         if (type) {
@@ -85,7 +85,7 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
         }
       }
 
-      return solicitationRepository.findAll({ db, transaction }, {
+      return solicitationRepository.findAll({ db: _db, transaction: t }, {
         attributes: ['id', 'number', 'partnerId', 'description', 'date', 'statusId'],
         where,
         limit,
@@ -100,24 +100,24 @@ export async function findAll({ page = 1, limit = 50, filters = {}, range = {}, 
           { association: 'documents' },
         ]
       })
-    })
+    }
 
-    return ServiceResponse.success({ items: result.rows, total: result.count, page, limit, filters, range, sortBy, sortOrder })
+    const { rows, count } = transaction ? await execute(transaction) : await _db.transaction(execute)
+
+    return ServiceResponse.success({ items: rows, total: count, page, limit, filters, range, sortBy, sortOrder })
 
   } catch (error) {
     return ServiceResponse.error(error)
   }
 }
 
-export async function findOne(id) {
+export async function findOne({ db, transaction } = {}, id) {
   try {
-
     const session = await getSession()
+    const _db = db || new AppContext()
 
-    const db = new AppContext()
-
-    const result = await db.transaction(async (transaction) => {
-      const solicitation = await solicitationRepository.findOne({ db, transaction }, {
+    const execute = async (t) => {
+      const solicitation = await solicitationRepository.findOne({ db: _db, transaction: t }, {
         attributes: ['id', 'description', 'number', 'date', 'forecastDate', 'typeId', 'statusId', 'partnerId'],
         where: {
           id: id,
@@ -146,7 +146,9 @@ export async function findOne(id) {
 
       return solicitation
 
-    })
+    }
+
+    const result = transaction ? await execute(transaction) : await _db.transaction(execute)
 
     return ServiceResponse.success(result)
 
@@ -155,17 +157,15 @@ export async function findOne(id) {
   }
 }
 
-export async function create(data) {
+export async function create({ db, transaction } = {}, data) {
   try {
-
     const session = await getSession()
+    const _db = db || new AppContext()
 
-    const db = new AppContext()
-
-    const result = await db.transaction(async (transaction) => {
+    const execute = async (t) => {
       const finalData = sanitize(data)
 
-      return solicitationRepository.create({ db, transaction }, {
+      return await solicitationRepository.create({ db: _db, transaction: t }, {
         ...finalData,
         companyId: session.company.id,
         userId: session.user.id,
@@ -179,7 +179,9 @@ export async function create(data) {
           { association: 'payments' }
         ]
       })
-    })
+    }
+
+    const result = transaction ? await execute(transaction) : await _db.transaction(execute)
 
     return ServiceResponse.success(result)
 
@@ -188,15 +190,13 @@ export async function create(data) {
   }
 }
 
-export async function update(id, data) {
+export async function update({ db, transaction } = {}, id, data) {
   try {
-
     const session = await getSession()
+    const _db = db || new AppContext()
 
-    const db = new AppContext()
-
-    await db.transaction(async (transaction) => {
-      const existing = await solicitationRepository.findOne({ db, transaction }, {
+    const execute = async (t) => {
+      const existing = await solicitationRepository.findOne({ db: _db, transaction: t }, {
         attributes: ['id'],
         where: {
           id: id,
@@ -209,8 +209,14 @@ export async function update(id, data) {
 
       const finalData = sanitize(data)
 
-      await solicitationRepository.update({ db, transaction }, { where: { id: id } }, finalData)
-    })
+      await solicitationRepository.update({ db: _db, transaction: t }, { where: { id: id } }, finalData)
+    }
+
+    if (transaction) {
+      await execute(transaction)
+    } else {
+      await _db.transaction(execute)
+    }
 
     return ServiceResponse.success({ id })
   } catch (error) {
@@ -218,16 +224,14 @@ export async function update(id, data) {
   }
 }
 
-export async function toStatus(id, statusId, description = null) {
+export async function toStatus({ db, transaction } = {}, id, statusId, description = null) {
   try {
-
     const session = await getSession()
+    const _db = db || new AppContext()
 
-    const db = new AppContext()
+    const execute = async (t) => {
 
-    await db.transaction(async (transaction) => {
-
-      const existing = await solicitationRepository.findOne({ db, transaction }, {
+      const existing = await solicitationRepository.findOne({ db: _db, transaction: t }, {
         attributes: ['id', 'partnerId', 'companyId', 'statusId'],
         where: {
           id: id,
@@ -242,9 +246,15 @@ export async function toStatus(id, statusId, description = null) {
 
       if (description !== null) updateData.description = description;
 
-      await solicitationRepository.update({ db, transaction }, { where: { id: id } }, updateData)
+      await solicitationRepository.update({ db: _db, transaction: t }, { where: { id: id } }, updateData)
 
-    })
+    }
+
+    if (transaction) {
+      await execute(transaction)
+    } else {
+      await _db.transaction(execute)
+    }
 
     return ServiceResponse.success({ id })
   } catch (error) {
@@ -252,16 +262,14 @@ export async function toStatus(id, statusId, description = null) {
   }
 }
 
-export async function destroy(id) {
+export async function destroy({ db, transaction } = {}, id) {
   try {
-
     const session = await getSession()
+    const _db = db || new AppContext()
 
-    const db = new AppContext()
+    const execute = async (t) => {
 
-    await db.transaction(async (transaction) => {
-
-      const existing = await solicitationRepository.findOne({ db, transaction }, {
+      const existing = await solicitationRepository.findOne({ db: _db, transaction: t }, {
         attributes: ['id'],
         where: {
           id: id,
@@ -272,8 +280,14 @@ export async function destroy(id) {
       if (!existing)
         throw ServiceResponse.badRequest("SOLICITATION_NOT_FOUND", "Solicitação não encontrada!")
 
-      await solicitationRepository.destroy({ db, transaction }, { where: { id: id } })
-    })
+      await solicitationRepository.destroy({ db: _db, transaction: t }, { where: { id: id } })
+    }
+
+    if (transaction) {
+      await execute(transaction)
+    } else {
+      await _db.transaction(execute)
+    }
 
     return ServiceResponse.success({ id })
 
@@ -297,9 +311,9 @@ export async function findAllStatuses() {
 }
 */
 
-export async function findAllowedTransitions(fromStatusIds) {
+export async function findAllowedTransitions({ db, transaction } = {}, fromStatusIds) {
   try {
-    const db = new AppContext()
+    const _db = db || new AppContext()
 
     // If no status is provided, we can't determine allowed transitions
     if (!fromStatusIds || fromStatusIds.length === 0) {
@@ -311,9 +325,10 @@ export async function findAllowedTransitions(fromStatusIds) {
     // Find transitions for each unique status
     const allowedByStatus = await Promise.all(
       uniqueFromStatusIds.map(async (fromId) => {
-        const transitions = await db.SolicitationStatusWorkflow.findAll({
+        const transitions = await _db.SolicitationStatusWorkflow.findAll({
           where: { fromStatusId: fromId },
-          include: [{ as: 'toStatus', model: db.SolicitationStatus }]
+          include: [{ as: 'toStatus', model: _db.SolicitationStatus }],
+          transaction
         })
         return transitions.map(t => t.toStatus.get({ plain: true }))
       })
@@ -403,22 +418,24 @@ export async function findDocuments(solicitationId) {
 }
 */
 
-export async function saveDocuments(solicitationId, documents = []) {
+export async function saveDocuments({ db, transaction } = {}, solicitationId, documents = []) {
   try {
 
     const session = await getSession()
+    const _db = db || new AppContext()
 
-    const db = new AppContext()
+    const execute = async (t) => {
 
-    await db.transaction(async (transaction) => {
-
-      const solicitation = await db.Solicitation.findOne({
+      const solicitation = await _db.Solicitation.findOne({
         attributes: ['id', 'partnerId'],
-        where: { id: solicitationId, companyId: session.company.id }
+        where: { id: solicitationId, companyId: session.company.id },
+        include: [{ association: 'payments', attributes: ['installment', 'value', 'dueDate', 'description'] }],
+        transaction: t
       })
 
       if (!solicitation) throw ServiceResponse.badRequest('SOLICITATION_NOT_FOUND', 'Solicitação não encontrada!')
 
+      const newDocIds = []
       for (const doc of documents) {
 
         const payload = {
@@ -426,29 +443,44 @@ export async function saveDocuments(solicitationId, documents = []) {
           invoiceNumber: doc.invoiceNumber || 0,
           invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate) : new Date(),
           invoiceValue: doc.invoiceValue || 0,
+          items: doc.items,
+          services: doc.services,
         }
         if (doc.id) {
-          await documentRepository.update({ db, transaction }, { where: { id: doc.id } }, payload)
+          const result = await documentService.update({ db: _db, transaction: t }, doc.id, payload)
+          if (result.header.status !== ServiceStatus.SUCCESS) throw new Error(result.header.message)
         } else {
-          const createdDoc = await documentRepository.create({ db, transaction }, {
+          const result = await documentService.create({ db: _db, transaction: t }, {
             ...payload,
             solicitationId,
             partnerId: solicitation.partnerId,
-            companyId: session.company.id,
-            createdById: session.user.id,
-            createdAt: new Date(),
-            systemDate: new Date(),
           })
-          doc.id = createdDoc.id
+          if (result.header.status !== ServiceStatus.SUCCESS) throw new Error(result.header.message)
+          doc.id = result.body.id
+          newDocIds.push(doc.id)
+
+          documentService.transmit({ db: _db, transaction: t }, doc.id)
+
         }
 
         // Always ensure relationship exists in solicitationDocument
-        await db.SolicitationDocument.findOrCreate({
+        await _db.SolicitationDocument.findOrCreate({
           where: { solicitationId, documentId: doc.id },
-          transaction
+          transaction: t
         })
       }
-    })
+
+      if (newDocIds.length > 0) {
+        await documentService.generateFinance({ db: _db, transaction: t }, newDocIds, solicitation.payments)
+      }
+
+    }
+
+    if (transaction) {
+      await execute(transaction)
+    } else {
+      await _db.transaction(execute)
+    }
 
     return ServiceResponse.success({ message: 'Documentos salvos com sucesso!' })
   } catch (error) {
@@ -456,34 +488,34 @@ export async function saveDocuments(solicitationId, documents = []) {
   }
 }
 
-export async function generateDocuments(solicitationIds = []) {
+export async function generateDocuments({ db, transaction } = {}, solicitationIds = []) {
   try {
 
     const session = await getSession()
+    const _db = db || new AppContext()
 
-    const db = new AppContext()
-
-    const solicitations = await db.Solicitation.findAll({
+    const solicitations = await _db.Solicitation.findAll({
       where: { id: solicitationIds, companyId: session.company.id },
       include: [
         { association: 'partner', attributes: ['name', 'surname'] },
-        { 
-          association: 'products', 
+        {
+          association: 'products',
           attributes: ['id', 'itemId', 'value', 'quantity'],
           include: [{ association: 'product', attributes: ['name'] }]
         },
-        { 
-          association: 'services', 
+        {
+          association: 'services',
           attributes: ['id', 'itemId', 'value', 'quantity', 'description'],
           include: [{ association: 'service', attributes: ['name'] }]
         },
         { association: 'documents' },
         { association: 'type', attributes: ['id', 'description'] },
         { association: 'status', attributes: ['id', 'generateDocumentTypeId'] }
-      ]
+      ],
+      transaction
     })
 
-    const docTypes = await db.DocumentType.findAll({ attributes: ['id', 'initials'] })
+    const docTypes = await _db.DocumentType.findAll({ attributes: ['id', 'initials'], transaction })
 
     const type55 = docTypes.find(dt => dt.id && String(dt.id).trim() === '55')
     const type99 = docTypes.find(dt => dt.id && String(dt.id).trim() === '99')
@@ -496,9 +528,11 @@ export async function generateDocuments(solicitationIds = []) {
 
       if (s.documents && s.documents.length > 0) {
         // Solicitation already has documents, don't generate more
+        s.alreadyGenerated = true;
         return s;
       }
 
+      s.alreadyGenerated = false;
       s.documents = [];
 
       const hasProducts = (s.products || []).length > 0;
@@ -530,11 +564,11 @@ export async function generateDocuments(solicitationIds = []) {
           value: p.value,
           description: p.description || p.service?.name || ''
         }));
-        s.documents.push({ 
-          id: null, 
-          documentTypeId: type99.id, 
-          invoiceNumber: 0, 
-          invoiceDate: defaultInvoiceDate, 
+        s.documents.push({
+          id: null,
+          documentTypeId: type99.id,
+          invoiceNumber: 0,
+          invoiceDate: defaultInvoiceDate,
           invoiceValue: total,
           services: docItems
         });
@@ -545,7 +579,6 @@ export async function generateDocuments(solicitationIds = []) {
       if (s.documents.length === 0 && defaultType) {
         s.documents.push({ id: null, documentTypeId: defaultType.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
       }
-
 
       return s;
 

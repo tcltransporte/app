@@ -86,7 +86,7 @@ export class Document {
     type: DataTypes.STRING(60)
   }
 
-  movementId = {
+  financeTitleId = {
     field: 'IDMovimento',
     allowNull: true,
     type: DataTypes.BIGINT
