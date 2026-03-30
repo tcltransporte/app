@@ -20,7 +20,7 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
       formikRef.current?.resetForm();
       return;
     }
-    
+
     if (partnerId === null) {
       setData({});
       formikRef.current?.resetForm();
@@ -119,9 +119,9 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
 
           <Dialog.Actions>
             <Button onClick={onClose} color="inherit" disabled={loading} sx={{ textTransform: 'none', fontWeight: 600 }}>Cancelar</Button>
-            <Button 
-              onClick={submitForm} 
-              variant="contained" 
+            <Button
+              onClick={submitForm}
+              variant="contained"
               disabled={loading}
               sx={{ textTransform: 'none', fontWeight: 600, px: 3 }}
             >

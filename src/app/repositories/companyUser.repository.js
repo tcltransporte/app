@@ -1,5 +1,7 @@
+import { AppContext } from '@/database'
+
 /**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {import('sequelize').Transaction} transaction
 * @param {{ 
 *   attributes?: string[],
 *   include?: import('sequelize').Includeable,
@@ -8,24 +10,16 @@
 * 
 * @returns {Promise<object|null>}
 */
-export async function findAll({ db, transaction }, { attributes, include, where }) {
+export async function findAll(transaction, { attributes, include, where }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const companyUser = await db.CompanyUser.findAll({
+      attributes,
+      include,
+      where,
+      transaction: t
+    })
 
-  const companyUser = await db.CompanyUser.findAll({
-    attributes,
-    include,
-    where,
-    transaction
+    return companyUser?.map(x => x.toJSON())
   })
-
-  return companyUser?.map(x => x.toJSON())
-
 }
-
-/*
-export async function findOne({ db, transaction }, { attributes, where }) {
-
-  const company = await db.Company.findOne({ attributes, where, transaction })
-
-  return company?.toJSON()
-
-}*/

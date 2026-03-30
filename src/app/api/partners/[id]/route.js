@@ -26,7 +26,7 @@ export async function GET(request, { params }) {
 
   const { id } = await params
 
-  const result = await partnerService.findOne(Number(id))
+  const result = await partnerService.findOne(null, Number(id))
 
   const { status, ...body } = result
 
@@ -66,7 +66,7 @@ export async function PUT(request, { params }) {
   const { id } = await params
   const data = await request.json()
 
-  const result = await partnerService.update(Number(id), data)
+  const result = await partnerService.update(null, Number(id), data)
 
   const { status, ...body } = result
 
@@ -99,7 +99,7 @@ export async function DELETE(request, { params }) {
 
   const { id } = await params
 
-  const result = await partnerService.destroy(Number(id))
+  const result = await partnerService.destroy(null, Number(id))
 
   const { status, ...body } = result
 

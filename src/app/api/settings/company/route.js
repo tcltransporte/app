@@ -23,7 +23,7 @@ import { NextResponse } from "next/server"
  */
 export async function GET() {
 
-  const companyResult = await companyService.findOne()
+  const companyResult = await companyService.findOne(null)
 
   return NextResponse.json(companyResult.body, { status: companyResult.header.status })
 

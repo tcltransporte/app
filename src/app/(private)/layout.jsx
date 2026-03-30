@@ -28,8 +28,8 @@ export default async function PublicLayout({ children }) {
   }
 
   const [typesResp, docTypesResp] = await Promise.all([
-    findSolicitationTypes({ limit: 100 }),
-    findDocumentTypes()
+    findSolicitationTypes(null, { limit: 100 }),
+    findDocumentTypes(null)
   ]);
 
   const solicitationTypes = typesResp.body.items || [];

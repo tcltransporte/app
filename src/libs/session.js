@@ -4,11 +4,11 @@ import { AppContext } from "@/database"
 import * as sessionRepository from "@/app/repositories/session.repository"
 import { ServiceResponse, ServiceStatus } from "./service"
 
-export async function getSession() {
+export async function getSession(transaction = null) {
 
   const db = new AppContext()
 
-  return db.transaction(async (transaction) => {
+  return await db.withTransaction(transaction, async (t) => {
 
     const header = await headers()
 
@@ -24,13 +24,15 @@ export async function getSession() {
       throw ServiceResponse.unauthorized('TOKEN_REQUIRED', 'Informe o token!')
     }
 
-    const session = await sessionRepository.findOne({ db, transaction }, {
+    const session = await sessionRepository.findOne(t, {
       attributes: ['id', 'lastAcess', 'expireIn'],
       include: [
         { model: db.User, as: 'user', attributes: ['id', 'userName'] },
         {
-          model: db.Company, as: 'company', attributes: ['id', 'name', 'surname'], include: [
-            { model: db.CompanyBusiness, as: 'companyBusiness', attributes: ['id', 'name'] }]
+          model: db.Company, as: 'company', attributes: ['id', 'name', 'surname'], 
+          include: [
+            { model: db.CompanyBusiness, as: 'companyBusiness', attributes: ['id', 'name'] }
+          ]
         }
       ],
       where: [{ id: token }]
@@ -45,20 +47,9 @@ export async function getSession() {
 
       const lastAcessDate = new Date(session.lastAcess)
       const now = new Date()
-      const elapsedMinutes = (now.getTime() - lastAcessDate.getTime()) / (1000 * 60)
-
-      /*
-      console.log(lastAcessDate, now)
-
-      if (elapsedMinutes > session.expireIn) {
-        await sessionRepository.destroy({ db, transaction }, { where: [{ id: session.id }] })
-        cookie.delete('authorization')
-        throw ServiceResponse.unauthorized('SESSION_EXPIRED', 'Sessão expirada!')
-      }
-      */
 
       // Renew session: update lastAcess on each valid access
-      await sessionRepository.update({ db, transaction }, { where: [{ id: session.id }] }, { lastAcess: now })
+      await sessionRepository.update(t, { where: [{ id: session.id }] }, { lastAcess: now })
 
     }
 
@@ -66,4 +57,4 @@ export async function getSession() {
 
   })
 
-}
+}

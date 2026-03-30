@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { Box, Typography, Button, IconButton, Drawer, Divider, Tabs, Tab, Checkbox as MuiCheckbox, FormControlLabel } from '@mui/material';
-import { 
-  Add as AddIcon, 
-  Edit as EditIcon, 
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
   Save as SaveIcon,
@@ -76,7 +76,7 @@ export function StatusesTab({ initialStatusesConfig }) {
   const handleSave = async (values) => {
     try {
       const statusId = drawer.item ? drawer.item.id : null;
-      
+
       const toIds = relationships.filter(r => r.fromStatusId === statusId).map(r => r.toStatusId);
       const typeIds = typeRelationships.filter(r => r.statusId === statusId).map(r => r.typeId);
 
@@ -138,9 +138,9 @@ export function StatusesTab({ initialStatusesConfig }) {
 
   const columns = [
     { field: 'description', label: 'Descrição', minWidth: 200 },
-    { 
-      field: 'actions', 
-      label: 'Ações', 
+    {
+      field: 'actions',
+      label: 'Ações',
       align: 'right',
       width: 160,
       renderCell: (value, row) => (
@@ -198,7 +198,7 @@ export function StatusesTab({ initialStatusesConfig }) {
       >
         <Box sx={{ height: '100%' }}>
           <Formik
-            initialValues={{ 
+            initialValues={{
               description: drawer.item?.description || '',
               isInitialOption: relationships.some(r => r.fromStatusId === null && r.toStatusId === drawer.item?.id)
             }}
@@ -213,30 +213,30 @@ export function StatusesTab({ initialStatusesConfig }) {
               const showTipos = drawer.tab === 0;
 
               return (
-              <Form style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ px: 3, pt: 2.5, pb: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography variant="h6" fontWeight={700}>
-                    {currentDescription}
-                  </Typography>
-                  <IconButton onClick={handleCloseDrawer} size="small">
-                    <CloseIcon />
-                  </IconButton>
-                </Box>
+                <Form style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <Box sx={{ px: 3, pt: 2.5, pb: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="h6" fontWeight={700}>
+                      {currentDescription}
+                    </Typography>
+                    <IconButton onClick={handleCloseDrawer} size="small">
+                      <CloseIcon />
+                    </IconButton>
+                  </Box>
 
-                <Box sx={{ p: 3, pb: 2 }}>
-                  <Field component={TextField} name="description" label="Descrição" fullWidth autoFocus />
-                  <FormControlLabel
-                    control={
-                      <MuiCheckbox
-                        size="small"
-                        checked={values.isInitialOption}
-                        onChange={(e) => setFieldValue('isInitialOption', e.target.checked)}
-                      />
-                    }
-                    label={<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>Permitir como status inicial (sem status)</Typography>}
-                    sx={{ mt: 1 }}
-                  />
-                </Box>
+                  <Box sx={{ p: 3, pb: 2 }}>
+                    <Field component={TextField} name="description" label="Descrição" fullWidth autoFocus />
+                    <FormControlLabel
+                      control={
+                        <MuiCheckbox
+                          size="small"
+                          checked={values.isInitialOption}
+                          onChange={(e) => setFieldValue('isInitialOption', e.target.checked)}
+                        />
+                      }
+                      label={<Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>Permitir como status inicial (sem status)</Typography>}
+                      sx={{ mt: 1 }}
+                    />
+                  </Box>
 
                   <React.Fragment>
                     <Tabs
@@ -252,72 +252,72 @@ export function StatusesTab({ initialStatusesConfig }) {
                     <Divider />
                   </React.Fragment>
 
-                {/* TAB 1: Workflow */}
-                {showWorkflow && (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
-                    <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Selecione para quais status <strong>{currentDescription}</strong> pode transitar.
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                        {allStatuses.filter(s => s.id !== currentStatusId).map(s => (
-                          <FormControlLabel
-                            key={s.id}
-                            control={
-                              <MuiCheckbox
-                                size="small"
-                                checked={relationships.some(r => r.fromStatusId === currentStatusId && r.toStatusId === s.id)}
-                                onChange={() => toggleWorkflowRule(s.id)}
-                              />
-                            }
-                            label={<Typography variant="body2">{s.description}</Typography>}
-                          />
-                        ))}
+                  {/* TAB 1: Workflow */}
+                  {showWorkflow && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+                      <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Selecione para quais status <strong>{currentDescription}</strong> pode transitar.
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                          {allStatuses.filter(s => s.id !== currentStatusId).map(s => (
+                            <FormControlLabel
+                              key={s.id}
+                              control={
+                                <MuiCheckbox
+                                  size="small"
+                                  checked={relationships.some(r => r.fromStatusId === currentStatusId && r.toStatusId === s.id)}
+                                  onChange={() => toggleWorkflowRule(s.id)}
+                                />
+                              }
+                              label={<Typography variant="body2">{s.description}</Typography>}
+                            />
+                          ))}
+                        </Box>
                       </Box>
                     </Box>
-                  </Box>
-                )}
+                  )}
 
-                {/* TAB 0: Tipos */}
-                {showTipos && (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
-                    <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Selecione os tipos de solicitação que permitem o status <strong>{currentDescription}</strong>.
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                        {allTypes.map(t => (
-                          <FormControlLabel
-                            key={t.id}
-                            control={
-                              <MuiCheckbox
-                                size="small"
-                                checked={typeRelationships.some(r => r.statusId === currentStatusId && r.typeId === t.id)}
-                                onChange={() => setTypeRelationships(prev => {
-                                  const exists = prev.some(r => r.statusId === currentStatusId && r.typeId === t.id);
-                                  if (exists) return prev.filter(r => !(r.statusId === currentStatusId && r.typeId === t.id));
-                                  return [...prev, { statusId: currentStatusId, typeId: t.id }];
-                                })}
-                              />
-                            }
-                            label={<Typography variant="body2">{t.description}</Typography>}
-                          />
-                        ))}
+                  {/* TAB 0: Tipos */}
+                  {showTipos && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+                      <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Selecione os tipos de solicitação que permitem o status <strong>{currentDescription}</strong>.
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                          {allTypes.map(t => (
+                            <FormControlLabel
+                              key={t.id}
+                              control={
+                                <MuiCheckbox
+                                  size="small"
+                                  checked={typeRelationships.some(r => r.statusId === currentStatusId && r.typeId === t.id)}
+                                  onChange={() => setTypeRelationships(prev => {
+                                    const exists = prev.some(r => r.statusId === currentStatusId && r.typeId === t.id);
+                                    if (exists) return prev.filter(r => !(r.statusId === currentStatusId && r.typeId === t.id));
+                                    return [...prev, { statusId: currentStatusId, typeId: t.id }];
+                                  })}
+                                />
+                              }
+                              label={<Typography variant="body2">{t.description}</Typography>}
+                            />
+                          ))}
+                        </Box>
                       </Box>
                     </Box>
-                  </Box>
-                )}
+                  )}
 
-                {/* Drawer Footer Actions */}
-                <Box sx={{ mt: 'auto', p: 2, display: 'flex', gap: 2, borderTop: 1, borderColor: 'divider' }}>
-                  <Button fullWidth variant="outlined" color="inherit" onClick={handleCloseDrawer} sx={{ textTransform: 'none', fontWeight: 600 }}>
-                    Cancelar
-                  </Button>
-                  <Button fullWidth variant="contained" startIcon={<SaveIcon />} onClick={submitForm} disabled={isSubmitting} sx={{ textTransform: 'none', fontWeight: 600 }}>
-                    {isSubmitting ? 'Salvando...' : 'Salvar'}
-                  </Button>
-                </Box>
-              </Form>
+                  {/* Drawer Footer Actions */}
+                  <Box sx={{ mt: 'auto', p: 2, display: 'flex', gap: 2, borderTop: 1, borderColor: 'divider' }}>
+                    <Button fullWidth variant="outlined" color="inherit" onClick={handleCloseDrawer} sx={{ textTransform: 'none', fontWeight: 600 }}>
+                      Cancelar
+                    </Button>
+                    <Button fullWidth variant="contained" startIcon={<SaveIcon />} onClick={submitForm} disabled={isSubmitting} sx={{ textTransform: 'none', fontWeight: 600 }}>
+                      {isSubmitting ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                  </Box>
+                </Form>
               );
             }}
           </Formik>

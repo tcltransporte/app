@@ -8,7 +8,7 @@ import { ServiceResponse, ServiceStatus, sanitize } from "@/libs/service"
 import { getSession } from "@/libs/session"
 import { handleGoogleSheetsExport, handleExcelExport } from "@/libs/export-helper"
 
-export async function exportTable({
+export async function exportTable(transaction, {
   format = 'excel',
   filters = {},
   range = {},
@@ -16,8 +16,7 @@ export async function exportTable({
   sortOrder = 'ASC',
   columns = []
 } = {}) {
-
-  const result = await findAll({ filters, range, sortBy, sortOrder, page: 1, limit: 10000 });
+  const result = await findAll(transaction, { filters, range, sortBy, sortOrder, page: 1, limit: 10000 });
 
   if (result.header.status !== ServiceStatus.SUCCESS) return result;
 
@@ -40,14 +39,11 @@ export async function exportTable({
   });
 }
 
-export async function findAll({ page = 1, limit = 50, filters = {}, sortBy = 'surname', sortOrder = 'ASC' } = {}) {
+export async function findAll(transaction, { page = 1, limit = 50, filters = {}, sortBy = 'surname', sortOrder = 'ASC' } = {}) {
+  const session = await getSession()
+  const db = new AppContext()
   try {
-
-    const session = await getSession()
-    const db = new AppContext()
-
-    const result = await db.transaction(async (transaction) => {
-
+    return await db.withTransaction(transaction, async (t) => {
       const offset = (page - 1) * limit
 
       const where = {
@@ -68,7 +64,7 @@ export async function findAll({ page = 1, limit = 50, filters = {}, sortBy = 'su
       if (filters.isEmployee) where.isEmployee = true
       if (filters.isSeller) where.isSeller = true
 
-      return partnerRepository.findAll({ db, transaction }, {
+      const result = await partnerRepository.findAll(t, {
         attributes: ['id', 'cpfCnpj', 'name', 'surname', 'typeId', 'isCustomer', 'isSupplier', 'isEmployee', 'isSeller', 'isActive', 'birthDate'],
         where,
         limit,
@@ -76,24 +72,19 @@ export async function findAll({ page = 1, limit = 50, filters = {}, sortBy = 'su
         order: [[sortBy, sortOrder]]
       })
 
+      return ServiceResponse.success({ items: result.rows, total: result.count, page, limit, filters, sortBy, sortOrder })
     })
-
-    return ServiceResponse.success({ items: result.rows, total: result.count, page, limit, filters, sortBy, sortOrder })
-
   } catch (error) {
     return ServiceResponse.error(error)
   }
 }
 
-export async function findOne(id) {
+export async function findOne(transaction, id) {
+  const session = await getSession()
+  const db = new AppContext()
   try {
-
-    const session = await getSession()
-    const db = new AppContext()
-
-    const result = await db.transaction(async (transaction) => {
-
-      const partner = await partnerRepository.findOne({ db, transaction }, {
+    return await db.withTransaction(transaction, async (t) => {
+      const partner = await partnerRepository.findOne(t, {
         where: {
           id: id,
           companyBusinessId: session.company.companyBusiness.id
@@ -103,51 +94,40 @@ export async function findOne(id) {
       if (!partner)
         throw ServiceResponse.badRequest("PARTNER_NOT_FOUND", "Parceiro não encontrado!")
 
-      return partner
-
+      return ServiceResponse.success(partner)
     })
-
-    return ServiceResponse.success(result)
-
   } catch (error) {
     return ServiceResponse.error(error)
   }
 }
 
-export async function create(data) {
+export async function create(transaction, data) {
+  const session = await getSession()
+  const db = new AppContext()
   try {
-
-    const session = await getSession()
-    const db = new AppContext()
-
-    const result = await db.transaction(async (transaction) => {
+    return await db.withTransaction(transaction, async (t) => {
       const finalData = sanitize(data)
 
-      return partnerRepository.create({ db, transaction }, {
+      const result = await partnerRepository.create(t, {
         ...finalData,
         companyBusinessId: session.company.companyBusiness.id,
         companyId: session.company.id,
         isActive: true
       })
 
+      return ServiceResponse.success(result)
     })
-
-    return ServiceResponse.success(result)
-
   } catch (error) {
     return ServiceResponse.error(error)
   }
 }
 
-export async function update(id, data) {
+export async function update(transaction, id, data) {
+  const session = await getSession()
+  const db = new AppContext()
   try {
-
-    const session = await getSession()
-    const db = new AppContext()
-
-    await db.transaction(async (transaction) => {
-
-      const existing = await partnerRepository.findOne({ db, transaction }, {
+    return await db.withTransaction(transaction, async (t) => {
+      const existing = await partnerRepository.findOne(t, {
         attributes: ['id'],
         where: {
           id: id,
@@ -159,27 +139,21 @@ export async function update(id, data) {
         throw ServiceResponse.badRequest("PARTNER_NOT_FOUND", "Parceiro não encontrado!")
 
       const finalData = sanitize(data)
+      await partnerRepository.update(t, { where: { id: id } }, finalData)
 
-      await partnerRepository.update({ db, transaction }, { where: { id: id } }, finalData)
-
+      return ServiceResponse.success({ id })
     })
-
-    return ServiceResponse.success({ id })
-
   } catch (error) {
     return ServiceResponse.error(error)
   }
 }
 
-export async function destroy(id) {
+export async function destroy(transaction, id) {
+  const session = await getSession()
+  const db = new AppContext()
   try {
-
-    const session = await getSession()
-    const db = new AppContext()
-
-    await db.transaction(async (transaction) => {
-
-      const existing = await partnerRepository.findOne({ db, transaction }, {
+    return await db.withTransaction(transaction, async (t) => {
+      const existing = await partnerRepository.findOne(t, {
         attributes: ['id'],
         where: {
           id: id,
@@ -190,12 +164,9 @@ export async function destroy(id) {
       if (!existing)
         throw ServiceResponse.badRequest("PARTNER_NOT_FOUND", "Parceiro não encontrado!")
 
-      await partnerRepository.destroy({ db, transaction }, { where: { id: id } })
-
+      await partnerRepository.destroy(t, { where: { id: id } })
+      return ServiceResponse.success({ id })
     })
-
-    return ServiceResponse.success({ id })
-
   } catch (error) {
     return ServiceResponse.error(error)
   }

@@ -21,7 +21,7 @@ export default async function SolicitationPage({ params }) {
     let solicitationType = null;
 
     if (typeHash) {
-      const typeResp = await findTypeAll({ filters: { hash: typeHash } });
+      const typeResp = await findTypeAll(null, { filters: { hash: typeHash } });
       if (typeResp.header.status === ServiceStatus.SUCCESS && typeResp.body.items.length > 0) {
         solicitationType = typeResp.body.items[0];
       }

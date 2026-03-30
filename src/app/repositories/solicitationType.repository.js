@@ -1,64 +1,68 @@
 import { Op } from 'sequelize'
+import { AppContext } from '@/database'
 
 /**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {import('sequelize').Transaction} transaction
 * @param {{ attributes?, include?, where?, limit?, offset?, order? }} params
 * @returns {Promise<{ rows: object[], count: number }>}
 */
-export async function findAll({ db, transaction }, { attributes, include, where, limit, offset, order }) {
+export async function findAll(transaction, { attributes, include, where, limit, offset, order }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const { rows, count } = await db.SolicitationType.findAndCountAll({
+      attributes, include, where, limit, offset, order, transaction: t,
+      distinct: true
+    })
 
-  const { rows, count } = await db.SolicitationType.findAndCountAll({
-    attributes, include, where, limit, offset, order, transaction,
-    distinct: true
+    return { rows: rows.map(r => r.toJSON()), count }
   })
-
-  return { rows: rows.map(r => r.toJSON()), count }
-
 }
 
 /**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {import('sequelize').Transaction} transaction
 * @param {{ attributes?, include?, where? }} params
 * @returns {Promise<object|null>}
 */
-export async function findOne({ db, transaction }, { attributes, include, where }) {
-
-  const tipo = await db.SolicitationType.findOne({ attributes, include, where, transaction })
-
-  return tipo?.toJSON()
-
+export async function findOne(transaction, { attributes, include, where }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const tipo = await db.SolicitationType.findOne({ attributes, include, where, transaction: t })
+    return tipo?.toJSON()
+  })
 }
 
 /**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {import('sequelize').Transaction} transaction
 * @param {object} data
 * @returns {Promise<object>}
 */
-export async function create({ db, transaction }, data) {
-
-  const tipo = await db.SolicitationType.create(data, { transaction })
-
-  return tipo?.toJSON()
-
+export async function create(transaction, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const tipo = await db.SolicitationType.create(data, { transaction: t })
+    return tipo?.toJSON()
+  })
 }
 
 /**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {import('sequelize').Transaction} transaction
 * @param {{ where? }} params
 * @param {object} data
 */
-export async function update({ db, transaction }, { where }, data) {
-
-  await db.SolicitationType.update(data, { where, transaction })
-
+export async function update(transaction, { where }, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    await db.SolicitationType.update(data, { where, transaction: t })
+  })
 }
 
 /**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {import('sequelize').Transaction} transaction
 * @param {{ where? }} params
 */
-export async function destroy({ db, transaction }, { where }) {
-
-  await db.SolicitationType.destroy({ where, transaction })
-
+export async function destroy(transaction, { where }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    await db.SolicitationType.destroy({ where, transaction: t })
+  })
 }

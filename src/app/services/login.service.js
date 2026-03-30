@@ -14,14 +14,13 @@ import { cookies } from 'next/headers';
 export async function signIn({ db, transaction } = {}, { username, password, companyBusinessId, companyId, forceCloseSession = false }) {
   try {
 
-    const db = new AppContext();
+    const db = new AppContext()
 
-    const result = await db.transaction(async (transaction) => {
-
-      const user = await userRepository.findOne(
-        { db, transaction },
-        { attributes: ["userId"], where: { userName: username } }
-      );
+    return await db.withTransaction(transaction, async (t) => {
+      const user = await userRepository.findOne(t, {
+        attributes: ["userId"],
+        where: { userName: username }
+      });
 
       if (!user)
         throw ServiceResponse.badRequest("USER_NOT_FOUND", "Usuário não encontrado!")
@@ -37,23 +36,20 @@ export async function signIn({ db, transaction } = {}, { username, password, com
       if (!validateResult.d)
         throw ServiceResponse.badRequest("UNAUTHORIZED_PASSWORD", "Senha incorreta!")
 
-      const companyUsers = await companyUserRepository.findAll(
-        { db, transaction },
-        {
-          attributes: ["companyId"],
-          include: [
-            {
-              model: db.Company, as: "company", attributes: ["surname"],
-              include: [
-                {
-                  model: db.CompanyBusiness, as: "companyBusiness", attributes: ["id", "name"]
-                }
-              ]
-            }
-          ],
-          where: { userId: user.userId }
-        }
-      );
+      const companyUsers = await companyUserRepository.findAll(t, {
+        attributes: ["companyId"],
+        include: [
+          {
+            model: db.Company, as: "company", attributes: ["surname"],
+            include: [
+              {
+                model: db.CompanyBusiness, as: "companyBusiness", attributes: ["id", "name"]
+              }
+            ]
+          }
+        ],
+        where: { userId: user.userId }
+      });
 
       if (!companyUsers.length)
         throw ServiceResponse.badRequest("NO_COMPANY_ACCESS")
@@ -76,7 +72,6 @@ export async function signIn({ db, transaction } = {}, { username, password, com
       if (!companyBusinessId)
         throw ServiceResponse.badRequest("SELECT_COMPANY_BUSINESS", "Selecione a empresa!", { companyBusinesses })
 
-
       const companies = companyUsers
         .filter(x => x.company.companyBusiness.id === companyBusinessId)
         .map(x => ({
@@ -87,7 +82,6 @@ export async function signIn({ db, transaction } = {}, { username, password, com
       if (!companies.length)
         throw ServiceResponse.badRequest("COMPANY_NOT_FOUND")
 
-
       companyId = companyId
         ? Number(companyId)
         : companies.length === 1
@@ -97,69 +91,54 @@ export async function signIn({ db, transaction } = {}, { username, password, com
       if (!companyId)
         throw ServiceResponse.badRequest("SELECT_COMPANY", "Selecione a filial!", { companies })
 
-      const existingSessions = await sessionRepository.findAll(
-        { db, transaction },
-        { where: { userId: user.userId } }
-      );
+      const existingSessions = await sessionRepository.findAll(t, {
+        where: { userId: user.userId }
+      });
 
       if (existingSessions.length > 0) {
         if (!forceCloseSession) {
           throw ServiceResponse.badRequest("ACTIVE_SESSION_EXISTS", "Existe uma sessão aberta para o seu usuário.");
         } else {
           // User opted to force close old sessions
-          await sessionRepository.destroy(
-            { db, transaction },
-            { where: [{ userId: user.userId }] }
-          );
+          await sessionRepository.destroy(t, {
+            where: [{ userId: user.userId }]
+          });
         }
       }
 
-      const session = await sessionRepository.create(
-        { db, transaction },
-        {
-          userId: user.userId,
-          companyId,
-          lastAcess: new Date(),
-          expireIn: 1
-        }
-      );
+      const session = await sessionRepository.create(t, {
+        userId: user.userId,
+        companyId,
+        lastAcess: new Date(),
+        expireIn: 1
+      });
 
-      return { token: session.id };
+      console.log(session)
 
-    });
+      const result = { token: session.id };
+      const cookieStore = await cookies();
+      cookieStore.set('authorization', result.token, { path: '/', maxAge: 60 * 60 * 8 });
 
-    const cookieStore = await cookies();
-    cookieStore.set('authorization', result.token, { path: '/', maxAge: 60 * 60 * 8 });
-
-    return ServiceResponse.success(result);
-
+      return ServiceResponse.success(result)
+    })
   } catch (error) {
     return ServiceResponse.error(error);
-
   }
 }
 
 export async function signOut({ db, transaction } = {}) {
   try {
-
     const session = await getSession()
-
     const db = new AppContext()
+    return await db.withTransaction(transaction, async (t) => {
+      await sessionRepository.destroy(t, { where: [{ id: session.id }] })
 
-    await db.transaction(async (transaction) => {
+      const cookieStore = await cookies();
+      cookieStore.delete('authorization');
 
-      await sessionRepository.destroy({ db, transaction }, { where: [{ id: session.id }] })
-
+      return ServiceResponse.success()
     })
-
-    const cookieStore = await cookies();
-    cookieStore.delete('authorization');
-
-    return ServiceResponse.success()
-
   } catch (error) {
-
     return ServiceResponse.error(error)
-
   }
 }

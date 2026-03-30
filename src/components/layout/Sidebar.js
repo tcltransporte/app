@@ -199,7 +199,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
 
     setIsSavingTipo(true);
     try {
-      const resp = await solicitationTypeService.create({
+      const resp = await solicitationTypeService.create(null, {
         description: quickAddDesc,
         hash: quickAddHash || quickAddDesc.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '-'),
         requestType: quickAddType
@@ -212,7 +212,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         setQuickAddHash('');
 
         // Manually refresh local list for immediate feedback
-        const refreshResp = await solicitationTypeService.findAll({ limit: 100 });
+        const refreshResp = await solicitationTypeService.findAll(null, { limit: 100 });
         if (refreshResp.header.status === ServiceStatus.SUCCESS) {
           setSolicitationTypes(refreshResp.body.items || []);
         }
@@ -247,7 +247,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
         order: index + 1
       }));
 
-      const resp = await solicitationTypeService.updateOrders(orderPairs);
+      const resp = await solicitationTypeService.updateOrders(null, orderPairs);
       if (resp.header.status === ServiceStatus.SUCCESS) {
         alert.success('Ordem salva com sucesso!');
         setIsReorderMode(false);
@@ -272,7 +272,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
 
     setIsSavingEdit(true);
     try {
-      const resp = await solicitationTypeService.update(id, { description: editingValue });
+      const resp = await solicitationTypeService.update(null, id, { description: editingValue });
       if (resp.header.status === ServiceStatus.SUCCESS) {
         setSolicitationTypes(prev => prev.map(t => t.id === id ? { ...t, description: editingValue } : t));
         setEditingId(null);

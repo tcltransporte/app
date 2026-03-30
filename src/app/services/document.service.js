@@ -7,18 +7,18 @@ import { ServiceResponse, ServiceStatus } from "@/libs/service"
 import { getSession } from "@/libs/session"
 import { Op } from "sequelize"
 
-export async function findAll({ db, transaction } = {}, { slug, page = 1, limit = 50, filters = {}, sortBy = 'invoiceDate', sortOrder = 'DESC' } = {}) {
+export async function findAll(transaction, { slug, page = 1, limit = 50, filters = {}, sortBy = 'invoiceDate', sortOrder = 'DESC' } = {}) {
+    const session = await getSession()
+    const db = new AppContext()
     try {
-        const session = await getSession()
-        const _db = db || new AppContext()
+        return await db.withTransaction(transaction, async (t) => {
 
-        const execute = async (t) => {
             const where = {
                 companyId: session.company.id
             }
 
             if (slug) {
-                const docType = await _db.DocumentType.findOne({
+                const docType = await db.DocumentType.findOne({
                     where: { initials: slug.toUpperCase() },
                     transaction: t
                 })
@@ -33,7 +33,7 @@ export async function findAll({ db, transaction } = {}, { slug, page = 1, limit 
                 where.invoiceNumber = { [Op.like]: `%${filters.invoiceNumber}%` }
             }
 
-            const { rows, count } = await documentRepository.findAll({ db: _db, transaction: t }, {
+            const { rows, count } = await documentRepository.findAll(t, {
                 where,
                 include: [
                     { association: 'partner', attributes: ['name', 'surname'] },
@@ -54,95 +54,82 @@ export async function findAll({ db, transaction } = {}, { slug, page = 1, limit 
                 sortBy,
                 sortOrder
             })
-        }
-
-        if (transaction) {
-            return await execute(transaction)
-        }
-        return await _db.transaction(execute)
-
-    } catch (error) {
-        return ServiceResponse.error(error)
-    }
-}
-
-export async function findOne({ db, transaction } = {}, id) {
-    try {
-        const _db = db || new AppContext()
-        const item = await documentRepository.findOne({ db: _db, transaction }, {
-            where: { id },
-            include: [
-                { association: 'partner' },
-                { association: 'documentType' },
-                { association: 'items', include: ['product'] },
-                { association: 'services', include: ['service'] }
-            ]
         })
-
-        if (!item) return ServiceResponse.error("NOT_FOUND", "Documento não encontrado")
-
-        return ServiceResponse.success(item)
     } catch (error) {
         return ServiceResponse.error(error)
     }
 }
 
-export async function update({ db, transaction } = {}, id, data) {
+export async function findOne(transaction, id) {
+    const db = new AppContext()
     try {
-        const _db = db || new AppContext()
+        return await db.withTransaction(transaction, async (t) => {
+            const item = await documentRepository.findOne(t, {
+                where: { id },
+                include: [
+                    { association: 'partner' },
+                    { association: 'documentType' },
+                    { association: 'items', include: ['product'] },
+                    { association: 'services', include: ['service'] }
+                ]
+            })
 
-        const execute = async (t) => {
-            const existing = await documentRepository.findOne({ db: _db, transaction: t }, {
+            if (!item) return ServiceResponse.error("NOT_FOUND", "Documento não encontrado")
+
+            return ServiceResponse.success(item)
+        })
+    } catch (error) {
+        return ServiceResponse.error(error)
+    }
+}
+
+export async function update(transaction, id, data) {
+    const db = new AppContext()
+    try {
+        return await db.withTransaction(transaction, async (t) => {
+            const existing = await documentRepository.findOne(t, {
                 attributes: ['id'],
                 where: { id }
             })
             if (!existing) throw ServiceResponse.error("NOT_FOUND", "Documento não encontrado")
 
-            await documentRepository.update({ db: _db, transaction: t }, { where: { id } }, data)
-        }
+            await documentRepository.update(t, { where: { id } }, data)
 
-        if (transaction) {
-            await execute(transaction)
-        } else {
-            await _db.transaction(execute)
-        }
-
-        return findOne({ db: _db, transaction }, id)
+            return await findOne(t, id)
+        })
     } catch (error) {
         return ServiceResponse.error(error)
     }
 }
 
-export async function create({ db, transaction } = {}, data) {
+export async function create(transaction, data) {
+    const session = await getSession()
+    const db = new AppContext()
     try {
-        const session = await getSession()
-        const _db = db || new AppContext()
+        return await db.withTransaction(transaction, async (t) => {
 
-        const execute = async (t) => {
-            return await documentRepository.create({ db: _db, transaction: t }, {
+            const result = await documentRepository.create(t, {
                 ...data,
                 companyId: session.company.id
             })
-        }
 
-        const result = transaction ? await execute(transaction) : await _db.transaction(execute)
-
-        return findOne({ db: _db, transaction }, result.id)
+            return await findOne(t, result.id)
+        })
     } catch (error) {
         return ServiceResponse.error(error)
     }
 }
 
-export async function generateFinance({ db, transaction } = {}, ids, financeEntries = []) {
+export async function generateFinance(transaction, ids, financeEntries = []) {
     try {
 
         const session = await getSession()
-        const _db = db || new AppContext()
+        const db = new AppContext()
 
-        const execute = async (t) => {
+        return await db.withTransaction(transaction, async (t) => {
             const idList = Array.isArray(ids) ? ids : [ids]
 
-            const docs = await _db.Document.findAll({
+            const docs = await db.Document.findAll({
                 where: { id: idList, companyId: session.company.id },
                 transaction: t
             })
@@ -184,33 +171,26 @@ export async function generateFinance({ db, transaction } = {}, ids, financeEntr
                 })
             }
 
-            const financeResponse = await financeService.create({ db: _db, transaction: t }, titleData)
+            const financeResponse = await financeService.create(t, titleData)
 
-            if (financeResponse.header.status !== ServiceStatus.SUCCESS) throw new Error(financeResponse.header.message)
+            if (financeResponse.header.status !== ServiceStatus.SUCCESS) throw new Error(financeResponse.body.message)
 
             const financeId = financeResponse.body.id
 
-            await _db.Document.update({ financeTitleId: financeId }, {
+            await db.Document.update({ financeTitleId: financeId }, {
                 where: { id: idList, companyId: session.company.id },
                 transaction: t
             })
 
             return ServiceResponse.success({ id: financeId })
-        }
-
-        if (transaction) {
-            return await execute(transaction)
-        }
-        return await _db.transaction(execute)
-
+        })
     } catch (error) {
         return ServiceResponse.error(error)
     }
 }
 
-export async function transmit({ db, transaction } = {}, id) {
-    const _db = db || new AppContext()
-    const response = await findOne({ db: _db, transaction }, id)
+export async function transmit(transaction, id) {
+    const response = await findOne(transaction, id)
 
     if (response.header.status !== ServiceStatus.SUCCESS) return
 

@@ -43,9 +43,15 @@ const afterFind = (result) => {
   }
 }
 
+let instance = null
+
 export class AppContext extends Sequelize {
 
   constructor() {
+
+    if (instance) {
+      return instance
+    }
 
     super({
       host: process.env.DB_HOST, port: process.env.DB_PORT, database: process.env.DB_DATABASE, username: process.env.DB_USER, password: process.env.DB_PASSWORD, dialect: 'mssql', dialectModule: tedious, timezone: "-03:00", dialectOptions: { useUTC: false, options: { requestTimeout: 300000, encrypt: false } }, define: { timestamps: false },
@@ -56,6 +62,8 @@ export class AppContext extends Sequelize {
         console.log(query)
       },
     })
+
+    instance = this
 
     this.Company = this.define('company', new Company(), { tableName: 'empresa_filial' })
     this.Solicitation = this.define('solicitation', new Solicitation(), { tableName: 'Solicitacao' })
@@ -172,6 +180,18 @@ export class AppContext extends Sequelize {
     this.FinanceEntry.addHook('afterFind', afterFind)
     this.SolicitationDocument.addHook('afterFind', afterFind)
     */
+
+  }
+
+  async withTransaction(transaction, callback) {
+
+    if (transaction) {
+      return await callback(transaction)
+    }
+
+    return await this.transaction(async (t) => {
+      return await callback(t)
+    })
 
   }
 

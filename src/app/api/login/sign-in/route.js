@@ -40,7 +40,7 @@ export async function POST(request) {
 
   const { username, password, companyBusinessId, companyId } = await request.json()
 
-  const loginResult = await loginService.signIn({ username, password, companyBusinessId, companyId })
+  const loginResult = await loginService.signIn(null, { username, password, companyBusinessId, companyId })
 
   return NextResponse.json(loginResult.body, { status: loginResult.header.status })
 
