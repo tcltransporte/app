@@ -3,8 +3,8 @@
 import { useState } from "react"
 
 //services
-import * as loginService from "@/app/services/login.service"
-import * as companyService from "@/app/services/settings/company.service"
+import * as loginAction from "@/app/actions/login.action"
+import * as companyAction from "@/app/actions/settings/company.action"
 import { ServiceStatus } from "@/libs/service"
 import { useRouter } from "next/navigation"
 import { Container } from "@/components/common"
@@ -36,7 +36,7 @@ export function SettingsView({ initialCompany, initialUser, activeSlug = 'empres
 
         const handleRefresh = async () => {
             try {
-                const companyResult = await companyService.findOne({})
+                const companyResult = await companyAction.findOne()
                 if (companyResult.header.status !== ServiceStatus.SUCCESS) throw companyResult
                 setCompany(companyResult.body.company)
                 setUser(companyResult.body.user)
@@ -47,7 +47,7 @@ export function SettingsView({ initialCompany, initialUser, activeSlug = 'empres
 
         const handleSignOut = async () => {
             try {
-                await loginService.signOut({})
+                await loginAction.signOut()
                 router.push("/sign-in")
                 router.refresh()
             } catch (error) {

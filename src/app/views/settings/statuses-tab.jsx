@@ -15,7 +15,7 @@ import { Formik, Form, Field } from 'formik';
 import { TextField, SelectField } from '@/components/controls';
 import { Table } from '@/components/common';
 import { useTable, useLoading } from '@/hooks';
-import * as companyService from '@/app/services/settings/company.service';
+import * as companyAction from '@/app/actions/settings/company.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
@@ -39,7 +39,7 @@ export function StatusesTab({ initialStatusesConfig }) {
   const fetchConfig = React.useCallback(async (showLoading = false) => {
     if (showLoading) loading.show(); // Use loading.show()
     try {
-      const result = await companyService.getStatusesConfig({});
+      const result = await companyAction.getStatusesConfig();
       if (result.header.status === ServiceStatus.SUCCESS) {
         setAllStatuses(result.body.allStatuses || []);
         setAllTypes(result.body.allTypes || []);
@@ -80,7 +80,7 @@ export function StatusesTab({ initialStatusesConfig }) {
       const toIds = relationships.filter(r => r.fromStatusId === statusId).map(r => r.toStatusId);
       const typeIds = typeRelationships.filter(r => r.statusId === statusId).map(r => r.typeId);
 
-      const result = await companyService.saveStatusConfig({}, {
+      const result = await companyAction.saveStatusConfig({
         id: values.id,
         description: values.description,
         workflowIds: toIds,
@@ -103,7 +103,7 @@ export function StatusesTab({ initialStatusesConfig }) {
     if (!confirmed) return;
     loading.show(); // Use loading.show()
     try {
-      const result = await companyService.destroyStatus({}, id);
+      const result = await companyAction.destroyStatus(id);
       if (result.header.status !== ServiceStatus.SUCCESS) throw result;
       alert.success('Status excluído!');
       fetchConfig(); // Changed from fetchTable() to fetchConfig() as fetchTable is not defined

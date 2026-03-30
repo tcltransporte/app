@@ -14,7 +14,7 @@ import {
 import { Container, Table, Toolbar } from '@/components/common';
 import { DocumentDetail } from './document-detail';
 import { useTable, useNavigation, useFilter, useExport, useLoading } from '@/hooks';
-import * as documentService from '@/app/services/document.service';
+import * as documentAction from '@/app/actions/document.action';
 import { ServiceStatus } from '@/libs/service';
 import { ExportFormat } from '@/hooks';
 import { alert } from '@/libs/alert';
@@ -34,7 +34,7 @@ export default function DocumentView({
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
-      const result = await documentService.findAll({}, {
+      const result = await documentAction.findAll({
         slug: documentType?.initials,
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
@@ -63,7 +63,7 @@ export default function DocumentView({
     try {
       await exporter.exportData({
         format,
-        service: documentService.findAll,
+        service: documentAction.findAll,
         params: {
           slug: documentType?.initials,
           filters: filter.filters,
@@ -88,7 +88,7 @@ export default function DocumentView({
 
     loading.show('Carregando...', 'Aguarde um momento')
     try {
-      const result = await documentService.findOne({}, id)
+      const result = await documentAction.findOne(id)
       if (result.header.status === ServiceStatus.SUCCESS) {
         setEditingDocument(result.body)
       }

@@ -25,7 +25,7 @@ import { SolicitationDocumentViewerDrawer } from './document-viewer-drawer';
 import { useTable, useNavigation, useRangeFilter, useFilter, useExport, useLoading } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import { Container, Table, Toolbar, RangeModal } from '@/components/common';
-import * as solicitationService from '@/app/services/solicitation.service';
+import * as solicitationAction from '@/app/actions/solicitation.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
@@ -148,7 +148,7 @@ export default function SolicitationView({
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
-      const result = await solicitationService.findAll({
+      const result = await solicitationAction.findAll({
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
         filters: overrides.filters || filter.filters,
@@ -202,7 +202,7 @@ export default function SolicitationView({
     loading.show('Excluindo...', 'Aguarde um momento')
     try {
       for (const item of table.selecteds) {
-        await solicitationService.destroy(item.id)
+        await solicitationAction.destroy(item.id)
       }
       await fetchTable()
       alert.success('Solicitação(ões) excluída(s) com sucesso!')
@@ -218,7 +218,7 @@ export default function SolicitationView({
     try {
       await exporter.exportData({
         format,
-        service: solicitationService.findAll,
+        service: solicitationAction.findAll,
         params: {
           typeHash: solicitationType?.hash,
           filters: filter.filters,

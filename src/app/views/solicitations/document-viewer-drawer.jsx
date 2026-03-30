@@ -22,7 +22,7 @@ import {
 } from '@mui/icons-material';
 import { DocumentDetail } from '../documents/document-detail';
 import { useLoading } from '@/hooks';
-import * as documentService from '@/app/services/document.service';
+import * as documentAction from '@/app/actions/document.action';
 import { ServiceStatus } from '@/libs/service';
 
 export function SolicitationDocumentViewerDrawer({ open, solicitation, onClose, onRefresh }) {
@@ -32,7 +32,7 @@ export function SolicitationDocumentViewerDrawer({ open, solicitation, onClose, 
   const handleViewDocument = async (docId) => {
     loading.show('Carregando...', 'Aguarde um momento');
     try {
-      const result = await documentService.findOne({}, docId);
+      const result = await documentAction.findOne(docId);
       if (result.header.status === ServiceStatus.SUCCESS) {
         setSelectedDocument(result.body);
       }

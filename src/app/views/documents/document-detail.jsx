@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { Dialog } from '@/components/common';
 import { Formik, Form, Field } from 'formik';
-import * as documentService from '@/app/services/document.service';
+import * as documentAction from '@/app/actions/document.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import {
@@ -60,9 +60,9 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
       };
 
       if (document?.id) {
-        result = await documentService.update({}, document.id, values);
+        result = await documentAction.update(document.id, values);
       } else {
-        result = await documentService.create({}, payload);
+        result = await documentAction.create(payload);
       }
 
       if (result.header.status === ServiceStatus.SUCCESS) {

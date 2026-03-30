@@ -5,7 +5,7 @@ import { Formik, Form, Field } from 'formik';
 import { Grid, Button } from '@mui/material';
 import { Dialog } from '@/components/common';
 import { TextField, CheckField, SelectField } from '@/components/controls';
-import * as partnerService from '@/app/services/partner.service';
+import * as partnerAction from '@/app/actions/partner.action';
 import { alert } from '@/libs/alert';
 
 export function PartnerDetail({ partnerId, onClose, onSave }) {
@@ -28,7 +28,7 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
     }
 
     setLoading(true)
-    partnerService.findOne({}, partnerId)
+    partnerAction.findOne(partnerId)
       .then(d => {
         setData(d ?? {});
       })
@@ -40,9 +40,9 @@ export function PartnerDetail({ partnerId, onClose, onSave }) {
     setLoading(true)
     try {
       if (partnerId) {
-        await partnerService.update({}, Number(partnerId), values)
+        await partnerAction.update(Number(partnerId), values)
       } else {
-        await partnerService.create({}, values)
+        await partnerAction.create(values)
       }
       alert.success('Salvo com sucesso!');
       onSave?.()

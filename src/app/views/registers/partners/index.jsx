@@ -18,7 +18,7 @@ import { PartnerFilter } from './filter';
 import { useTable, useNavigation, useFilter, useExport, useLoading } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import { Container, Table, Toolbar } from '@/components/common';
-import * as partnerService from '@/app/services/partner.service';
+import * as partnerAction from '@/app/actions/partner.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
@@ -43,7 +43,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
-      const result = await partnerService.findAll({}, {
+      const result = await partnerAction.findAll({
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
         filters: overrides.filters || filter.filters,
@@ -88,7 +88,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
     loading.show('Excluindo...', 'Aguarde um momento')
     try {
       for (const item of table.selecteds) {
-        await partnerService.destroy({}, item.id)
+        await partnerAction.destroy(item.id)
       }
       await fetchTable()
       alert.success('Parceiro(s) excluído(s) com sucesso!')
@@ -104,7 +104,7 @@ export function RegistersPartners({ partnerId, initialTable, initialFilters }) {
     try {
       await exporter.exportData({
         format,
-        service: partnerService.findAll,
+        service: partnerAction.findAll,
         params: {
           filters: filter.filters,
           sortBy: table.sortBy,

@@ -3,7 +3,7 @@ import { Drawer, Box, Typography, IconButton, Divider, Button, CircularProgress 
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Formik, Form, Field } from 'formik';
 import { SelectField, TextField } from '@/components/controls';
-import * as solicitationService from '@/app/services/solicitation.service';
+import * as solicitationAction from '@/app/actions/solicitation.action';
 import { alert } from '@/libs/alert';
 import { ServiceStatus } from '@/libs/service';
 
@@ -23,7 +23,7 @@ export function StatusDrawer({
       setStatuses([]);
       setLoading(true);
       // Fetch allowed transitions for the "Change Status" tab
-      solicitationService.findAllowedTransitions({}, fromStatusIds)
+      solicitationAction.findAllowedTransitions({}, fromStatusIds)
         .then(result => {
           if (result.header.status === ServiceStatus.SUCCESS) {
             setStatuses(result.body.items || []);
@@ -37,7 +37,7 @@ export function StatusDrawer({
     setSubmitting(true);
     try {
       for (const id of selectedIds) {
-        const result = await solicitationService.update({}, id, {
+        const result = await solicitationAction.update({}, id, {
           statusId: values.statusId,
           description: values.observation
         });

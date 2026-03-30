@@ -9,7 +9,7 @@ import { SectionTable } from '@/components/common/SectionTable';
 import { ProductDrawer } from './product-drawer';
 import { ServiceDrawer } from './service-drawer';
 import { PaymentDrawer } from './payment-drawer';
-import * as solicitationService from '@/app/services/solicitation.service';
+import * as solicitationAction from '@/app/actions/solicitation.action';
 import { alert } from '@/libs/alert';
 
 import * as search from "@/libs/search";
@@ -33,7 +33,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
     }
 
     setLoading(true)
-    solicitationService.findOne({}, solicitationId)
+    solicitationAction.findOne(solicitationId)
       .then(result => {
 
         if (result.header.status !== ServiceStatus.SUCCESS) {
@@ -65,9 +65,9 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
 
       let result
       if (solicitationId) {
-        result = await solicitationService.update({}, Number(solicitationId), payload)
+        result = await solicitationAction.update(Number(solicitationId), payload)
       } else {
-        result = await solicitationService.create({}, payload)
+        result = await solicitationAction.create(payload)
       }
 
       if (result.header.status !== ServiceStatus.SUCCESS) {

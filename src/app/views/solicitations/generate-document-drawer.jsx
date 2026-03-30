@@ -39,8 +39,8 @@ import {
 import { DocumentDetail } from '../documents/document-detail';
 import { SelectField, NumericField } from '@/components/controls';
 // No longer using AutoComplete here as we have manual filters in modal
-import * as documentTypeService from '@/app/services/documentType.service';
-import * as solicitationService from '@/app/services/solicitation.service';
+import * as documentTypeAction from '@/app/actions/documentType.action';
+import * as solicitationAction from '@/app/actions/solicitation.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
@@ -329,8 +329,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
     setRows({});
 
     Promise.all([
-      documentTypeService.findAll({}),
-      solicitationService.generateDocuments({}, solicitations.map(s => s.id))
+      documentTypeAction.findAll(),
+      solicitationAction.generateDocuments(solicitations.map(s => s.id))
     ]).then(([typesResult, docsResult]) => {
       if (typesResult.header.status === ServiceStatus.SUCCESS) {
         setDocumentTypes(typesResult.body.items || []);
@@ -595,8 +595,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
 
         if (docs.length === 0) continue;
 
-        const result = await solicitationService.saveDocuments(
-          {},
+        const result = await solicitationAction.saveDocuments(
           solicitation.id,
           docs
         );

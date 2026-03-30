@@ -29,7 +29,7 @@ import {
   AccountCircle,
   ArrowBack
 } from "@mui/icons-material"
-import * as loginService from "@/app/services/login.service"
+import * as loginAction from "@/app/actions/login.action"
 import { ServiceStatus } from "@/libs/service"
 import { ThemeContext } from "@/context/ThemeContext"
 import { TextField, SelectField } from '@/components/controls'
@@ -64,7 +64,7 @@ export function LoginView() {
     setError("")
 
     try {
-      const loginResult = await loginService.signIn({}, values)
+      const loginResult = await loginAction.signIn(values)
 
       if (loginResult.header.status !== ServiceStatus.SUCCESS) {
         throw loginResult
