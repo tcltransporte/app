@@ -106,14 +106,12 @@ export async function findAll(transaction, { page = 1, limit = 50, filters = {},
   }
 }
 
-export async function findOne({ db, transaction } = {}, id) {
+export async function findOne(transaction, id) {
+  const session = await getSession()
+  const db = new AppContext()
   try {
-
-    const session = await getSession()
-    const _db = db || new AppContext()
-
-    const execute = async (t) => {
-      const solicitation = await solicitationRepository.findOne({ db: _db, transaction: t }, {
+    return await db.withTransaction(transaction, async (t) => {
+      const solicitation = await solicitationRepository.findOne(t, {
         attributes: ['id', 'description', 'number', 'date', 'forecastDate', 'typeId', 'statusId', 'partnerId'],
         where: { id },
         include: [

@@ -185,7 +185,7 @@ export class AppContext extends Sequelize {
 
   async withTransaction(transaction, callback) {
 
-    if (transaction) {
+    if (transaction && typeof transaction.commit === 'function') {
       return await callback(transaction)
     }
 
