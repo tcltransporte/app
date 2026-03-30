@@ -1,5 +1,7 @@
+import { AppContext } from '@/database'
+
 /**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {import('sequelize').Transaction} transaction
 * @param {{ 
 *   attributes?: string[],
 *   include?: import('sequelize').Includeable,
@@ -8,16 +10,18 @@
 * 
 * @returns {Promise<object|null>}
 */
-export async function findOne({ db, transaction }, { attributes, include, where }) {
-
-  const session = await db.Session.findOne({ attributes, include, where, transaction })
-
-  return session?.toJSON()
-
+export async function findOne(transaction, { attributes, include, where }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const session = await db.Session.findOne({ attributes, include, where, transaction: t })
+    const plain = session?.toJSON()
+    console.log("sessionRepository: Found session", plain, "for where", where)
+    return plain
+  })
 }
 
 /**
-* @param {{ db: import('@/database').AppContext, transaction: import('sequelize').Transaction }} context
+* @param {import('sequelize').Transaction} transaction
 * @param {{ 
 *   attributes?: string[],
 *   include?: import('sequelize').Includeable,
@@ -26,19 +30,16 @@ export async function findOne({ db, transaction }, { attributes, include, where 
 * 
 * @returns {Promise<object[]>}
 */
-export async function findAll({ db, transaction }, { attributes, include, where }) {
-
-  const sessions = await db.Session.findAll({ attributes, include, where, transaction })
-
-  return sessions.map(s => s.toJSON())
-
+export async function findAll(transaction, { attributes, include, where }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const sessions = await db.Session.findAll({ attributes, include, where, transaction: t })
+    return sessions.map(s => s.toJSON())
+  })
 }
 
 /**
-* @param {{
-*   db: import('@/database').AppContext,
-*   transaction: import('sequelize').Transaction
-* }} context
+* @param {import('sequelize').Transaction} transaction
 *
 * @param {{
 *   userId: string,
@@ -47,41 +48,39 @@ export async function findAll({ db, transaction }, { attributes, include, where 
 *   expireIn: number | null
 * }} data
 */
-export async function create({ db, transaction }, { userId, companyId, lastAcess, expireIn }) {
-
-  const session = await db.Session.create({ userId, companyId, lastAcess, expireIn }, { transaction })
-
-  return session?.toJSON()
-
+export async function create(transaction, { userId, companyId, lastAcess, expireIn }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const session = await db.Session.create({ userId, companyId, lastAcess, expireIn }, { transaction: t })
+    const plain = session?.toJSON()
+    console.log("sessionRepository: Created session", plain)
+    return plain
+  })
 }
 
 /**
-* @param {{
-*   db: import('@/database').AppContext,
-*   transaction: import('sequelize').Transaction
-* }} context
+* @param {import('sequelize').Transaction} transaction
 *
 * @param {{ where?: object }} params
 * @param {object} data
 */
-export async function update({ db, transaction }, { where }, data) {
-
-  await db.Session.update(data, { where, transaction })
-
+export async function update(transaction, { where }, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    await db.Session.update(data, { where, transaction: t })
+  })
 }
 
 /**
-* @param {{
-*   db: import('@/database').AppContext,
-*   transaction: import('sequelize').Transaction
-* }} context
+* @param {import('sequelize').Transaction} transaction
 *
- * @param {{
+* @param {{
 *   where?: object
 * }} params
 */
-export async function destroy({ db, transaction }, { where }) {
-
-  await db.Session.destroy({ where, transaction })
-
+export async function destroy(transaction, { where }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    await db.Session.destroy({ where, transaction: t })
+  })
 }

@@ -33,7 +33,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
     }
 
     setLoading(true)
-    solicitationService.findOne(solicitationId)
+    solicitationService.findOne(null, solicitationId)
       .then(result => {
 
         console.log(result)
@@ -67,9 +67,9 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
 
       let result
       if (solicitationId) {
-        result = await solicitationService.update(Number(solicitationId), payload)
+        result = await solicitationService.update(null, Number(solicitationId), payload)
       } else {
-        result = await solicitationService.create(payload)
+        result = await solicitationService.create(null, payload)
       }
 
       if (result.header.status !== ServiceStatus.SUCCESS) {

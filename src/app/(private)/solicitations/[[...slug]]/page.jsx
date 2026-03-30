@@ -21,7 +21,7 @@ export default async function SolicitationPage({ params }) {
     let solicitationType = null;
 
     if (typeHash) {
-      const typeResp = await findTypeAll({ filters: { hash: typeHash } });
+      const typeResp = await findTypeAll(null, { filters: { hash: typeHash } });
       if (typeResp.header.status === ServiceStatus.SUCCESS && typeResp.body.items.length > 0) {
         solicitationType = typeResp.body.items[0];
       }
@@ -36,7 +36,7 @@ export default async function SolicitationPage({ params }) {
     const initialFilters = { typeHash };
     const initialRange = { start: today, end: today, field: 'date' };
 
-    const solicitationsResult = await solicitationService.findAll({
+    const solicitationsResult = await solicitationService.findAll(null, {
       page: 1,
       limit: 50,
       filters: initialFilters,

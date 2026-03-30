@@ -148,7 +148,7 @@ export default function SolicitationView({
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
-      const result = await solicitationService.findAll({
+      const result = await solicitationService.findAll(null, {
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
         filters: overrides.filters || filter.filters,
@@ -202,7 +202,7 @@ export default function SolicitationView({
     loading.show('Excluindo...', 'Aguarde um momento')
     try {
       for (const item of table.selecteds) {
-        await solicitationService.destroy(item.id)
+        await solicitationService.destroy(null, item.id)
       }
       await fetchTable()
       alert.success('Solicitação(ões) excluída(s) com sucesso!')

@@ -1,6 +1,7 @@
 // src/app/api/v1/auth/login/route.js
 import * as loginService from "@/app/services/login.service";
 import { ServiceResponse } from "@/libs/service";
+import { NextResponse } from "next/server";
 
 /**
  * @swagger
@@ -16,7 +17,7 @@ import { ServiceResponse } from "@/libs/service";
  */
 export async function POST() {
 
-  const loginResult = await loginService.signOut()
+  const loginResult = await loginService.signOut(null)
 
   return NextResponse.json(loginResult.body, { status: loginResult.header.status })
 

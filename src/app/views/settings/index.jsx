@@ -36,7 +36,7 @@ export function SettingsView({ initialCompany, initialUser, activeSlug = 'empres
 
         const handleRefresh = async () => {
             try {
-                const companyResult = await companyService.findOne()
+                const companyResult = await companyService.findOne({})
                 if (companyResult.header.status !== ServiceStatus.SUCCESS) throw companyResult
                 setCompany(companyResult.body.company)
                 setUser(companyResult.body.user)
@@ -47,7 +47,7 @@ export function SettingsView({ initialCompany, initialUser, activeSlug = 'empres
 
         const handleSignOut = async () => {
             try {
-                await loginService.signOut()
+                await loginService.signOut({})
                 router.push("/sign-in")
                 router.refresh()
             } catch (error) {

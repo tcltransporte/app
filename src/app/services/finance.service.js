@@ -3,81 +3,80 @@ import { AppContext } from "@/database"
 import { ServiceResponse, ServiceStatus } from "@/libs/service"
 import { getSession } from "@/libs/session"
 
-export async function findAll({ db, transaction } = {}, params = {}) {
+export async function findAll(transaction, params = {}) {
+    const session = await getSession()
+    const db = new AppContext()
     try {
-        const session = await getSession()
-        const _db = db || new AppContext()
+        return await db.withTransaction(transaction, async (t) => {
 
-        const where = {
-            ...params.where,
-            companyId: session.company.id
-        }
+            const where = {
+                ...params.where,
+                companyId: session.company.id
+            }
 
-        const result = await financeRepository.findAll({ db: _db, transaction }, { ...params, where })
-        return ServiceResponse.success(result)
-    } catch (error) {
-        return ServiceResponse.error(error)
-    }
-}
-
-export async function findOne({ db, transaction } = {}, id) {
-    try {
-        const session = await getSession()
-        const _db = db || new AppContext()
-
-        const result = await financeRepository.findOne({ db: _db, transaction }, {
-            where: { id, companyId: session.company.id },
-            include: [{ association: 'entries' }, { association: 'partner' }]
+            const result = await financeRepository.findAll(t, { ...params, where })
+            return ServiceResponse.success(result)
         })
-
-        if (!result) {
-            return ServiceResponse.error(new Error("Título financeiro não encontrado"))
-        }
-
-        return ServiceResponse.success(result)
     } catch (error) {
         return ServiceResponse.error(error)
     }
 }
 
-export async function create({ db, transaction } = {}, data) {
+export async function findOne(transaction, id) {
+    const session = await getSession()
+    const db = new AppContext()
     try {
-        const session = await getSession()
-        const _db = db || new AppContext()
+        return await db.withTransaction(transaction, async (t) => {
 
-        const execute = async (t) => {
-            return await financeRepository.create({ db: _db, transaction: t }, {
+            const result = await financeRepository.findOne(t, {
+                where: { id, companyId: session.company.id },
+                include: [{ association: 'entries' }, { association: 'partner' }]
+            })
+
+            if (!result) {
+                return ServiceResponse.error(new Error("Título financeiro não encontrado"))
+            }
+
+            return ServiceResponse.success(result)
+        })
+    } catch (error) {
+        return ServiceResponse.error(error)
+    }
+}
+
+export async function create(transaction, data) {
+    try {
+
+        const session = await getSession()
+        const db = new AppContext()
+
+        return await db.withTransaction(transaction, async (t) => {
+
+            const result = await financeRepository.create(t, {
                 ...data,
                 companyId: session.company.id
             })
-        }
 
-        const result = transaction ? await execute(transaction) : await _db.transaction(execute)
-
-        return ServiceResponse.success(result)
+            return ServiceResponse.success(result)
+        })
     } catch (error) {
         return ServiceResponse.error(error)
     }
 }
 
-export async function update({ db, transaction } = {}, id, data) {
+export async function update(transaction, id, data) {
+    const session = await getSession()
+    const db = new AppContext()
     try {
-        const session = await getSession()
-        const _db = db || new AppContext()
+        return await db.withTransaction(transaction, async (t) => {
 
-        const execute = async (t) => {
-            await financeRepository.update({ db: _db, transaction: t }, {
+            await financeRepository.update(t, {
                 where: { id, companyId: session.company.id }
             }, data)
-        }
 
-        if (transaction) {
-            await execute(transaction)
-        } else {
-            await _db.transaction(execute)
-        }
-
-        return findOne({ db: _db, transaction }, id)
+            const result = await findOne(t, id)
+            return result
+        })
     } catch (error) {
         return ServiceResponse.error(error)
     }

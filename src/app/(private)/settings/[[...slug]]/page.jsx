@@ -16,7 +16,7 @@ export default async ({ params }) => {
   const activeSlug = slug[0];
 
   try {
-    const companyResult = await companyService.findOne()
+    const companyResult = await companyService.findOne(null)
 
     if (companyResult.header.status !== ServiceStatus.SUCCESS) {
       throw companyResult
@@ -24,7 +24,7 @@ export default async ({ params }) => {
 
     let initialStatusesConfig = null;
     if (activeSlug === 'status') {
-      const result = await companyService.getStatusesConfig();
+      const result = await companyService.getStatusesConfig(null);
       if (result.header.status === ServiceStatus.SUCCESS) {
         initialStatusesConfig = result.body;
       }

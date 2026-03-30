@@ -19,7 +19,7 @@ export default async function DocumentPage({ params }) {
     documentType = docTypeResult ? docTypeResult.get({ plain: true }) : null;
   }
 
-  const documentResult = await documentService.findAll({
+  const documentResult = await documentService.findAll(null, {
     slug: typeSlug,
     page: 1,
     limit: 50

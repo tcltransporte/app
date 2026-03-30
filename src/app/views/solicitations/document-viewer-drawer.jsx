@@ -32,7 +32,7 @@ export function SolicitationDocumentViewerDrawer({ open, solicitation, onClose, 
   const handleViewDocument = async (docId) => {
     loading.show('Carregando...', 'Aguarde um momento');
     try {
-      const result = await documentService.findOne(docId);
+      const result = await documentService.findOne(null, docId);
       if (result.header.status === ServiceStatus.SUCCESS) {
         setSelectedDocument(result.body);
       }

@@ -34,7 +34,7 @@ export default function DocumentView({
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
-      const result = await documentService.findAll({
+      const result = await documentService.findAll(null, {
         slug: documentType?.initials,
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
@@ -88,7 +88,7 @@ export default function DocumentView({
 
     loading.show('Carregando...', 'Aguarde um momento')
     try {
-      const result = await documentService.findOne(id)
+      const result = await documentService.findOne(null, id)
       if (result.header.status === ServiceStatus.SUCCESS) {
         setEditingDocument(result.body)
       }

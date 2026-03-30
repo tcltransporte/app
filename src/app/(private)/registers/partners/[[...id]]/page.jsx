@@ -9,7 +9,7 @@ export default async ({ params }) => {
 
     const initialFilters = {};
 
-    const partnerResult = await partnerService.findAll({
+    const partnerResult = await partnerService.findAll(null, {
       page: 1,
       limit: 50,
       filters: initialFilters

@@ -64,7 +64,7 @@ export function LoginView() {
     setError("")
 
     try {
-      const loginResult = await loginService.signIn(values)
+      const loginResult = await loginService.signIn(null, values)
 
       if (loginResult.header.status !== ServiceStatus.SUCCESS) {
         throw loginResult
