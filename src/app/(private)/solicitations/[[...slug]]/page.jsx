@@ -1,6 +1,6 @@
 import SolicitationView from '@/app/views/solicitations';
-import * as solicitationService from '@/app/services/solicitation.service';
-import { findAll as findTypeAll } from '@/app/services/solicitationType.service';
+import * as solicitationAction from '@/app/actions/solicitation.action';
+import * as solicitationTypeAction from '@/app/actions/solicitationType.action';
 import { ServiceStatus } from '@/libs/service';
 import { getSession } from '@/libs/session';
 import { redirect } from 'next/navigation';
@@ -21,9 +21,9 @@ export default async function SolicitationPage({ params }) {
     let solicitationType = null;
 
     if (typeHash) {
-      const typeResp = await findTypeAll(null, { filters: { hash: typeHash } });
-      if (typeResp?.items?.length > 0) {
-        solicitationType = typeResp.items[0];
+      const typeResp = await solicitationTypeAction.findAll({ filters: { hash: typeHash } });
+      if (typeResp.header.status === ServiceStatus.SUCCESS && typeResp.body.items?.length > 0) {
+        solicitationType = typeResp.body.items[0];
       }
     }
 
@@ -36,7 +36,7 @@ export default async function SolicitationPage({ params }) {
     const initialFilters = { typeHash };
     const initialRange = { start: today, end: today, field: 'date' };
 
-    const solicitationsResult = await solicitationService.findAll(null, {
+    const solicitationsResult = await solicitationAction.findAll({
       page: 1,
       limit: 50,
       filters: initialFilters,
@@ -44,8 +44,12 @@ export default async function SolicitationPage({ params }) {
       sortBy: 'number',
       sortOrder: 'DESC'
     });
+    
+    if (solicitationsResult.header.status !== ServiceStatus.SUCCESS) {
+      throw solicitationsResult;
+    }
 
-    const initialTable = solicitationsResult;
+    const initialTable = solicitationsResult.body;
 
     return (
       <SolicitationView

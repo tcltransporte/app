@@ -316,17 +316,53 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
 
   // rows: { [solicitationId]: Array<{ rowKey, checked, documentTypeId }> }
   const [rows, setRows] = React.useState({});
-
   const [editModal, setEditModal] = React.useState({ open: false, rowKey: null, solicitationId: null, initialData: null });
   const [linkModal, setLinkModal] = React.useState({ open: false, solicitationId: null, rowKey: null });
-
-  // { [solicitationId]: boolean }
   const [statusMap, setStatusMap] = React.useState({});
+
+  const formatRowData = (doc, solId, index) => {
+    const today = new Date().toISOString().split('T')[0];
+    return {
+      rowKey: doc.id ? `existing-${doc.id}` : `new-${solId}-${index}`,
+      checked: true,
+      id: doc.id || null,
+      documentTypeId: doc.documentTypeId || doc.documentModelId || '',
+      invoiceNumber: doc.invoiceNumber || 0,
+      invoiceSeries: doc.invoiceSeries || '',
+      invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : today,
+      receiptDate: doc.receiptDate ? new Date(doc.receiptDate).toISOString().split('T')[0] : '',
+      invoiceKey: doc.invoiceKey || '',
+      invoiceValue: doc.invoiceValue || 0,
+      totalProductsValue: doc.totalProductsValue || 0,
+      discountValue: doc.discountValue || 0,
+      freightValue: doc.freightValue || 0,
+      insuranceValue: doc.insuranceValue || 0,
+      otherValues: doc.otherValues || 0,
+      icmsBaseValue: doc.icmsBaseValue || 0,
+      icmsValue: doc.icmsValue || 0,
+      ipiValue: doc.ipiValue || 0,
+      pisValue: doc.pisValue || 0,
+      cofinsValue: doc.cofinsValue || 0,
+      icmsstBaseValue: doc.icmsstBaseValue || 0,
+      icmsstValue: doc.icmsstValue || 0,
+      description: doc.description || '',
+      items: doc.items || [],
+      services: doc.services || [],
+    };
+  };
+
+  const updateRow = (solicitationId, rowKey, next) => {
+    setRows(prev => ({
+      ...prev,
+      [solicitationId]: (prev[solicitationId] || []).map(r =>
+        r.rowKey === rowKey ? (typeof next === 'function' ? next(r) : { ...r, ...next }) : r
+      ),
+    }));
+  };
 
   React.useEffect(() => {
     if (!open || solicitations.length === 0) return;
     setLoading(true);
-    setRows({});
 
     Promise.all([
       documentTypeAction.findAll(),
@@ -338,280 +374,83 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
 
       if (docsResult.header.status === ServiceStatus.SUCCESS) {
         const initial = {};
-        const hydratedSolicitations = docsResult.body.items || [];
-
-        hydratedSolicitations.forEach(s => {
-          const autoRows = [];
-          const defaultInvoiceDate = new Date().toISOString().split('T')[0];
-
-          if (s.documents && s.documents.length > 0) {
-            s.documents.forEach((doc, idx) => {
-              autoRows.push({
-                rowKey: doc.id ? `existing-${doc.id}` : `new-${s.id}-${idx}`,
-                checked: true,
-                documentTypeId: doc.documentTypeId,
-                invoiceNumber: doc.invoiceNumber || 0,
-                invoiceSeries: doc.invoiceSeries || '',
-                invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : defaultInvoiceDate,
-                receiptDate: doc.receiptDate ? new Date(doc.receiptDate).toISOString().split('T')[0] : '',
-                invoiceKey: doc.invoiceKey || '',
-                invoiceValue: doc.invoiceValue || 0,
-                totalProductsValue: doc.totalProductsValue || 0,
-                discountValue: doc.discountValue || 0,
-                freightValue: doc.freightValue || 0,
-                insuranceValue: doc.insuranceValue || 0,
-                otherValues: doc.otherValues || 0,
-                icmsBaseValue: doc.icmsBaseValue || 0,
-                icmsValue: doc.icmsValue || 0,
-                ipiValue: doc.ipiValue || 0,
-                pisValue: doc.pisValue || 0,
-                cofinsValue: doc.cofinsValue || 0,
-                icmsstBaseValue: doc.icmsstBaseValue || 0,
-                icmsstValue: doc.icmsstValue || 0,
-                description: doc.description || '',
-                items: doc.items || [],
-                services: doc.services || [],
-                id: doc.id
-              });
-            });
-          }
-          initial[s.id] = autoRows;
-        });
-
         const initialStatus = {};
-        hydratedSolicitations.forEach(s => {
+        const items = docsResult.body.items || [];
+
+        items.forEach(s => {
+          initial[s.id] = (s.documents || []).map((doc, idx) => formatRowData(doc, s.id, idx));
           initialStatus[s.id] = !!s.alreadyGenerated;
         });
-        setStatusMap(initialStatus);
 
-        // Merge with existing array (just in case)
-        solicitations.forEach(s => {
-          if (!initial[s.id]) initial[s.id] = [];
-        });
+        // Ensure all input solicitations have an entry
+        solicitations.forEach(s => { if (!initial[s.id]) initial[s.id] = []; });
 
         setRows(initial);
+        setStatusMap(initialStatus);
       }
     }).finally(() => setLoading(false));
   }, [open, solicitations]);
 
-  const handleToggle = (solicitationId, rowKey) => {
-    setRows(prev => ({
-      ...prev,
-      [solicitationId]: prev[solicitationId].map(r =>
-        r.rowKey === rowKey ? { ...r, checked: !r.checked } : r
-      ),
-    }));
-  };
-
-  const handleChangeType = (solicitationId, rowKey, documentTypeId) => {
-    setRows(prev => ({
-      ...prev,
-      [solicitationId]: prev[solicitationId].map(r =>
-        r.rowKey === rowKey ? { ...r, documentTypeId } : r
-      ),
-    }));
-  };
-
-  const handleChangeValue = (solicitationId, rowKey, invoiceValue) => {
-    setRows(prev => ({
-      ...prev,
-      [solicitationId]: prev[solicitationId].map(r =>
-        r.rowKey === rowKey ? { ...r, invoiceValue } : r
-      ),
-    }));
-  };
+  const handleToggle = (solicitationId, rowKey) => updateRow(solicitationId, rowKey, r => ({ ...r, checked: !r.checked }));
+  const handleChangeType = (solicitationId, rowKey, documentTypeId) => updateRow(solicitationId, rowKey, { documentTypeId });
+  const handleChangeValue = (solicitationId, rowKey, invoiceValue) => updateRow(solicitationId, rowKey, { invoiceValue });
 
   const handleEdit = (solicitationId, rowKey) => {
-    const solRows = rows[solicitationId] || [];
-    const row = solRows.find(r => r.rowKey === rowKey);
-    if (row) {
-      const formattedDate = row.invoiceDate ? new Date(row.invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-      setEditModal({
-        open: true,
-        solicitationId,
-        rowKey,
-        initialData: {
-          id: row.id,
-          documentTypeId: row.documentTypeId || '',
-          invoiceNumber: row.invoiceNumber || 0,
-          invoiceSeries: row.invoiceSeries || '',
-          invoiceDate: formattedDate,
-          receiptDate: row.receiptDate ? new Date(row.receiptDate).toISOString().split('T')[0] : '',
-          invoiceKey: row.invoiceKey || '',
-          invoiceValue: row.invoiceValue || 0,
-          totalProductsValue: row.totalProductsValue || 0,
-          discountValue: row.discountValue || 0,
-          freightValue: row.freightValue || 0,
-          insuranceValue: row.insuranceValue || 0,
-          otherValues: row.otherValues || 0,
-          icmsBaseValue: row.icmsBaseValue || 0,
-          icmsValue: row.icmsValue || 0,
-          ipiValue: row.ipiValue || 0,
-          pisValue: row.pisValue || 0,
-          cofinsValue: row.cofinsValue || 0,
-          icmsstBaseValue: row.icmsstBaseValue || 0,
-          icmsstValue: row.icmsstValue || 0,
-          description: row.description || '',
-          items: row.items || [],
-          services: row.services || [],
-        }
-      });
-    }
+    const row = (rows[solicitationId] || []).find(r => r.rowKey === rowKey);
+    if (row) setEditModal({ open: true, solicitationId, rowKey, initialData: { ...row } });
   };
 
   const handleSaveEdit = (editedForm) => {
-    if (!editModal.solicitationId) return;
-    setRows(prev => ({
-      ...prev,
-      [editModal.solicitationId]: prev[editModal.solicitationId].map(r =>
-        r.rowKey === editModal.rowKey ? {
-          ...r,
-          id: editedForm.id || r.id,
-          documentTypeId: editedForm.documentTypeId,
-          invoiceNumber: Number(editedForm.invoiceNumber),
-          invoiceSeries: editedForm.invoiceSeries,
-          invoiceDate: editedForm.invoiceDate,
-          receiptDate: editedForm.receiptDate,
-          invoiceKey: editedForm.invoiceKey,
-          invoiceValue: Number(editedForm.invoiceValue),
-          totalProductsValue: Number(editedForm.totalProductsValue),
-          discountValue: Number(editedForm.discountValue),
-          freightValue: Number(editedForm.freightValue),
-          insuranceValue: Number(editedForm.insuranceValue),
-          otherValues: Number(editedForm.otherValues),
-          icmsBaseValue: Number(editedForm.icmsBaseValue),
-          icmsValue: Number(editedForm.icmsValue),
-          ipiValue: Number(editedForm.ipiValue),
-          pisValue: Number(editedForm.pisValue),
-          cofinsValue: Number(editedForm.cofinsValue),
-          icmsstBaseValue: Number(editedForm.icmsstBaseValue),
-          icmsstValue: Number(editedForm.icmsstValue),
-          description: editedForm.description,
-          items: editedForm.items || [],
-          services: editedForm.services || [],
-        } : r
-      ),
-    }));
+    updateRow(editModal.solicitationId, editModal.rowKey, { ...editedForm });
     setEditModal({ open: false, rowKey: null, solicitationId: null, initialData: null });
   };
 
-  const handleLinkClick = (event, solicitationId, rowKey) => {
-    setLinkModal({ open: true, solicitationId, rowKey });
-  };
-
-  const handleLinkClose = () => {
-    setLinkModal({ open: false, solicitationId: null, rowKey: null });
-  };
+  const handleLinkClick = (event, solicitationId, rowKey) => setLinkModal({ open: true, solicitationId, rowKey });
+  const handleLinkClose = () => setLinkModal({ open: false, solicitationId: null, rowKey: null });
 
   const handleLinkSelect = (doc) => {
     if (!doc || !linkModal.solicitationId) return;
-
-    setRows(prev => ({
-      ...prev,
-      [linkModal.solicitationId]: prev[linkModal.solicitationId].map(r =>
-        r.rowKey === linkModal.rowKey ? {
-          ...r,
-          id: doc.id,
-          documentTypeId: doc.documentModelId || r.documentTypeId,
-          invoiceNumber: doc.invoiceNumber || 0,
-          invoiceSeries: doc.invoiceSeries || '',
-          invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : r.invoiceDate,
-          receiptDate: doc.receiptDate ? new Date(doc.receiptDate).toISOString().split('T')[0] : '',
-          invoiceKey: doc.invoiceKey || '',
-          invoiceValue: doc.invoiceValue || 0,
-          totalProductsValue: doc.totalProductsValue || 0,
-          discountValue: doc.discountValue || 0,
-          freightValue: doc.freightValue || 0,
-          insuranceValue: doc.insuranceValue || 0,
-          otherValues: doc.otherValues || 0,
-          icmsBaseValue: doc.icmsBaseValue || 0,
-          icmsValue: doc.icmsValue || 0,
-          ipiValue: doc.ipiValue || 0,
-          pisValue: doc.pisValue || 0,
-          cofinsValue: doc.cofinsValue || 0,
-          icmsstBaseValue: doc.icmsstBaseValue || 0,
-          icmsstValue: doc.icmsstValue || 0,
-          description: doc.description || '',
-        } : r
-      ),
-    }));
-
+    updateRow(linkModal.solicitationId, linkModal.rowKey, formatRowData(doc, linkModal.solicitationId, 'link'));
     handleLinkClose();
   };
 
   const handleUnlink = (solicitationId, rowKey) => {
-    setRows(prev => ({
-      ...prev,
-      [solicitationId]: prev[solicitationId].map(r =>
-        r.rowKey === rowKey ? {
-          ...r,
-          id: null,
-          invoiceNumber: 0,
-          invoiceDate: new Date().toISOString().split('T')[0],
-          invoiceValue: 0
-        } : r
-      ),
-    }));
+    updateRow(solicitationId, rowKey, {
+      id: null,
+      invoiceNumber: 0,
+      invoiceDate: new Date().toISOString().split('T')[0],
+      invoiceValue: 0
+    });
   };
 
   const hasAnySelected = Object.values(rows).some(solRows => solRows.some(r => r.checked));
 
   const handleConfirm = async () => {
     try {
-
       setSubmitting(true);
 
       for (const solicitation of solicitations) {
-
-        const solRows = rows[solicitation.id] || [];
-
-        const docs = solRows
+        const docs = (rows[solicitation.id] || [])
           .filter(r => r.checked && r.documentTypeId)
           .map(r => ({
-            id: r.id,
+            ...r,
             documentModelId: r.documentTypeId,
-            invoiceNumber: r.invoiceNumber || 0,
-            invoiceSeries: r.invoiceSeries || '',
             invoiceDate: r.invoiceDate ? new Date(r.invoiceDate) : new Date(),
             receiptDate: r.receiptDate ? new Date(r.receiptDate) : null,
-            invoiceKey: r.invoiceKey || '',
-            invoiceValue: r.invoiceValue || 0,
-            totalProductsValue: r.totalProductsValue || 0,
-            discountValue: r.discountValue || 0,
-            freightValue: r.freightValue || 0,
-            insuranceValue: r.insuranceValue || 0,
-            otherValues: r.otherValues || 0,
-            icmsBaseValue: r.icmsBaseValue || 0,
-            icmsValue: r.icmsValue || 0,
-            ipiValue: r.ipiValue || 0,
-            pisValue: r.pisValue || 0,
-            cofinsValue: r.cofinsValue || 0,
-            icmsstBaseValue: r.icmsstBaseValue || 0,
-            icmsstValue: r.icmsstValue || 0,
-            description: r.description || '',
-            items: r.items || [],
-            services: r.services || [],
           }));
 
         if (docs.length === 0) continue;
 
-        const result = await solicitationAction.saveDocuments(
-          solicitation.id,
-          docs
-        );
-
+        const result = await solicitationAction.saveDocuments(solicitation.id, docs);
         if (result.header.status !== ServiceStatus.SUCCESS)
           throw new Error(result.body.message || 'Erro ao gerar documento.');
-
       }
 
       alert.success('Documentos gerados com sucesso!');
-
       onSave?.();
       onClose();
-
     } catch (error) {
-      alert.error('Erro ao gerar documentos', error?.body?.message || error.message || 'Ocorreu um erro inesperado.');
+      alert.error('Erro ao gerar documentos', error.message || 'Ocorreu um erro inesperado.');
     } finally {
       setSubmitting(false);
     }

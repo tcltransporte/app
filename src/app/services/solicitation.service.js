@@ -4,7 +4,7 @@ import { Op } from 'sequelize'
 import * as solicitationRepository from "@/app/repositories/solicitation.repository"
 import * as typeRepository from "@/app/repositories/solicitationType.repository"
 import { AppContext } from "@/database"
-import { ServiceResponse, sanitize } from "@/libs/service"
+import { sanitize } from "@/libs/service"
 import { getSession } from "@/libs/session"
 
 export async function findAll(transaction, { page = 1, limit = 50, filters = {}, range = {}, sortBy = 'number', sortOrder = 'DESC' }) {
@@ -219,9 +219,8 @@ export async function linkDocument(transaction, solicitationId, documentId) {
 }
 
 export async function generateDocuments(transaction, solicitationIds = []) {
-  try {
-    const session = await getSession()
-    const db = new AppContext()
+  const session = await getSession()
+  const db = new AppContext()
     
     const solicitations = await db.Solicitation.findAll({
       where: { id: solicitationIds, companyId: session.company.id },
@@ -310,8 +309,5 @@ export async function generateDocuments(transaction, solicitationIds = []) {
       return s;
     });
 
-    return ServiceResponse.success({ items })
-  } catch (error) {
-    return ServiceResponse.error(error)
-  }
+    return { items };
 }
