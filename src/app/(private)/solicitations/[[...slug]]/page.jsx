@@ -36,7 +36,7 @@ export default async function SolicitationPage({ params }) {
     const initialFilters = { typeHash };
     const initialRange = { start: today, end: today, field: 'date' };
 
-    const solicitationsResult = await solicitationService.findAll({}, {
+    const solicitationsResult = await solicitationService.findAll(null, {
       page: 1,
       limit: 50,
       filters: initialFilters,

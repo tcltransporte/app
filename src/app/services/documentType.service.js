@@ -6,7 +6,7 @@ import { ServiceResponse } from "@/libs/service"
 
 export async function findAll(transaction) {
     const db = new AppContext()
-    
+
     const items = await db.DocumentType.findAll({
         attributes: ['id', 'surname', 'initials'],
         where: {

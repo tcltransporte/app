@@ -1,5 +1,5 @@
 import DocumentView from '@/app/views/documents';
-import * as documentService from '@/app/services/document.service';
+import * as documentAction from '@/app/actions/document.action';
 import { AppContext } from "@/database";
 import { ServiceStatus } from '@/libs/service';
 
@@ -19,7 +19,7 @@ export default async function DocumentPage({ params }) {
     documentType = docTypeResult ? docTypeResult.get({ plain: true }) : null;
   }
 
-  const documentResult = await documentService.findAll(null, {
+  const documentResult = await documentAction.findAll({
     slug: typeSlug,
     page: 1,
     limit: 50
