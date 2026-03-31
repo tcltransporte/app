@@ -56,7 +56,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
       const payload = {
         ...values,
         partnerId: values.partner?.id || values.partnerId,
-        documentModelId: values.documentTypeId || document?.id ? undefined : documentType?.id
+        documentModelId: values.documentModelId || values.documentTypeId
       };
 
       if (document?.id) {
@@ -114,6 +114,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     id: data?.id || null,
     partnerId: data?.partnerId || null,
     partner: data?.partner || null,
+    documentModelId: data?.documentModelId || data?.documentTypeId || '',
     invoiceTypeId: data?.invoiceTypeId || '',
     invoiceDate: data?.invoiceDate || '',
     receiptDate: data?.receiptDate || '',

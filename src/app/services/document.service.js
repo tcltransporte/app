@@ -83,9 +83,28 @@ export async function update(transaction, id, data) {
 
 export async function create(transaction, data) {
   const session = await getSession()
+  const db = new AppContext()
+
+  // Auto-increment logic
+  const payload = {
+    ...data,
+    partnerId: data.partner?.id || data.partnerId,
+    documentModelId: data.documentModelId || data.documentTypeId
+  };
+
+  const max = await db.Document.max('invoiceNumber', {
+    where: {
+      documentModelId: payload.documentModelId || null,
+      invoiceTypeId: payload.invoiceTypeId || null,
+      companyId: session.company.id
+    },
+    transaction
+  })
+
+  payload.invoiceNumber = (Number(max) || 0) + 1
 
   const result = await documentRepository.create(transaction, {
-    ...data,
+    ...payload,
     companyId: session.company.id
   })
 

@@ -225,7 +225,7 @@ export async function generateDocuments(transaction, solicitationIds = []) {
     const solicitations = await db.Solicitation.findAll({
       where: { id: solicitationIds, companyId: session.company.id },
       include: [
-        { association: 'partner', attributes: ['name', 'surname'] },
+        { association: 'partner', attributes: ['id', 'name', 'surname'] },
         {
           association: 'products',
           attributes: ['id', 'itemId', 'value', 'quantity'],
@@ -237,7 +237,7 @@ export async function generateDocuments(transaction, solicitationIds = []) {
           include: [{ association: 'service', attributes: ['name'] }]
         },
         { association: 'documents' },
-        { association: 'type', attributes: ['id', 'description'] },
+        { association: 'type', attributes: ['id', 'description', 'requestType'] },
         { association: 'status', attributes: ['id', 'generateDocumentTypeId'] }
       ],
       transaction
@@ -275,7 +275,9 @@ export async function generateDocuments(transaction, solicitationIds = []) {
         }));
         s.documents.push({
           id: null,
-          documentTypeId: type55.id,
+          partner: s.partner,
+          documentModelId: type55.id,
+          invoiceTypeId: s.type?.requestType,
           invoiceNumber: 0,
           invoiceDate: defaultInvoiceDate,
           invoiceValue: total,
@@ -292,7 +294,9 @@ export async function generateDocuments(transaction, solicitationIds = []) {
         }));
         s.documents.push({
           id: null,
-          documentTypeId: type99.id,
+          partner: s.partner,
+          documentModelId: type99.id,
+          invoiceTypeId: s.type?.requestType,
           invoiceNumber: 0,
           invoiceDate: defaultInvoiceDate,
           invoiceValue: total,
@@ -300,10 +304,10 @@ export async function generateDocuments(transaction, solicitationIds = []) {
         });
       }
       if (s.documents.length === 0 && s.status?.generateDocumentTypeId) {
-        s.documents.push({ id: null, documentTypeId: s.status.generateDocumentTypeId, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
+        s.documents.push({ id: null, partner: s.partner, documentModelId: s.status.generateDocumentTypeId, invoiceTypeId: s.type?.requestType, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
       }
       if (s.documents.length === 0 && defaultType) {
-        s.documents.push({ id: null, documentTypeId: defaultType.id, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
+        s.documents.push({ id: null, partner: s.partner, documentModelId: defaultType.id, invoiceTypeId: s.type?.requestType, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
       }
 
       return s;

@@ -157,7 +157,7 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
                       <TableCell sx={{ minWidth: 200 }}>
                         <SelectField
                           label="Tipo"
-                          value={row.documentTypeId || ''}
+                          value={row.documentModelId || ''}
                           onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
                           disabled={!row.checked}
                           options={documentTypes.map(dt => ({ value: dt.id, label: dt.surname }))}
@@ -326,7 +326,9 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
       rowKey: doc.id ? `existing-${doc.id}` : `new-${solId}-${index}`,
       checked: true,
       id: doc.id || null,
-      documentTypeId: doc.documentTypeId || doc.documentModelId || '',
+      partner: doc.partner || null,
+      documentModelId: doc.documentModelId || '',
+      invoiceTypeId: doc.invoiceTypeId || null,
       invoiceNumber: doc.invoiceNumber || 0,
       invoiceSeries: doc.invoiceSeries || '',
       invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : today,
@@ -392,7 +394,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
   }, [open, solicitations]);
 
   const handleToggle = (solicitationId, rowKey) => updateRow(solicitationId, rowKey, r => ({ ...r, checked: !r.checked }));
-  const handleChangeType = (solicitationId, rowKey, documentTypeId) => updateRow(solicitationId, rowKey, { documentTypeId });
+  const handleChangeType = (solicitationId, rowKey, documentModelId) => updateRow(solicitationId, rowKey, { documentModelId });
   const handleChangeValue = (solicitationId, rowKey, invoiceValue) => updateRow(solicitationId, rowKey, { invoiceValue });
 
   const handleEdit = (solicitationId, rowKey) => {
@@ -431,10 +433,9 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
 
       for (const solicitation of solicitations) {
         const docs = (rows[solicitation.id] || [])
-          .filter(r => r.checked && r.documentTypeId)
+          .filter(r => r.checked && r.documentModelId)
           .map(r => ({
             ...r,
-            documentModelId: r.documentTypeId,
             invoiceDate: r.invoiceDate ? new Date(r.invoiceDate) : new Date(),
             receiptDate: r.receiptDate ? new Date(r.receiptDate) : null,
           }));

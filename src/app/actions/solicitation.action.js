@@ -144,6 +144,7 @@ export async function saveDocuments(solicitationId, documents = []) {
       for (const doc of documents) {
         const payload = {
           documentModelId: doc.documentModelId,
+          invoiceTypeId: doc.invoiceTypeId,
           invoiceNumber: doc.invoiceNumber || 0,
           invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate) : new Date(),
           invoiceValue: doc.invoiceValue || 0,
