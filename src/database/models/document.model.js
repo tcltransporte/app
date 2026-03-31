@@ -224,7 +224,7 @@ export class Document {
     type: DataTypes.DECIMAL(19, 4)
   }
 
-  invoiceTypeId = {
+  requestTypeId = {
     field: 'IDTipoNotaFiscal',
     allowNull: true,
     type: DataTypes.INTEGER

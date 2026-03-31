@@ -328,7 +328,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
       id: doc.id || null,
       partner: doc.partner || null,
       documentModelId: doc.documentModelId || '',
-      invoiceTypeId: doc.invoiceTypeId || null,
+      requestTypeId: doc.requestTypeId || null,
       invoiceNumber: doc.invoiceNumber || 0,
       invoiceSerie: doc.invoiceSerie || '',
       invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : today,

@@ -82,7 +82,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
   const initialValues = {
     id: null,
     documentTypeId: '',
-    invoiceTypeId: '',
+    requestTypeId: '',
     partnerId: null,
     partner: null,
     invoiceNumber: '',
@@ -115,7 +115,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     partnerId: data?.partnerId || null,
     partner: data?.partner || null,
     documentModelId: data?.documentModelId || data?.documentTypeId || '',
-    invoiceTypeId: data?.invoiceTypeId || '',
+    requestTypeId: data?.requestTypeId || data?.invoiceTypeId || '',
     invoiceDate: data?.invoiceDate || '',
     receiptDate: data?.receiptDate || '',
     invoiceNumber: data?.invoiceNumber || '',
@@ -194,7 +194,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
                 <Grid container spacing={1}>
                   <Grid size={{ xs: 12, sm: 1.8 }}>
                     <Field
-                      name="invoiceTypeId"
+                      name="requestTypeId"
                       component={SelectField}
                       label="Tipo"
                       options={[
@@ -207,7 +207,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
                     <Field
                       name="partner"
                       component={AutoComplete}
-                      label={values.invoiceTypeId === 2 ? 'Cliente' : 'Fornecedor'}
+                      label={values.requestTypeId === 2 ? 'Cliente' : 'Fornecedor'}
                       fullWidth
                       size="small"
                       text={(item) => item?.surname || item?.name || ''}

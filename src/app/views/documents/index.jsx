@@ -113,7 +113,10 @@ export default function DocumentView({
   }, [])
 
   const columns = [
-    { field: 'id', headerName: 'ID', width: 80 },
+    {
+      field: 'requestType', headerName: 'Tipo', width: 120,
+      renderCell: (val) => val?.description || ''
+    },
     { field: 'invoiceNumber', headerName: 'Número NF', width: 120 },
     {
       field: 'invoiceDate', headerName: 'Data NF', width: 150,

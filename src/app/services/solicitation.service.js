@@ -280,7 +280,7 @@ export async function generateDocuments(transaction, solicitationIds = []) {
         id: null,
         partner: s.partner,
         documentModelId: type55.id,
-        invoiceTypeId: s.type?.requestType,
+        requestTypeId: s.type?.requestType,
         invoiceDate: defaultInvoiceDate,
         invoiceNumber: 0,
         invoiceSerie: defaultInvoiceSerie,
@@ -300,7 +300,7 @@ export async function generateDocuments(transaction, solicitationIds = []) {
         id: null,
         partner: s.partner,
         documentModelId: type99.id,
-        invoiceTypeId: s.type?.requestType,
+        requestTypeId: s.type?.requestType,
         invoiceDate: defaultInvoiceDate,
         invoiceNumber: 0,
         invoiceSerie: defaultInvoiceSerie,
@@ -309,10 +309,10 @@ export async function generateDocuments(transaction, solicitationIds = []) {
       });
     }
     if (s.documents.length === 0 && s.status?.generateDocumentTypeId) {
-      s.documents.push({ id: null, partner: s.partner, documentModelId: s.status.generateDocumentTypeId, invoiceTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceNumber: 0, invoiceSerie: defaultInvoiceSerie, invoiceValue: 0 });
+      s.documents.push({ id: null, partner: s.partner, documentModelId: s.status.generateDocumentTypeId, requestTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceNumber: 0, invoiceSerie: defaultInvoiceSerie, invoiceValue: 0 });
     }
     if (s.documents.length === 0 && defaultType) {
-      s.documents.push({ id: null, partner: s.partner, documentModelId: defaultType.id, invoiceTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceNumber: 0, invoiceSerie: defaultInvoiceSerie, invoiceValue: 0 });
+      s.documents.push({ id: null, partner: s.partner, documentModelId: defaultType.id, requestTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceNumber: 0, invoiceSerie: defaultInvoiceSerie, invoiceValue: 0 });
     }
 
     return s;

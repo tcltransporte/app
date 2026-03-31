@@ -21,6 +21,7 @@ import { SolicitationStatusWorkflow } from './models/solicitationStatusWorkflow.
 import { SolicitationStatusTipo } from './models/solicitationStatusTipo.model.js'
 import { Document } from './models/document.model.js'
 import { DocumentType } from './models/documentType.model.js'
+import { DocumentRequestType } from './models/documentRequestType.model.js'
 import { SolicitationDocument } from './models/solicitationDocument.model.js'
 import { DocumentProduct } from './models/documentProduct.model.js'
 import { DocumentService } from './models/documentService.model.js'
@@ -85,6 +86,7 @@ export class AppContext extends Sequelize {
     this.UserMember = this.define('userMember', new UserMember(), { tableName: 'aspnet_Membership' })
     this.Document = this.define('document', new Document(), { tableName: 'Compras' })
     this.DocumentType = this.define('documentType', new DocumentType(), { tableName: 'TipoModeloDocumento' })
+    this.DocumentRequestType = this.define('documentRequestType', new DocumentRequestType(), { tableName: 'TipoNotaFiscal' })
     this.SolicitationDocument = this.define('solicitationDocument', new SolicitationDocument(), { tableName: 'solicitationDocument' })
     this.DocumentProduct = this.define('documentProduct', new DocumentProduct(), { tableName: 'ComprasItens' })
     this.DocumentService = this.define('documentService', new DocumentService(), { tableName: 'ComprasServicos' })
@@ -136,6 +138,7 @@ export class AppContext extends Sequelize {
     this.Document.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
     this.Document.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
     this.Document.belongsTo(this.DocumentType, { as: 'documentType', foreignKey: 'documentModelId' })
+    this.Document.belongsTo(this.DocumentRequestType, { as: 'requestType', foreignKey: 'requestTypeId' })
     this.Document.belongsTo(this.FinanceTitle, { as: 'financeTitle', foreignKey: 'financeTitleId' })
 
     this.SolicitationDocument.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
@@ -174,6 +177,7 @@ export class AppContext extends Sequelize {
     this.Product.addHook('afterFind', afterFind)
     this.Document.addHook('afterFind', afterFind)
     this.DocumentType.addHook('afterFind', afterFind)
+    this.DocumentRequestType.addHook('afterFind', afterFind)
     this.DocumentProduct.addHook('afterFind', afterFind)
     this.DocumentService.addHook('afterFind', afterFind)
     this.FinanceTitle.addHook('afterFind', afterFind)

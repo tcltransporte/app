@@ -33,7 +33,8 @@ export async function findAll(transaction, { slug, page = 1, limit = 50, filters
     where,
     include: [
       { association: 'partner', attributes: ['name', 'surname'] },
-      { association: 'documentType', attributes: ['description', 'initials'] }
+      { association: 'documentType', attributes: ['description', 'initials'] },
+      { association: 'requestType', attributes: ['description'] }
     ],
     limit,
     offset: (page - 1) * limit,
@@ -58,6 +59,7 @@ export async function findOne(transaction, id) {
     include: [
       { association: 'partner' },
       { association: 'documentType' },
+      { association: 'requestType' },
       { association: 'items', include: ['product'] },
       { association: 'services', include: ['service'] }
     ]
@@ -100,7 +102,7 @@ export async function create(transaction, data) {
   const max = await db.Document.max('invoiceNumber', {
     where: {
       documentModelId: payload.documentModelId || null,
-      invoiceTypeId: payload.invoiceTypeId || null,
+      requestTypeId: payload.requestTypeId || null,
       invoiceSerie: serie,
       companyId: session.company.id
     },
