@@ -22,8 +22,8 @@ export default async function SolicitationPage({ params }) {
 
     if (typeHash) {
       const typeResp = await findTypeAll(null, { filters: { hash: typeHash } });
-      if (typeResp.header.status === ServiceStatus.SUCCESS && typeResp.body.items.length > 0) {
-        solicitationType = typeResp.body.items[0];
+      if (typeResp?.items?.length > 0) {
+        solicitationType = typeResp.items[0];
       }
     }
 
@@ -45,11 +45,7 @@ export default async function SolicitationPage({ params }) {
       sortOrder: 'DESC'
     });
 
-    if (solicitationsResult.header.status !== ServiceStatus.SUCCESS) {
-      throw solicitationsResult
-    }
-
-    const initialTable = solicitationsResult.body;
+    const initialTable = solicitationsResult;
 
     return (
       <SolicitationView

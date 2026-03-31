@@ -32,8 +32,8 @@ export default async function PublicLayout({ children }) {
     findDocumentTypes(null)
   ]);
 
-  const solicitationTypes = typesResp.body.items || [];
-  const documentTypes = docTypesResp.body.items || [];
+  const solicitationTypes = typesResp?.items || [];
+  const documentTypes = docTypesResp?.items || [];
   const sitemapMenuItems = await parseSitemap();
 
   return (
