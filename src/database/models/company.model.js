@@ -100,5 +100,10 @@ export class Company {
     field: 'subscriptionExpiresIn',
     type: DataTypes.STRING
   }
+  
+  invoiceSerie = {
+    field: 'SerieCte',
+    type: DataTypes.STRING
+  }
 
 }

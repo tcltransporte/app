@@ -32,7 +32,7 @@ export class Document {
     type: DataTypes.DATE
   }
 
-  invoiceSeries = {
+  invoiceSerie = {
     field: 'SerieNF',
     allowNull: true,
     type: DataTypes.CHAR(30)

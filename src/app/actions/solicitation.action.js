@@ -146,6 +146,7 @@ export async function saveDocuments(solicitationId, documents = []) {
           documentModelId: doc.documentModelId,
           invoiceTypeId: doc.invoiceTypeId,
           invoiceNumber: doc.invoiceNumber || 0,
+          invoiceSerie: doc.invoiceSerie,
           invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate) : new Date(),
           invoiceValue: doc.invoiceValue || 0,
           items: doc.items,

@@ -82,7 +82,9 @@ export async function update(transaction, id, data) {
 }
 
 export async function create(transaction, data) {
+
   const session = await getSession()
+
   const db = new AppContext()
 
   // Auto-increment logic
@@ -92,16 +94,21 @@ export async function create(transaction, data) {
     documentModelId: data.documentModelId || data.documentTypeId
   };
 
+  const company = await db.Company.findByPk(session.company.id, { attributes: ['id', 'invoiceSerie'], transaction });
+  const serie = company?.invoiceSerie || '';
+
   const max = await db.Document.max('invoiceNumber', {
     where: {
       documentModelId: payload.documentModelId || null,
       invoiceTypeId: payload.invoiceTypeId || null,
+      invoiceSerie: serie,
       companyId: session.company.id
     },
     transaction
   })
 
   payload.invoiceNumber = (Number(max) || 0) + 1
+  payload.invoiceSerie = serie
 
   const result = await documentRepository.create(transaction, {
     ...payload,

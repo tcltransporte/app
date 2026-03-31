@@ -86,7 +86,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     partnerId: null,
     partner: null,
     invoiceNumber: '',
-    invoiceSeries: '',
+    invoiceSerie: '',
     invoiceDate: '',
     receiptDate: '',
     invoiceKey: '',
@@ -232,7 +232,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
                   <Grid size={{ xs: 4, sm: 1.4 }}>
                     <Field
                       label="Série"
-                      name="invoiceSeries"
+                      name="invoiceSerie"
                       component={TextField}
                     />
                   </Grid>

@@ -221,97 +221,102 @@ export async function linkDocument(transaction, solicitationId, documentId) {
 export async function generateDocuments(transaction, solicitationIds = []) {
   const session = await getSession()
   const db = new AppContext()
-    
-    const solicitations = await db.Solicitation.findAll({
-      where: { id: solicitationIds, companyId: session.company.id },
-      include: [
-        { association: 'partner', attributes: ['id', 'name', 'surname'] },
-        {
-          association: 'products',
-          attributes: ['id', 'itemId', 'value', 'quantity'],
-          include: [{ association: 'product', attributes: ['name'] }]
-        },
-        {
-          association: 'services',
-          attributes: ['id', 'itemId', 'value', 'quantity', 'description'],
-          include: [{ association: 'service', attributes: ['name'] }]
-        },
-        { association: 'documents' },
-        { association: 'type', attributes: ['id', 'description', 'requestType'] },
-        { association: 'status', attributes: ['id', 'generateDocumentTypeId'] }
-      ],
-      transaction
-    })
 
-    const docTypes = await db.DocumentType.findAll({ attributes: ['id', 'initials'], transaction })
+  const solicitations = await db.Solicitation.findAll({
+    where: { id: solicitationIds, companyId: session.company.id },
+    include: [
+      { association: 'partner', attributes: ['id', 'name', 'surname'] },
+      {
+        association: 'products',
+        attributes: ['id', 'itemId', 'value', 'quantity'],
+        include: [{ association: 'product', attributes: ['name'] }]
+      },
+      {
+        association: 'services',
+        attributes: ['id', 'itemId', 'value', 'quantity', 'description'],
+        include: [{ association: 'service', attributes: ['name'] }]
+      },
+      { association: 'documents' },
+      { association: 'type', attributes: ['id', 'description', 'requestType'] },
+      { association: 'status', attributes: ['id', 'generateDocumentTypeId'] }
+    ],
+    transaction
+  })
 
-    const type55 = docTypes.find(dt => dt.id && String(dt.id).trim() === '55')
-    const type99 = docTypes.find(dt => dt.id && String(dt.id).trim() === '99')
+  const docTypes = await db.DocumentType.findAll({ attributes: ['id', 'initials'], transaction })
 
-    const defaultType = docTypes.length > 0 ? docTypes[0] : null
+  const type55 = docTypes.find(dt => dt.id && String(dt.id).trim() === '55')
+  const type99 = docTypes.find(dt => dt.id && String(dt.id).trim() === '99')
 
-    const items = solicitations.map(sRow => {
-      const s = sRow.toJSON()
+  const defaultType = docTypes.length > 0 ? docTypes[0] : null
 
-      if (s.documents && s.documents.length > 0) {
-        s.alreadyGenerated = true;
-        return s;
-      }
+  const company = await db.Company.findByPk(session.company.id, { attributes: ['id', 'invoiceSerie'], transaction });
+  const defaultInvoiceSerie = company?.invoiceSerie || '';
 
-      s.alreadyGenerated = false;
-      s.documents = [];
+  const items = solicitations.map(sRow => {
+    const s = sRow.toJSON()
 
-      const hasProducts = (s.products || []).length > 0;
-      const hasServices = (s.services || []).length > 0;
-      const defaultInvoiceDate = new Date().toISOString().split('T')[0];
-
-      if (hasProducts && type55) {
-        const total = (s.products || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
-        const docItems = (s.products || []).map(p => ({
-          itemId: p.itemId,
-          quantity: p.quantity,
-          value: p.value,
-          description: p.description || p.product?.name || ''
-        }));
-        s.documents.push({
-          id: null,
-          partner: s.partner,
-          documentModelId: type55.id,
-          invoiceTypeId: s.type?.requestType,
-          invoiceNumber: 0,
-          invoiceDate: defaultInvoiceDate,
-          invoiceValue: total,
-          items: docItems
-        });
-      }
-      if (hasServices && type99) {
-        const total = (s.services || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
-        const docItems = (s.services || []).map(p => ({
-          itemId: p.itemId,
-          quantity: p.quantity,
-          value: p.value,
-          description: p.description || p.service?.name || ''
-        }));
-        s.documents.push({
-          id: null,
-          partner: s.partner,
-          documentModelId: type99.id,
-          invoiceTypeId: s.type?.requestType,
-          invoiceNumber: 0,
-          invoiceDate: defaultInvoiceDate,
-          invoiceValue: total,
-          services: docItems
-        });
-      }
-      if (s.documents.length === 0 && s.status?.generateDocumentTypeId) {
-        s.documents.push({ id: null, partner: s.partner, documentModelId: s.status.generateDocumentTypeId, invoiceTypeId: s.type?.requestType, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
-      }
-      if (s.documents.length === 0 && defaultType) {
-        s.documents.push({ id: null, partner: s.partner, documentModelId: defaultType.id, invoiceTypeId: s.type?.requestType, invoiceNumber: 0, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
-      }
-
+    if (s.documents && s.documents.length > 0) {
+      s.alreadyGenerated = true;
       return s;
-    });
+    }
 
-    return { items };
+    s.alreadyGenerated = false;
+    s.documents = [];
+
+    const hasProducts = (s.products || []).length > 0;
+    const hasServices = (s.services || []).length > 0;
+    const defaultInvoiceDate = new Date().toISOString().split('T')[0];
+
+    if (hasProducts && type55) {
+      const total = (s.products || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
+      const docItems = (s.products || []).map(p => ({
+        itemId: p.itemId,
+        quantity: p.quantity,
+        value: p.value,
+        description: p.description || p.product?.name || ''
+      }));
+      s.documents.push({
+        id: null,
+        partner: s.partner,
+        documentModelId: type55.id,
+        invoiceTypeId: s.type?.requestType,
+        invoiceDate: defaultInvoiceDate,
+        invoiceNumber: 0,
+        invoiceSerie: defaultInvoiceSerie,
+        invoiceValue: total,
+        items: docItems
+      });
+    }
+    if (hasServices && type99) {
+      const total = (s.services || []).reduce((acc, p) => acc + (parseFloat(p.value || 0) * (p.quantity || 1)), 0);
+      const docItems = (s.services || []).map(p => ({
+        itemId: p.itemId,
+        quantity: p.quantity,
+        value: p.value,
+        description: p.description || p.service?.name || ''
+      }));
+      s.documents.push({
+        id: null,
+        partner: s.partner,
+        documentModelId: type99.id,
+        invoiceTypeId: s.type?.requestType,
+        invoiceDate: defaultInvoiceDate,
+        invoiceNumber: 0,
+        invoiceSerie: defaultInvoiceSerie,
+        invoiceValue: total,
+        services: docItems
+      });
+    }
+    if (s.documents.length === 0 && s.status?.generateDocumentTypeId) {
+      s.documents.push({ id: null, partner: s.partner, documentModelId: s.status.generateDocumentTypeId, invoiceTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceNumber: 0, invoiceSerie: defaultInvoiceSerie, invoiceValue: 0 });
+    }
+    if (s.documents.length === 0 && defaultType) {
+      s.documents.push({ id: null, partner: s.partner, documentModelId: defaultType.id, invoiceTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceNumber: 0, invoiceSerie: defaultInvoiceSerie, invoiceValue: 0 });
+    }
+
+    return s;
+  });
+
+  return { items };
 }

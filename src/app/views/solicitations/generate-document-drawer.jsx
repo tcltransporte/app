@@ -330,7 +330,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
       documentModelId: doc.documentModelId || '',
       invoiceTypeId: doc.invoiceTypeId || null,
       invoiceNumber: doc.invoiceNumber || 0,
-      invoiceSeries: doc.invoiceSeries || '',
+      invoiceSerie: doc.invoiceSerie || '',
       invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate).toISOString().split('T')[0] : today,
       receiptDate: doc.receiptDate ? new Date(doc.receiptDate).toISOString().split('T')[0] : '',
       invoiceKey: doc.invoiceKey || '',
