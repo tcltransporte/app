@@ -4,6 +4,7 @@ import { AppContext } from "@/database"
 import * as solicitationService from "@/app/services/solicitation.service"
 import * as documentService from "@/app/services/document.service"
 import * as financeService from "@/app/services/finance.service"
+import * as freightLetterService from "@/app/services/freightLetter.service"
 import { ServiceResponse } from "@/libs/service"
 import { handleGoogleSheetsExport, handleExcelExport } from "@/libs/export-helper"
 
@@ -189,6 +190,47 @@ export async function generateDocuments(solicitationIds = []) {
     return await db.withTransaction(null, async (t) => {
       const result = await solicitationService.generateDocuments(t, solicitationIds)
       return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function generateFreightLetters(solicitationIds = []) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await solicitationService.generateFreightLetters(t, solicitationIds)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function saveFreightLetters(solicitationId, freightLetters = []) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const solicitation = await solicitationService.findOne(t, solicitationId)
+
+      for (const fl of freightLetters) {
+        const payload = {
+          ...fl,
+          solicitationId,
+          tripId: fl.tripId || solicitation.tripId,
+          groupId: fl.groupId || solicitation.tripGroupId,
+          payeeId: fl.payeeId || solicitation.partnerId
+        }
+
+        if (fl.id) {
+          await freightLetterService.update(t, fl.id, payload)
+        } else {
+          await freightLetterService.create(t, payload)
+        }
+      }
+
+      return ServiceResponse.success({ message: 'Cartas de frete salvas com sucesso!' })
     })
   } catch (error) {
     return ServiceResponse.error(error)

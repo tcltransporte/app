@@ -26,6 +26,7 @@ import { useLoading } from '@/hooks';
 import { SectionTable } from '@/components/common';
 import { DocumentProductDrawer } from './document-product.drawer';
 import { DocumentServiceDrawer } from './document-service.drawer';
+import { DocumentFinanceDrawer } from './document-finance.drawer';
 
 export function DocumentDetail({ document, onClose, onSave, documentType, manual = false }) {
 
@@ -39,6 +40,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
 
   const [productDrawer, setProductDrawer] = React.useState({ open: false, data: null, index: -1 });
   const [serviceDrawer, setServiceDrawer] = React.useState({ open: false, data: null, index: -1 });
+  const [financeDrawer, setFinanceDrawer] = React.useState({ open: false, data: null, index: -1 });
 
   const handleSubmit = async (values) => {
 
@@ -106,6 +108,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     description: '',
     items: [],
     services: [],
+    financeEntries: [],
   };
 
   const getValues = (data) => ({
@@ -134,6 +137,7 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
     icmsstValue: data?.icmsstValue || 0,
     items: data?.items || [],
     services: data?.services || [],
+    financeEntries: data?.financeTitle?.entries || [],
   });
 
   return (
@@ -180,6 +184,23 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
         const handleDeleteService = (index) => {
           const newServices = (values.services || []).filter((_, i) => i !== index);
           setFieldValue('services', newServices);
+        };
+
+        const handleSaveFinance = (data) => {
+          const newEntries = [...(values.financeEntries || [])];
+          if (financeDrawer.index >= 0) {
+            newEntries[financeDrawer.index] = data;
+          } else if (data.installments && data.installments.length > 0) {
+            newEntries.push(...data.installments);
+          } else {
+            newEntries.push({ ...data, tempId: Date.now() });
+          }
+          setFieldValue('financeEntries', newEntries);
+        };
+
+        const handleDeleteFinance = (index) => {
+          const newEntries = (values.financeEntries || []).filter((_, i) => i !== index);
+          setFieldValue('financeEntries', newEntries);
         };
 
         return (
@@ -404,6 +425,22 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
                         onDelete={(_, index) => handleDeleteService(index)}
                       />
                     </Box>
+
+                    <Box sx={{ mt: 2 }}>
+                      <SectionTable
+                        title="Financeiro / Parcelas"
+                        columns={[
+                          { field: 'installmentNumber', headerName: 'Parcela', width: 80 },
+                          { field: 'dueDate', headerName: 'Vencimento', renderCell: (val) => val ? new Date(val).toLocaleDateString('pt-BR') : '' },
+                          { field: 'installmentValue', headerName: 'Valor', renderCell: (val) => Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
+                          { field: 'description', headerName: 'Descrição', flex: 1 },
+                        ]}
+                        items={values.financeEntries || []}
+                        onAdd={() => setFinanceDrawer({ open: true, data: null, index: -1 })}
+                        onEdit={(item, index) => setFinanceDrawer({ open: true, data: item, index })}
+                        onDelete={(_, index) => handleDeleteFinance(index)}
+                      />
+                    </Box>
                   </Grid>
                 </Grid>
 
@@ -419,6 +456,13 @@ export function DocumentDetail({ document, onClose, onSave, documentType, manual
                   initialData={serviceDrawer.data}
                   onClose={() => setServiceDrawer({ open: false, data: null, index: -1 })}
                   onSave={handleSaveService}
+                />
+
+                <DocumentFinanceDrawer
+                  open={financeDrawer.open}
+                  initialData={financeDrawer.data}
+                  onClose={() => setFinanceDrawer({ open: false, data: null, index: -1 })}
+                  onSave={handleSaveFinance}
                 />
               </Form>
             </Dialog.Content>

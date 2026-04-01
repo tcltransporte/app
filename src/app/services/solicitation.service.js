@@ -320,3 +320,51 @@ export async function generateDocuments(transaction, solicitationIds = []) {
 
   return { items };
 }
+
+export async function generateFreightLetters(transaction, solicitationIds = []) {
+  const session = await getSession()
+  const db = new AppContext()
+
+  const solicitations = await db.Solicitation.findAll({
+    where: { id: solicitationIds, companyId: session.company.id },
+    include: [
+      { association: 'partner', attributes: ['id', 'name', 'surname'] },
+      { association: 'payments' },
+      { association: 'freightLetters' }
+    ],
+    transaction
+  })
+
+  const items = solicitations.map(sRow => {
+    const s = sRow.toJSON()
+
+    if (s.freightLetters && s.freightLetters.length > 0) {
+      s.alreadyGenerated = true;
+      return s;
+    }
+
+    s.alreadyGenerated = false;
+    s.freightLetters = (s.payments || []).map((p, idx) => {
+      let typeId = 1; // Default
+      const desc = (p.description || '').toLowerCase();
+      if (desc.includes('saldo')) typeId = 2;
+      if (desc.includes('pedagio') || desc.includes('pedágio')) typeId = 3;
+
+      return {
+        id: null,
+        solicitationId: s.id,
+        freightLetterComponentTypeId: typeId,
+        value: p.value || 0,
+        discountValue: 0,
+        effectiveDate: new Date().toISOString().split('T')[0],
+        description: p.description,
+        tripId: s.tripId,
+        groupId: s.tripGroupId
+      };
+    });
+
+    return s;
+  });
+
+  return { items };
+}

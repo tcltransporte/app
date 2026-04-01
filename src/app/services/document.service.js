@@ -61,7 +61,8 @@ export async function findOne(transaction, id) {
       { association: 'documentType' },
       { association: 'requestType' },
       { association: 'items', include: ['product'] },
-      { association: 'services', include: ['service'] }
+      { association: 'services', include: ['service'] },
+      { association: 'financeTitle', include: ['entries'] }
     ]
   })
 

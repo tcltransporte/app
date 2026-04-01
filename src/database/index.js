@@ -27,6 +27,8 @@ import { DocumentProduct } from './models/documentProduct.model.js'
 import { DocumentService } from './models/documentService.model.js'
 import { FinanceTitle } from './models/financeTitle.model.js'
 import { FinanceEntry } from './models/financeEntry.model.js'
+import { FreightLetter } from './models/freightLetter.model.js'
+import { FreightLetterComponentType } from './models/freightLetterComponentType.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -92,6 +94,8 @@ export class AppContext extends Sequelize {
     this.DocumentService = this.define('documentService', new DocumentService(), { tableName: 'ComprasServicos' })
     this.FinanceTitle = this.define('financeTitle', new FinanceTitle(), { tableName: 'movimentos' })
     this.FinanceEntry = this.define('financeEntry', new FinanceEntry(), { tableName: 'movimentos_detalhe' })
+    this.FreightLetter = this.define('freightLetter', new FreightLetter(), { tableName: 'CompValorCartaFrete' })
+    this.FreightLetterComponentType = this.define('freightLetterComponentType', new FreightLetterComponentType(), { tableName: 'CompValorCartaFreteTipo' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -117,6 +121,7 @@ export class AppContext extends Sequelize {
     this.Solicitation.hasMany(this.SolicitationService, { as: 'services', foreignKey: 'solicitationId' })
     this.Solicitation.hasMany(this.SolicitationFinance, { as: 'payments', foreignKey: 'solicitationId' })
     this.Solicitation.hasMany(this.Document, { as: 'documents', foreignKey: 'solicitationId' })
+    this.Solicitation.hasMany(this.FreightLetter, { as: 'freightLetters', foreignKey: 'solicitationId' })
 
     this.SolicitationStatusWorkflow.belongsTo(this.SolicitationStatus, { as: 'fromStatus', foreignKey: 'fromStatusId' })
     this.SolicitationStatusWorkflow.belongsTo(this.SolicitationStatus, { as: 'toStatus', foreignKey: 'toStatusId' })
@@ -158,6 +163,10 @@ export class AppContext extends Sequelize {
 
     this.FinanceTitle.hasMany(this.FinanceEntry, { as: 'entries', foreignKey: 'titleId' })
     this.FinanceEntry.belongsTo(this.FinanceTitle, { as: 'title', foreignKey: 'titleId' })
+    this.FreightLetter.belongsTo(this.Partner, { as: 'payee', foreignKey: 'payeeId' })
+    this.FreightLetter.belongsTo(this.FinanceTitle, { as: 'movement', foreignKey: 'movementId' })
+    this.FreightLetter.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
+    this.FreightLetter.belongsTo(this.FreightLetterComponentType, { as: 'componentType', foreignKey: 'freightLetterComponentTypeId' })
 
     /*
     this.Company.addHook('afterFind', afterFind)

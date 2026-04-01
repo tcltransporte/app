@@ -15,6 +15,7 @@ import {
   MoreVert as MoreIcon,
   NoteAdd as GenerateIcon,
   Description as DocumentIcon,
+  LocalShipping as FreightIcon,
 } from '@mui/icons-material';
 
 import SolicitationDetail from './solicitation.detail';
@@ -22,6 +23,7 @@ import SolicitationFilter from './filter';
 import { StatusDrawer } from './status-drawer';
 import { GenerateDocumentDrawer } from './generate-document-drawer';
 import { SolicitationDocumentViewerDrawer } from './document-viewer-drawer';
+import { GenerateFreightLetterDrawer } from './generate-freightletter-drawer';
 import { useTable, useNavigation, useRangeFilter, useFilter, useExport, useLoading } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import { Container, Table, Toolbar, RangeModal } from '@/components/common';
@@ -118,6 +120,19 @@ export default function SolicitationView({
                   <ListItemText primary="Gerar documento" primaryTypographyProps={{ variant: 'body2' }} />
                 </MenuItem>
               )}
+              <MenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClose();
+                  setGenerateFreightLetterDrawer({ open: true, solicitations: [row] });
+                }}
+                sx={{ gap: 1 }}
+              >
+                <ListItemIcon sx={{ minWidth: 'auto !important' }}>
+                  <FreightIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary="Gerar carta frete" primaryTypographyProps={{ variant: 'body2' }} />
+              </MenuItem>
             </Menu>
           </>
         )}
@@ -129,6 +144,7 @@ export default function SolicitationView({
 
   const [statusDrawer, setStatusDrawer] = React.useState({ open: false, selectedIds: [], fromStatusIds: [] });
   const [generateDocumentDrawer, setGenerateDocumentDrawer] = React.useState({ open: false, solicitations: [] });
+  const [generateFreightLetterDrawer, setGenerateFreightLetterDrawer] = React.useState({ open: false, solicitations: [] });
   const [documentViewerDrawer, setDocumentViewerDrawer] = React.useState({ open: false, solicitation: null });
 
   const table = useTable({ initialTable })
@@ -321,6 +337,18 @@ export default function SolicitationView({
         })
       },
     ] : []),
+    ...(table.selecteds.length > 0 ? [
+      {
+        label: 'Gerar cartas frete',
+        icon: <FreightIcon />,
+        variant: 'outlined',
+        color: 'primary',
+        onClick: () => setGenerateFreightLetterDrawer({
+          open: true,
+          solicitations: table.selecteds
+        })
+      },
+    ] : []),
     ...(table.selecteds.length === 1 ? [
       { label: 'Editar', icon: <EditIcon />, variant: 'outlined', color: 'primary', onClick: () => navigation.setSelectedId(table.selecteds[0].id) },
     ] : []),
@@ -455,6 +483,13 @@ export default function SolicitationView({
           open={generateDocumentDrawer.open}
           solicitations={generateDocumentDrawer.solicitations}
           onClose={() => setGenerateDocumentDrawer({ open: false, solicitations: [] })}
+          onSave={() => fetchTable()}
+        />
+
+        <GenerateFreightLetterDrawer
+          open={generateFreightLetterDrawer.open}
+          solicitations={generateFreightLetterDrawer.solicitations}
+          onClose={() => setGenerateFreightLetterDrawer({ open: false, solicitations: [] })}
           onSave={() => fetchTable()}
         />
 
