@@ -20,19 +20,22 @@ import {
   Close as CloseIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { SelectField, NumericField, TextField } from '@/components/controls';
 import * as freightLetterAction from '@/app/actions/freightLetter.action';
 import * as solicitationAction from '@/app/actions/solicitation.action';
+import { FreightLetterDetail } from '../freight-letters/freight-letter-detail';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
-function SolicitationRow({ solicitation, componentTypes, rows, onChangeType, onChangeValue, onChangeDiscount, onChangeDescription, onChangeProtocol, alreadyGenerated }) {
+function SolicitationRow({ solicitation, componentTypes, rows, onAdd, onEdit, onDelete, alreadyGenerated }) {
   const [expanded, setExpanded] = React.useState(true);
 
   const solRows = rows[solicitation.id] || [];
   const totalValue = solRows.reduce((sum, r) => sum + (Number(r.value) || 0), 0);
-  const totalDiscount = solRows.reduce((sum, r) => sum + (Number(r.discountValue) || 0), 0);
 
   return (
     <>
@@ -64,56 +67,67 @@ function SolicitationRow({ solicitation, componentTypes, rows, onChangeType, onC
               </Box>
             ) : (
               <Table size="small">
-                <TableHead>
+                <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
                   <TableRow>
-                    <TableCell sx={{ minWidth: 150 }}>Tipo</TableCell>
-                    <TableCell align="right" sx={{ width: 120 }}>Valor (R$)</TableCell>
-                    <TableCell align="right" sx={{ width: 100 }}>Desc. (R$)</TableCell>
-                    <TableCell sx={{ minWidth: 180 }}>Protocolo / Ref</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.725rem', py: 0.75 }}>Tipo</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.725rem', py: 0.75, width: 100 }}>Valor (R$)</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.725rem', py: 0.75, width: 90 }}>Desc. (R$)</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.725rem', py: 0.75 }}>Protocolo / Ref</TableCell>
+                    <TableCell align="right" sx={{ py: 0.75, width: 70 }}></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {solRows.map((row) => (
                     <TableRow key={row.rowKey} hover>
-                      <TableCell>
-                        <SelectField
-                          label="Tipo"
-                          value={row.freightLetterComponentTypeId || ''}
-                          onChange={(val) => onChangeType(solicitation.id, row.rowKey, val)}
-                          options={componentTypes.map(ct => ({ value: ct.id, label: ct.description }))}
-                        />
+                      <TableCell sx={{ fontSize: '0.825rem', py: 0.5 }}>
+                        {componentTypes.find(ct => ct.id === row.freightLetterComponentTypeId)?.description || '—'}
                       </TableCell>
-                      <TableCell>
-                        <NumericField
-                          label="Valor"
-                          value={row.value || 0}
-                          onChange={(val) => onChangeValue(solicitation.id, row.rowKey, val)}
-                        />
+                      <TableCell align="right" sx={{ fontSize: '0.825rem', py: 0.5 }}>
+                        {Number(row.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell>
-                        <NumericField
-                          label="Desconto"
-                          value={row.discountValue || 0}
-                          onChange={(val) => onChangeDiscount(solicitation.id, row.rowKey, val)}
-                        />
+                      <TableCell align="right" sx={{ fontSize: '0.825rem', py: 0.5 }}>
+                        {Number(row.discountValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell>
-                        <TextField
-                          label="Protocolo / Descrição"
-                          value={row.operatorProtocol || ''}
-                          onChange={(e) => onChangeProtocol(solicitation.id, row.rowKey, e.target.value)}
-                          placeholder="Protocolo operadora..."
-                        />
+                      <TableCell sx={{ fontSize: '0.825rem', py: 0.5, color: 'text.secondary' }}>
+                        {row.operatorProtocol || '—'}
+                      </TableCell>
+                      <TableCell align="right" sx={{ py: 0.5 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <IconButton size="small" onClick={() => onEdit(solicitation.id, row)}>
+                            <EditIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                          <IconButton size="small" color="error" onClick={() => onDelete(solicitation.id, row.rowKey)}>
+                            <DeleteIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))}
                   {solRows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4}>
-                        <Typography variant="caption" color="text.secondary">Nenhum componente configurado.</Typography>
+                      <TableCell colSpan={5} sx={{ py: 2, textAlign: 'center' }}>
+                        <Typography variant="caption" color="text.secondary">Nenhuma carta frete adicionada.</Typography>
                       </TableCell>
                     </TableRow>
                   )}
+                  <TableRow>
+                    <TableCell colSpan={5} sx={{ p: 0.5 }}>
+                      <Button
+                        size="small"
+                        onClick={() => onAdd(solicitation.id)}
+                        disabled={alreadyGenerated}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          color: 'primary.main',
+                          '&:hover': { bgcolor: 'primary.lighter' }
+                        }}
+                      >
+                        + Adicionar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             )}
@@ -132,8 +146,10 @@ export function GenerateFreightLetterDrawer({ open, solicitations = [], onClose,
   const [rows, setRows] = React.useState({});
   const [statusMap, setStatusMap] = React.useState({});
 
+  const [detailModal, setDetailModal] = React.useState({ open: false, solicitationId: null, data: null });
+
   const formatRowData = (fl, solId, index) => ({
-    rowKey: fl.id ? `existing-${fl.id}` : `new-${solId}-${index}`,
+    rowKey: fl.id ? `existing-${fl.id}` : `new-${solId}-${index}-${Date.now()}`,
     id: fl.id || null,
     freightLetterComponentTypeId: fl.freightLetterComponentTypeId || 1,
     value: fl.value || 0,
@@ -143,16 +159,11 @@ export function GenerateFreightLetterDrawer({ open, solicitations = [], onClose,
     effectiveDate: fl.effectiveDate || new Date().toISOString().split('T')[0],
     tripId: fl.tripId || null,
     groupId: fl.groupId || null,
+    solicitationId: solId,
+    payeeId: fl.payeeId || null,
+    payee: fl.payee || null,
+    cardNumber: fl.cardNumber || '',
   });
-
-  const updateRow = (solicitationId, rowKey, next) => {
-    setRows(prev => ({
-      ...prev,
-      [solicitationId]: (prev[solicitationId] || []).map(r =>
-        r.rowKey === rowKey ? { ...r, ...next } : r
-      ),
-    }));
-  };
 
   React.useEffect(() => {
     if (!open || solicitations.length === 0) return;
@@ -184,10 +195,46 @@ export function GenerateFreightLetterDrawer({ open, solicitations = [], onClose,
     }).finally(() => setLoading(false));
   }, [open, solicitations]);
 
-  const handleChangeType = (solicitationId, rowKey, freightLetterComponentTypeId) => updateRow(solicitationId, rowKey, { freightLetterComponentTypeId });
-  const handleChangeValue = (solicitationId, rowKey, value) => updateRow(solicitationId, rowKey, { value });
-  const handleChangeDiscount = (solicitationId, rowKey, discountValue) => updateRow(solicitationId, rowKey, { discountValue });
-  const handleChangeProtocol = (solicitationId, rowKey, operatorProtocol) => updateRow(solicitationId, rowKey, { operatorProtocol });
+  const handleAddRow = (solicitationId) => {
+    const solicitation = solicitations.find(s => s.id === solicitationId);
+    setDetailModal({
+      open: true,
+      solicitationId,
+      data: {
+        payee: solicitation?.partner || null,
+        payeeId: solicitation?.partner?.id || null,
+      }
+    });
+  };
+
+  const handleEditRow = (solicitationId, row) => {
+    setDetailModal({ open: true, solicitationId, data: row });
+  };
+
+  const handleDeleteRow = (solicitationId, rowKey) => {
+    setRows(prev => ({
+      ...prev,
+      [solicitationId]: (prev[solicitationId] || []).filter(r => r.rowKey !== rowKey)
+    }));
+  };
+
+  const handleSaveDetail = (data) => {
+    const solId = detailModal.solicitationId;
+    const isEdit = !!data.rowKey;
+
+    setRows(prev => {
+      const currentRows = prev[solId] || [];
+      let nextRows;
+
+      if (isEdit) {
+        nextRows = currentRows.map(r => r.rowKey === data.rowKey ? { ...r, ...data } : r);
+      } else {
+        nextRows = [...currentRows, formatRowData(data, solId, currentRows.length)];
+      }
+
+      return { ...prev, [solId]: nextRows };
+    });
+  };
 
   const handleConfirm = async () => {
     try {
@@ -197,9 +244,10 @@ export function GenerateFreightLetterDrawer({ open, solicitations = [], onClose,
         const fls = (rows[solicitation.id] || []).map(r => ({
           ...r,
           effectiveDate: new Date(r.effectiveDate),
+          payeeId: r.payee?.id || r.payeeId
         }));
 
-        if (fls.length === 0 || statusMap[solicitation.id]) continue;
+        if (statusMap[solicitation.id] || fls.length === 0) continue;
 
         const result = await solicitationAction.saveFreightLetters(solicitation.id, fls);
         if (result.header.status !== ServiceStatus.SUCCESS)
@@ -243,10 +291,9 @@ export function GenerateFreightLetterDrawer({ open, solicitations = [], onClose,
                   solicitation={s}
                   componentTypes={componentTypes}
                   rows={rows}
-                  onChangeType={handleChangeType}
-                  onChangeValue={handleChangeValue}
-                  onChangeDiscount={handleChangeDiscount}
-                  onChangeProtocol={handleChangeProtocol}
+                  onAdd={handleAddRow}
+                  onEdit={handleEditRow}
+                  onDelete={handleDeleteRow}
                   alreadyGenerated={statusMap[s.id]}
                 />
               ))}
@@ -269,6 +316,14 @@ export function GenerateFreightLetterDrawer({ open, solicitations = [], onClose,
           {submitting ? 'Gerando...' : 'Confirmar'}
         </Button>
       </Box>
+
+      <FreightLetterDetail
+        open={detailModal.open}
+        freightLetter={detailModal.data}
+        componentTypes={componentTypes}
+        onClose={() => setDetailModal({ ...detailModal, open: false })}
+        onSave={handleSaveDetail}
+      />
     </Drawer>
   );
 }

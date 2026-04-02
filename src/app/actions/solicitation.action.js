@@ -135,6 +135,18 @@ export async function findAllowedTransitions(fromStatusIds) {
   }
 }
 
+export async function generateDocuments(solicitationIds = []) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await solicitationService.generateDocuments(t, solicitationIds)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
 export async function saveDocuments(solicitationId, documents = []) {
   const db = new AppContext()
   try {
@@ -145,11 +157,25 @@ export async function saveDocuments(solicitationId, documents = []) {
       for (const doc of documents) {
         const payload = {
           documentModelId: doc.documentModelId,
-          invoiceTypeId: doc.invoiceTypeId,
+          requestTypeId: doc.requestTypeId,
           invoiceNumber: doc.invoiceNumber || 0,
           invoiceSerie: doc.invoiceSerie,
           invoiceDate: doc.invoiceDate ? new Date(doc.invoiceDate) : new Date(),
+          invoiceKey: doc.invoiceKey,
           invoiceValue: doc.invoiceValue || 0,
+          totalProductsValue: doc.totalProductsValue || 0,
+          discountValue: doc.discountValue || 0,
+          freightValue: doc.freightValue || 0,
+          insuranceValue: doc.insuranceValue || 0,
+          otherValues: doc.otherValues || 0,
+          icmsBaseValue: doc.icmsBaseValue || 0,
+          icmsValue: doc.icmsValue || 0,
+          ipiValue: doc.ipiValue || 0,
+          pisValue: doc.pisValue || 0,
+          cofinsValue: doc.cofinsValue || 0,
+          icmsstBaseValue: doc.icmsstBaseValue || 0,
+          icmsstValue: doc.icmsstValue || 0,
+          description: doc.description,
           items: doc.items,
           services: doc.services,
         }
@@ -178,18 +204,6 @@ export async function saveDocuments(solicitationId, documents = []) {
       }
 
       return ServiceResponse.success({ message: 'Documentos salvos com sucesso!' })
-    })
-  } catch (error) {
-    return ServiceResponse.error(error)
-  }
-}
-
-export async function generateDocuments(solicitationIds = []) {
-  const db = new AppContext()
-  try {
-    return await db.withTransaction(null, async (t) => {
-      const result = await solicitationService.generateDocuments(t, solicitationIds)
-      return ServiceResponse.success(result)
     })
   } catch (error) {
     return ServiceResponse.error(error)

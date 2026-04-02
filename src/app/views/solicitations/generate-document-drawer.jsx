@@ -33,6 +33,7 @@ import {
   Edit as EditIcon,
   Link as LinkIcon,
   CheckCircle as CheckCircleIcon,
+  Add as AddIcon,
   Search as SearchIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
@@ -48,7 +49,7 @@ import { alert } from '@/libs/alert';
  * rowItems[solicitationId] = Array<{ rowKey: string, checked: boolean, documentTypeId: number }>
  */
 
-function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChangeType, onChangeValue, onEdit, onLinkClick, onUnlink, alreadyGenerated }) {
+function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChangeType, onChangeValue, onEdit, onAdd, onLinkClick, onUnlink, alreadyGenerated }) {
   const [expanded, setExpanded] = React.useState(true);
   const [unlinkMenu, setUnlinkMenu] = React.useState({ anchorEl: null, rowKey: null });
 
@@ -173,9 +174,27 @@ function SolicitationRow({ solicitation, documentTypes, rows, onToggle, onChange
                       </TableCell>
                     </TableRow>
                   ))}
+                  <TableRow>
+                    <TableCell colSpan={3} sx={{ p: 0.5 }}>
+                      <Button
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => onAdd(solicitation.id)}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          color: 'primary.main',
+                          '&:hover': { bgcolor: 'primary.lighter' }
+                        }}
+                      >
+                        Adicionar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                   {solRows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={3}>
+                      <TableCell colSpan={3} sx={{ py: 2, textAlign: 'center' }}>
                         <Typography variant="caption" color="text.secondary">Nenhum documento configurado.</Typography>
                       </TableCell>
                     </TableRow>
@@ -320,6 +339,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
   const [linkModal, setLinkModal] = React.useState({ open: false, solicitationId: null, rowKey: null });
   const [statusMap, setStatusMap] = React.useState({});
 
+  const [enrichedSolicitations, setEnrichedSolicitations] = React.useState([]);
+
   const formatRowData = (doc, solId, index) => {
     const today = new Date().toISOString().split('T')[0];
     return {
@@ -379,6 +400,8 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
         const initialStatus = {};
         const items = docsResult.body.items || [];
 
+        setEnrichedSolicitations(items);
+
         items.forEach(s => {
           initial[s.id] = (s.documents || []).map((doc, idx) => formatRowData(doc, s.id, idx));
           initialStatus[s.id] = !!s.alreadyGenerated;
@@ -402,8 +425,39 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
     if (row) setEditModal({ open: true, solicitationId, rowKey, initialData: { ...row } });
   };
 
+  const handleAddRow = (solicitationId) => {
+    const sol = enrichedSolicitations.find(s => s.id === solicitationId) || solicitations.find(s => s.id === solicitationId);
+    setEditModal({
+      open: true,
+      solicitationId,
+      rowKey: null,
+      initialData: {
+        partner: sol?.partner || null,
+        requestTypeId: sol?.type?.requestType || ''
+      }
+    });
+  };
+
   const handleSaveEdit = (editedForm) => {
-    updateRow(editModal.solicitationId, editModal.rowKey, { ...editedForm });
+    const { solicitationId, rowKey } = editModal;
+    const isEdit = !!rowKey;
+
+    setRows(prev => {
+      const solRows = prev[solicitationId] || [];
+      if (isEdit) {
+        return {
+          ...prev,
+          [solicitationId]: solRows.map(r => r.rowKey === rowKey ? { ...r, ...editedForm } : r)
+        };
+      } else {
+        const newRow = formatRowData(editedForm, solicitationId, solRows.length);
+        return {
+          ...prev,
+          [solicitationId]: [...solRows, newRow]
+        };
+      }
+    });
+
     setEditModal({ open: false, rowKey: null, solicitationId: null, initialData: null });
   };
 
@@ -490,6 +544,7 @@ export function GenerateDocumentDrawer({ open, solicitations = [], onClose, onSa
                   onChangeType={handleChangeType}
                   onChangeValue={handleChangeValue}
                   onEdit={handleEdit}
+                  onAdd={handleAddRow}
                   onLinkClick={handleLinkClick}
                   onUnlink={handleUnlink}
                   alreadyGenerated={statusMap[s.id]}

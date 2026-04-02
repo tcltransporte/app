@@ -15,7 +15,6 @@ export async function findOne(transaction, { attributes, include, where }) {
   return await db.withTransaction(transaction, async (t) => {
     const session = await db.Session.findOne({ attributes, include, where, transaction: t })
     const plain = session?.toJSON()
-    console.log("sessionRepository: Found session", plain, "for where", where)
     return plain
   })
 }
@@ -53,7 +52,6 @@ export async function create(transaction, { userId, companyId, lastAcess, expire
   return await db.withTransaction(transaction, async (t) => {
     const session = await db.Session.create({ userId, companyId, lastAcess, expireIn }, { transaction: t })
     const plain = session?.toJSON()
-    console.log("sessionRepository: Created session", plain)
     return plain
   })
 }

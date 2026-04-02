@@ -63,36 +63,34 @@ export function LoginView() {
     setLoading(true)
     setError("")
 
-    try {
-      const loginResult = await loginAction.signIn(values)
+    const result = await loginAction.signIn(values)
 
-      if (loginResult.header.status !== ServiceStatus.SUCCESS) {
-        throw loginResult
-      }
-
-      if (loginResult.body.token) {
-        const redirectUrl = redirectParam || "/"
-        window.location.href = redirectUrl
-      }
-    } catch (err) {
-
-      console.log(err)
-
-      if (err.body?.code === "SELECT_COMPANY_BUSINESS") {
-        setCompanyBusinesses(err.body.companyBusinesses || [])
+    switch (result.body?.code) {
+      case "SELECT_COMPANY_BUSINESS":
+        setCompanyBusinesses(result.body.companyBusinesses || [])
         setStep('selection')
-      } else if (err.body?.code === "SELECT_COMPANY") {
-        setCompanies(err.body.companies || [])
+        break
+      case "SELECT_COMPANY":
+        setCompanies(result.body.companies || [])
         setStep('selection')
-      } else if (err.body?.code === "ACTIVE_SESSION_EXISTS") {
+        break
+      case "ACTIVE_SESSION_EXISTS":
         setSessionConflict(true)
         setCurrentValues(values)
-      } else {
-        setError(err.body?.message || err.message || "Erro ao realizar login")
-      }
-    } finally {
-      setLoading(false)
+        break
+      default:
+        if (result.header.status === ServiceStatus.SUCCESS) {
+          if (result.body.token) {
+            const redirectUrl = redirectParam || "/"
+            window.location.href = redirectUrl
+          }
+        } else {
+          setError(result.body?.message || result.message || "Erro ao realizar login")
+        }
+        break
     }
+
+    setLoading(false)
   }
 
   const handleCompanyChange = (id, values, setFieldValue) => {

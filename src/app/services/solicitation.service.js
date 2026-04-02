@@ -250,8 +250,8 @@ export async function generateDocuments(transaction, solicitationIds = []) {
 
   const defaultType = docTypes.length > 0 ? docTypes[0] : null
 
-  const company = await db.Company.findByPk(session.company.id, { attributes: ['id', 'invoiceSerie'], transaction });
-  const defaultInvoiceSerie = company?.invoiceSerie || '';
+  //const company = await db.Company.findByPk(session.company.id, { attributes: ['id', 'invoiceSerie'], transaction });
+  //const defaultInvoiceSerie = company?.invoiceSerie || '';
 
   const items = solicitations.map(sRow => {
     const s = sRow.toJSON()
@@ -282,8 +282,8 @@ export async function generateDocuments(transaction, solicitationIds = []) {
         documentModelId: type55.id,
         requestTypeId: s.type?.requestType,
         invoiceDate: defaultInvoiceDate,
-        invoiceNumber: 0,
-        invoiceSerie: defaultInvoiceSerie,
+        //invoiceNumber: 0,
+        //invoiceSerie: defaultInvoiceSerie,
         invoiceValue: total,
         items: docItems
       });
@@ -302,17 +302,17 @@ export async function generateDocuments(transaction, solicitationIds = []) {
         documentModelId: type99.id,
         requestTypeId: s.type?.requestType,
         invoiceDate: defaultInvoiceDate,
-        invoiceNumber: 0,
-        invoiceSerie: defaultInvoiceSerie,
+        //invoiceNumber: 0,
+        //invoiceSerie: defaultInvoiceSerie,
         invoiceValue: total,
         services: docItems
       });
     }
     if (s.documents.length === 0 && s.status?.generateDocumentTypeId) {
-      s.documents.push({ id: null, partner: s.partner, documentModelId: s.status.generateDocumentTypeId, requestTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceNumber: 0, invoiceSerie: defaultInvoiceSerie, invoiceValue: 0 });
+      s.documents.push({ id: null, partner: s.partner, documentModelId: s.status.generateDocumentTypeId, requestTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
     }
     if (s.documents.length === 0 && defaultType) {
-      s.documents.push({ id: null, partner: s.partner, documentModelId: defaultType.id, requestTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceNumber: 0, invoiceSerie: defaultInvoiceSerie, invoiceValue: 0 });
+      s.documents.push({ id: null, partner: s.partner, documentModelId: defaultType.id, requestTypeId: s.type?.requestType, invoiceDate: defaultInvoiceDate, invoiceValue: 0 });
     }
 
     return s;
@@ -344,24 +344,7 @@ export async function generateFreightLetters(transaction, solicitationIds = []) 
     }
 
     s.alreadyGenerated = false;
-    s.freightLetters = (s.payments || []).map((p, idx) => {
-      let typeId = 1; // Default
-      const desc = (p.description || '').toLowerCase();
-      if (desc.includes('saldo')) typeId = 2;
-      if (desc.includes('pedagio') || desc.includes('pedágio')) typeId = 3;
-
-      return {
-        id: null,
-        solicitationId: s.id,
-        freightLetterComponentTypeId: typeId,
-        value: p.value || 0,
-        discountValue: 0,
-        effectiveDate: new Date().toISOString().split('T')[0],
-        description: p.description,
-        tripId: s.tripId,
-        groupId: s.tripGroupId
-      };
-    });
+    s.freightLetters = [];
 
     return s;
   });
