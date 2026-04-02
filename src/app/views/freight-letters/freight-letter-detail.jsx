@@ -20,7 +20,7 @@ export function FreightLetterDetail({ open, freightLetter, componentTypes = [], 
 
   const initialValues = {
     id: null,
-    freightLetterComponentTypeId: 1,
+    freightLetterComponentTypeId: '',
     value: 0,
     discountValue: 0,
     operatorProtocol: '',

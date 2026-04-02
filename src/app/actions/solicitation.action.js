@@ -235,6 +235,7 @@ export async function saveFreightLetters(solicitationId, freightLetters = []) {
         const payload = {
           ...fl,
           solicitationId,
+          operatorId: 2, //TCL
           tripId: fl.tripId || solicitation.tripId,
           groupId: fl.groupId || solicitation.tripGroupId,
           payeeId: fl.payeeId || solicitation.partnerId

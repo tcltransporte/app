@@ -163,7 +163,7 @@ export function GenerateFreightLetterDrawer({ open, solicitations = [], onClose,
   const formatRowData = (fl, solId, index) => ({
     rowKey: fl.id ? `existing-${fl.id}` : `new-${solId}-${index}-${Date.now()}`,
     id: fl.id || null,
-    freightLetterComponentTypeId: fl.freightLetterComponentTypeId || 1,
+    freightLetterComponentTypeId: fl.freightLetterComponentTypeId || '',
     value: fl.value || 0,
     discountValue: fl.discountValue || 0,
     operatorProtocol: fl.operatorProtocol || '',
@@ -209,12 +209,19 @@ export function GenerateFreightLetterDrawer({ open, solicitations = [], onClose,
 
   const handleAddRow = (solicitationId) => {
     const solicitation = solicitations.find(s => s.id === solicitationId);
+    const existingRows = rows[solicitationId] || [];
+
+    const totalPayments = (solicitation?.payments || []).reduce((sum, p) => sum + (Number(p.value) || 0), 0);
+    const currentTotal = existingRows.reduce((sum, r) => sum + (Number(r.value) || 0), 0);
+    const remainingValue = Math.max(0, totalPayments - currentTotal);
+
     setDetailModal({
       open: true,
       solicitationId,
       data: {
         payee: solicitation?.partner || null,
         payeeId: solicitation?.partner?.id || null,
+        value: remainingValue,
       }
     });
   };
