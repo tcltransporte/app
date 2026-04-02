@@ -92,4 +92,11 @@ export class Solicitation {
     type: DataTypes.BIGINT
   }
 
+  alreadyGenerated = {
+    field: 'alreadyGenerated',
+    allowNull: false,
+    defaultValue: false,
+    type: DataTypes.BOOLEAN
+  }
+
 }

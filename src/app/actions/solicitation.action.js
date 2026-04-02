@@ -203,6 +203,9 @@ export async function saveDocuments(solicitationId, documents = []) {
         await documentService.linkFinanceTitle(t, newDocIds, financeResult.id)
       }
 
+      // Set alreadyGenerated to true
+      await solicitationService.update(t, solicitationId, { alreadyGenerated: true })
+
       return ServiceResponse.success({ message: 'Documentos salvos com sucesso!' })
     })
   } catch (error) {

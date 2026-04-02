@@ -15,6 +15,7 @@ import {
   TableHead,
   TableRow,
   Collapse,
+  Tooltip,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -23,6 +24,7 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { SelectField, NumericField, TextField } from '@/components/controls';
 import * as freightLetterAction from '@/app/actions/freightLetter.action';
@@ -36,6 +38,9 @@ function SolicitationRow({ solicitation, componentTypes, rows, onAdd, onEdit, on
 
   const solRows = rows[solicitation.id] || [];
   const totalValue = solRows.reduce((sum, r) => sum + (Number(r.value) || 0), 0);
+  const totalPayments = (solicitation.payments || []).reduce((sum, p) => sum + (Number(p.value) || 0), 0);
+
+  const isDivergent = Math.abs(totalValue - totalPayments) > 0.01;
 
   return (
     <>
@@ -51,9 +56,16 @@ function SolicitationRow({ solicitation, componentTypes, rows, onAdd, onEdit, on
           </Box>
         </TableCell>
         <TableCell align="right" sx={{ py: 1, pr: 2 }}>
-          <Typography variant="body2" fontWeight={700} color="primary">
-            R$ {totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+            {isDivergent && (
+              <Tooltip title={`Divergência: Carta Frete (R$ ${totalValue.toFixed(2)}) ≠ Pagamentos (R$ ${totalPayments.toFixed(2)})`}>
+                <WarningIcon color="warning" fontSize="small" />
+              </Tooltip>
+            )}
+            <Typography variant="body2" fontWeight={700} color="primary">
+              R$ {totalPayments.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Typography>
+          </Box>
         </TableCell>
       </TableRow>
       <TableRow>

@@ -256,7 +256,7 @@ export async function generateDocuments(transaction, solicitationIds = []) {
   const items = solicitations.map(sRow => {
     const s = sRow.toJSON()
 
-    if (s.documents && s.documents.length > 0) {
+    if (s.alreadyGenerated) {
       s.alreadyGenerated = true;
       return s;
     }
