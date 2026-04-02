@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Badge, IconButton as MuiIconButton, Tooltip, Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import {
   Add as AddIcon,
@@ -141,6 +142,8 @@ export default function SolicitationView({
   };
 
   const navigation = useNavigation(`/solicitations/${solicitationType?.hash}`, selectedId)
+  const searchParams = useSearchParams();
+  const tripTravelId = searchParams.get('tripTravelId');
 
   const [statusDrawer, setStatusDrawer] = React.useState({ open: false, selectedIds: [], fromStatusIds: [] });
   const [generateDocumentDrawer, setGenerateDocumentDrawer] = React.useState({ open: false, solicitations: [] });
@@ -311,7 +314,10 @@ export default function SolicitationView({
   const displayColumns = columns;
 
   const primaryActions = [
-    { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => navigation.setSelectedId(null) },
+    { label: 'Adicionar', icon: <AddIcon />, variant: 'contained', color: 'primary', onClick: () => navigation.setSelectedId('new') },
+    ...(table.selecteds.length === 1 ? [
+      { label: 'Editar', icon: <EditIcon />, variant: 'outlined', color: 'primary', onClick: () => navigation.setSelectedId(table.selecteds[0].id) },
+    ] : []),
     ...(table.selecteds.length > 0 ? [
       {
         label: 'Alterar Status',
@@ -349,9 +355,7 @@ export default function SolicitationView({
         })
       },
     ] : []),
-    ...(table.selecteds.length === 1 ? [
-      { label: 'Editar', icon: <EditIcon />, variant: 'outlined', color: 'primary', onClick: () => navigation.setSelectedId(table.selecteds[0].id) },
-    ] : []),
+
     ...(table.selecteds.length > 0 ? [
       { label: 'Excluir', icon: <DeleteIcon />, variant: 'outlined', color: 'error', onClick: handleDelete },
     ] : []),
@@ -437,6 +441,7 @@ export default function SolicitationView({
           onClose={handleCloseModal}
           onSave={handleSave}
           solicitationType={solicitationType}
+          tripTravelId={tripTravelId}
         />
 
         <SolicitationFilter

@@ -30,7 +30,7 @@ export function FreightLetterDetail({ open, freightLetter, componentTypes = [], 
     payee: null,
     cardNumber: '',
     tripId: null,
-    groupId: null,
+    tripTravelId: null,
     solicitationId: null,
   };
 

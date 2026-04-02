@@ -69,7 +69,7 @@ export async function findAll(transaction, { page = 1, limit = 50, filters = {},
 export async function findOne(transaction, id) {
   const session = await getSession()
   const solicitation = await solicitationRepository.findOne(transaction, {
-    attributes: ['id', 'description', 'number', 'date', 'forecastDate', 'typeId', 'statusId', 'partnerId'],
+    attributes: ['id', 'description', 'number', 'date', 'forecastDate', 'typeId', 'statusId', 'partnerId', 'tripTravelId'],
     where: { id },
     include: [
       { association: 'type', attributes: ['description'] },

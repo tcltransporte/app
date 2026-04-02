@@ -87,7 +87,7 @@ export class FreightLetter {
     type: DataTypes.BIGINT
   }
 
-  groupId = {
+  tripTravelId = {
     field: 'IDViagemGrupo',
     allowNull: true,
     type: DataTypes.BIGINT

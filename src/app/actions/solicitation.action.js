@@ -237,7 +237,7 @@ export async function saveFreightLetters(solicitationId, freightLetters = []) {
           solicitationId,
           operatorId: 2, //TCL
           tripId: fl.tripId || solicitation.tripId,
-          groupId: fl.groupId || solicitation.tripGroupId,
+          tripTravelId: fl.tripTravelId || solicitation.tripTravelId,
           payeeId: fl.payeeId || solicitation.partnerId
         }
 

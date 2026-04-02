@@ -56,7 +56,7 @@ export class Solicitation {
     type: DataTypes.BIGINT
   }
 
-  tripGroupId = {
+  tripTravelId = {
     field: 'IdViagemGrupo',
     allowNull: true,
     type: DataTypes.BIGINT

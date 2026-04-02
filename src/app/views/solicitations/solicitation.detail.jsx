@@ -15,7 +15,7 @@ import { alert } from '@/libs/alert';
 import * as search from "@/libs/search";
 import { ServiceStatus } from '@/libs/service';
 
-export default function SolicitationDetail({ solicitationId, onClose, onSave, solicitationType }) {
+export default function SolicitationDetail({ solicitationId, onClose, onSave, solicitationType, tripTravelId }) {
 
   const formikRef = React.useRef(null);
   const [data, setData] = React.useState({});
@@ -26,7 +26,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
 
   React.useEffect(() => {
 
-    if (!solicitationId || solicitationId === 'undefined' || solicitationId === 'null') {
+    if (!solicitationId || solicitationId === 'undefined' || solicitationId === 'null' || solicitationId === 'new') {
       setData({});
       formikRef.current?.resetForm();
       return;
@@ -63,8 +63,9 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
         payload.typeId = solicitationType.id;
       }
 
+
       let result
-      if (solicitationId) {
+      if (solicitationId && solicitationId !== 'new') {
         result = await solicitationAction.update(Number(solicitationId), payload)
       } else {
         result = await solicitationAction.create(payload)
@@ -79,7 +80,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
       onClose?.();
 
     } catch (error) {
-      alert.error('Erro ao salvar', error?.header?.message || error.message);
+      alert.error('Erro ao salvar', error?.body?.message || error.message);
     } finally {
       setLoading(false)
     }
@@ -195,6 +196,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
           products: data?.products ?? [],
           services: data?.services ?? [],
           payments: data?.payments ?? [],
+          tripTravelId: data?.tripTravelId ?? ((solicitationId === null || solicitationId === 'new') ? tripTravelId : ''),
         }}
         onSubmit={handleSubmit}
       >
@@ -202,7 +204,7 @@ export default function SolicitationDetail({ solicitationId, onClose, onSave, so
           <Dialog
             open={solicitationId !== undefined}
             loading={loading && !Object.keys(data).length}
-            title={solicitationId === null ? 'Nova solicitação' : `Editar solicitação: ${data?.number || ''}`}
+            title={(solicitationId === null || solicitationId === 'new') ? 'Nova solicitação' : `Editar solicitação: ${data?.number || ''}`}
             onClose={onClose}
             width="1000px"
           >
