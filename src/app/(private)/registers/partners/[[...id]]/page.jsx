@@ -1,5 +1,5 @@
 import { RegistersPartners } from "@/app/views/registers/partners"
-import * as partnerService from "@/app/services/partner.service"
+import * as partnerAction from "@/app/actions/partner.action"
 import { ServiceStatus } from "@/libs/service";
 
 export default async ({ params }) => {
@@ -9,7 +9,7 @@ export default async ({ params }) => {
 
     const initialFilters = {};
 
-    const partnerResult = await partnerService.findAll(null, {
+    const partnerResult = await partnerAction.findAll({
       page: 1,
       limit: 50,
       filters: initialFilters

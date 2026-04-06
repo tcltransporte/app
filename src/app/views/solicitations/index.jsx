@@ -278,7 +278,7 @@ export default function SolicitationView({
       sx: { py: 0 },
       renderCell: (value, row) => (
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: 32 }}>
-          <Typography variant="body2" sx={{ lineHeight: 1 }}>{row.status?.description || 'Pendente'}</Typography>
+          <Typography variant="body2" sx={{ lineHeight: 1 }}>{row.status?.description}</Typography>
           <Tooltip title="Alterar status">
             <MuiIconButton
               size="small"

@@ -1,7 +1,7 @@
 "use server"
 
 import { redirect } from "next/navigation"
-import * as companyService from "@/app/services/settings/company.service"
+import * as companyAction from "@/app/actions/settings/company.action"
 import { SettingsView } from "@/app/views/settings"
 import { ServiceStatus } from "@/libs/service"
 
@@ -16,7 +16,7 @@ export default async ({ params }) => {
   const activeSlug = slug[0];
 
   try {
-    const companyResult = await companyService.findOne(null)
+    const companyResult = await companyAction.findOne()
 
     if (companyResult.header.status !== ServiceStatus.SUCCESS) {
       throw companyResult
@@ -24,7 +24,7 @@ export default async ({ params }) => {
 
     let initialStatusesConfig = null;
     if (activeSlug === 'status') {
-      const result = await companyService.getStatusesConfig(null);
+      const result = await companyAction.getStatusesConfig();
       if (result.header.status === ServiceStatus.SUCCESS) {
         initialStatusesConfig = result.body;
       }

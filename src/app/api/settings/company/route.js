@@ -1,4 +1,4 @@
-import * as companyService from "@/app/services/settings/company.service"
+import * as companyAction from "@/app/actions/settings/company.action"
 import { NextResponse } from "next/server"
 
 /**
@@ -23,7 +23,7 @@ import { NextResponse } from "next/server"
  */
 export async function GET() {
 
-  const companyResult = await companyService.findOne(null)
+  const companyResult = await companyAction.findOne()
 
   return NextResponse.json(companyResult.body, { status: companyResult.header.status })
 
