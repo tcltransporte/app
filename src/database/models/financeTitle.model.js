@@ -75,7 +75,7 @@ export class FinanceTitle {
     allowNull: true
   }
 
-  accountingChartId = {
+  accountPlanId = {
     field: 'IDPlanoContasContabil',
     type: DataTypes.INTEGER,
     allowNull: true

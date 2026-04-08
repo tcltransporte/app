@@ -19,13 +19,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable 
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
         where: overrides.where || {}, // Add extra filtering if needed
-        include: [
-          {
-            association: 'title',
-            where: { operationType },
-            include: ['partner']
-          }
-        ],
+        operationType,
         sortBy: overrides.sortBy || table.sortBy || undefined,
         sortOrder: overrides.sortOrder || table.sortOrder || undefined
       });

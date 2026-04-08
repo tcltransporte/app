@@ -10,16 +10,12 @@ export default async function FinanceReceivablePage() {
   const result = await financeEntryAction.findAll({
     page: 1,
     limit: 50,
-    include: [
-      {
-        association: 'title',
-        where: { operationType: 2 },
-        include: ['partner']
-      }
-    ]
+    operationType: 2
   });
 
-  const initialTable = result?.header?.status === ServiceStatus.SUCCESS ? result.body : { items: [], total: 0 };
+  const initialTable = result?.header?.status === ServiceStatus.SUCCESS
+    ? { items: result.body.rows || [], total: result.body.count || 0 }
+    : { items: [], total: 0 };
 
-  return <FinanceEntriesList operationType={2} title="Contas a Receber" initialTable={initialTable} />
+  return <FinanceEntriesList operationType={1} title="Contas a Receber" initialTable={initialTable} />
 }

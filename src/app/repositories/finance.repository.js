@@ -129,3 +129,23 @@ export async function findAllEntries(transaction, { attributes, include, where, 
     return { rows: rows.map(r => r.toJSON()), count }
   })
 }
+
+export async function findEntry(transaction, id) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const entry = await db.FinanceEntry.findOne({
+      where: { id },
+      include: [{ association: 'title', include: ['partner', 'accountPlan'] }],
+      transaction: t
+    })
+    return entry?.toJSON()
+  })
+}
+
+export async function updateEntry(transaction, id, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    await db.FinanceEntry.update(data, { where: { id }, transaction: t })
+    return findEntry(t, id)
+  })
+}

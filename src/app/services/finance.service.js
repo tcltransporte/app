@@ -2,6 +2,7 @@
 
 import * as financeRepository from "@/app/repositories/finance.repository"
 import { getSession } from "@/libs/session"
+import { Op } from 'sequelize'
 
 export async function findAll(transaction, params = {}) {
   const session = await getSession()
@@ -55,20 +56,48 @@ export async function update(transaction, id, data) {
 export async function findAllEntries(transaction, params = {}) {
   const session = await getSession()
 
-  // Ensure title is included and its companyId matches the session
-  const includeTitleIndex = params.include?.findIndex(inc => inc === 'title' || inc.association === 'title')
-  let titleInclude = { association: 'title', where: { companyId: session.company.id } }
-
-  if (includeTitleIndex !== undefined && includeTitleIndex > -1) {
-    const existingTitleInclude = params.include[includeTitleIndex]
-    if (typeof existingTitleInclude === 'string') {
-      params.include[includeTitleIndex] = titleInclude
-    } else {
-      params.include[includeTitleIndex].where = { ...existingTitleInclude.where, companyId: session.company.id }
-    }
-  } else {
-    params.include = [...(params.include || []), titleInclude]
+  const titleInclude = {
+    association: 'title',
+    where: { companyId: session.company.id },
+    include: [
+      { association: 'partner' },
+      { association: 'accountPlan', required: false }
+    ]
   }
 
+  if (params.operationType) {
+    params.where = {
+      ...params.where,
+      [Op.or]: [
+        { '$title.type_operation$': params.operationType },
+        {
+          '$title.type_operation$': null,
+          '$title.accountPlan.codigo_tipo_operacao$': params.operationType
+        }
+      ]
+    }
+    delete params.operationType
+  }
+
+  params.include = [...(params.include || []), titleInclude]
+
   return await financeRepository.findAllEntries(transaction, params)
+}
+
+export async function findEntry(transaction, id) {
+  const session = await getSession()
+  const entry = await financeRepository.findEntry(transaction, id)
+  if (!entry || entry.title?.companyId !== session.company.id) {
+    throw { code: "NOT_FOUND", message: "Parcela financeira não encontrada" }
+  }
+  return entry
+}
+
+export async function updateEntry(transaction, id, data) {
+  await findEntry(transaction, id) // Validate existence and company permissions first
+  
+  // Prevent updating security fields if present in data
+  const { id: _id, titleId: _titleId, ...safeData } = data
+
+  return await financeRepository.updateEntry(transaction, id, safeData)
 }

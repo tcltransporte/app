@@ -29,6 +29,7 @@ import { FinanceTitle } from './models/financeTitle.model.js'
 import { FinanceEntry } from './models/financeEntry.model.js'
 import { FreightLetter } from './models/freightLetter.model.js'
 import { FreightLetterComponentType } from './models/freightLetterComponentType.model.js'
+import { AccountPlan } from './models/accountPlan.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -96,6 +97,7 @@ export class AppContext extends Sequelize {
     this.FinanceEntry = this.define('financeEntry', new FinanceEntry(), { tableName: 'movimentos_detalhe' })
     this.FreightLetter = this.define('freightLetter', new FreightLetter(), { tableName: 'CompValorCartaFrete' })
     this.FreightLetterComponentType = this.define('freightLetterComponentType', new FreightLetterComponentType(), { tableName: 'CompValorCartaFreteTipo' })
+    this.AccountPlan = this.define('accountPlan', new AccountPlan(), { tableName: 'PlanoContasContabil' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -160,6 +162,7 @@ export class AppContext extends Sequelize {
     this.FinanceTitle.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId' })
     this.FinanceTitle.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
     this.FinanceTitle.belongsTo(this.FinanceTitle, { as: 'parent', foreignKey: 'parentMovementId' })
+    this.FinanceTitle.belongsTo(this.AccountPlan, { as: 'accountPlan', foreignKey: 'accountPlanId' })
 
     this.FinanceTitle.hasMany(this.FinanceEntry, { as: 'entries', foreignKey: 'titleId' })
     this.FinanceEntry.belongsTo(this.FinanceTitle, { as: 'title', foreignKey: 'titleId' })
