@@ -83,6 +83,9 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize }) => 
     opacity: isDragging ? 0.5 : 1,
     width: width || col.width || 'auto',
     minWidth: width || col.width || 'auto',
+    maxWidth: width || col.width || 'auto',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
     ...col.headerSx
   };
 
@@ -491,6 +494,10 @@ export const Table = ({
                           fontSize: '0.8125rem',
                           width: widths[col.field] || col.width || 'auto',
                           minWidth: widths[col.field] || col.width || 'auto',
+                          maxWidth: widths[col.field] || col.width || 'auto',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
                           ...((typeof col.sx === 'function' ? col.sx(row) : col.sx) || {})
                         }}
                       >
@@ -580,6 +587,12 @@ export const Table = ({
                       align={col.align || 'left'}
                       sx={{ 
                         fontSize: '0.8125rem',
+                        width: col.width || 'auto',
+                        minWidth: col.width || 'auto',
+                        maxWidth: col.width || 'auto',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                         ...(typeof col.sx === 'function' ? col.sx(row) : col.sx)
                       }}
                     >

@@ -122,7 +122,15 @@ export async function findAllEntries(transaction, { attributes, include, where, 
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {
     const { rows, count } = await db.FinanceEntry.findAndCountAll({
-      attributes, include, where, limit, offset, order, transaction: t,
+      attributes: {
+        include: [
+          [
+            db.literal(`(SELECT COUNT(*) FROM movimentos_detalhe WHERE movimentos_detalhe.codigo_movimento = financeEntry.codigo_movimento)`),
+            'installmentsCount'
+          ]
+        ]
+      },
+      include, where, limit, offset, order, transaction: t,
       distinct: true
     })
 

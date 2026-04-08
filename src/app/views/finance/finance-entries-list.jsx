@@ -6,11 +6,30 @@ import { useTable, useNavigation, useLoading } from '@/hooks';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
+import { Button, IconButton, Tooltip, Box, Chip, Typography } from '@mui/material';
+import { Add as AddIcon, Edit as EditIcon, ListAlt as ListIcon, EditNote as EditNoteIcon } from '@mui/icons-material';
+import FinanceTitleModal from './finance-title-modal';
+import FinanceEntryModal from './finance-entry-modal';
+import FinanceTitleDetailsDrawer from './finance-title-details-drawer';
 
 export default function FinanceEntriesList({ operationType, title, initialTable }) {
   const table = useTable({ initialTable });
   const loading = useLoading();
   const navigation = useNavigation(`/finance/${operationType === 1 ? 'payable' : 'receivable'}`);
+
+  const [titleModalOpen, setTitleModalOpen] = React.useState(false);
+  const [entryModalOpen, setEntryModalOpen] = React.useState(false);
+  const [selectedEntryId, setSelectedEntryId] = React.useState(null);
+
+  const [detailsDrawerOpen, setDetailsDrawerOpen] = React.useState(false);
+  const [selectedTitleId, setSelectedTitleId] = React.useState(null);
+  const [selectedTitleDoc, setSelectedTitleDoc] = React.useState(null);
+  const [drawerRefreshKey, setDrawerRefreshKey] = React.useState(0);
+
+  const handleEdit = React.useCallback((row) => {
+    setSelectedEntryId(row.id);
+    setEntryModalOpen(true);
+  }, []);
 
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
@@ -53,24 +72,91 @@ export default function FinanceEntriesList({ operationType, title, initialTable 
   }, [fetchTable]);
 
   const columns = [
-    { field: 'id', headerName: 'Cód. Parcela', width: 120 },
-    { field: 'installmentNumber', headerName: 'Nº Parcela', width: 100 },
     {
-      field: 'partner', headerName: 'Fornecedor/Cliente', width: 300,
+      field: 'documentNumber', headerName: 'Nº Doc.', width: 140,
+      renderCell: (val, row) => (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          overflow: 'hidden'
+        }}>
+          <Typography
+            sx={{
+              fontSize: 'inherit', // Herda o tamanho da célula da tabela (0.8125rem)
+              flex: 1,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              mr: 1
+            }}
+          >
+            {row.title?.documentNumber || ''}
+          </Typography>
+          <Tooltip title="Ver todas as parcelas">
+            <Chip
+              label={`${row.installmentNumber}/${row.installmentsCount || '?'}`}
+              size="small"
+              color="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedTitleId(row.titleId);
+                setSelectedTitleDoc(row.title?.documentNumber);
+                setDetailsDrawerOpen(true);
+              }}
+              sx={{
+                height: 24,
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                mr: 1, // Pequeno recuo
+                boxShadow: (theme) => `0 2px 4px ${theme.palette.primary.main}44`,
+                '&:hover': {
+                  opacity: 0.9,
+                  transform: 'scale(1.05)',
+                  boxShadow: (theme) => `0 4px 8px ${theme.palette.primary.main}66`,
+                },
+                transition: 'all 0.2s'
+              }}
+            />
+          </Tooltip>
+        </Box>
+      )
+    },
+    {
+      field: 'partner', headerName: 'Fornecedor/Cliente',
       renderCell: (val, row) => row.title?.partner?.surname || row.title?.partner?.name || ''
     },
     {
-      field: 'dueDate', headerName: 'Vencimento', width: 150,
+      field: 'accountPlan', headerName: 'Plano de Contas', width: 300,
+      renderCell: (val, row) => row.title?.accountPlan ? `${row.title.accountPlan.code} - ${row.title.accountPlan.description}` : ''
+    },
+    {
+      field: 'dueDate', headerName: 'Vencimento', width: 140,
       renderCell: (value) => value ? new Date(value).toLocaleDateString('pt-BR') : ''
     },
     {
-      field: 'installmentValue', headerName: 'Valor', width: 150,
+      field: 'installmentValue', headerName: 'Valor', width: 120,
       renderCell: (value) => value ? parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
     },
-    {
-      field: 'documentNumber', headerName: 'Nº Doc', width: 150,
-      renderCell: (val, row) => row.title?.documentNumber || ''
-    }
+    /*{
+      field: 'actions', headerName: 'Ações', width: 80, align: 'center',
+      renderCell: (val, row) => (
+        <Tooltip title="Editar Parcela">
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={() => {
+              setSelectedEntryId(row.id);
+              setEntryModalOpen(true);
+            }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      )
+    },*/
   ];
 
   React.useEffect(() => {
@@ -85,7 +171,21 @@ export default function FinanceEntriesList({ operationType, title, initialTable 
 
       <Container.Content>
         <Toolbar
-          primary={[]}
+          primary={[
+            {
+              label: 'Adicionar',
+              icon: <AddIcon />,
+              onClick: () => setTitleModalOpen(true),
+              variant: 'contained'
+            },
+            ...(table.selecteds.length === 1 ? [{
+              label: 'Editar',
+              icon: <EditNoteIcon />,
+              onClick: () => handleEdit(table.selecteds[0]),
+              variant: 'outlined',
+              color: 'primary'
+            }] : [])
+          ]}
           secondary={[]}
         />
 
@@ -95,6 +195,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable 
           selecteds={table.selecteds}
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}
+          onRowDoubleClick={handleEdit}
           onSort={async (property) => {
             const isAsc = table.sortBy === property && table.sortOrder === 'ASC';
             const newOrder = isAsc ? 'DESC' : 'ASC';
@@ -131,6 +232,35 @@ export default function FinanceEntriesList({ operationType, title, initialTable 
             table.setPage(1);
           }
         }}
+      />
+
+      <FinanceTitleModal
+        open={titleModalOpen}
+        onClose={() => setTitleModalOpen(false)}
+        operationType={operationType}
+        onSuccess={() => fetchTable()}
+      />
+
+      <FinanceEntryModal
+        open={entryModalOpen}
+        onClose={() => setEntryModalOpen(false)}
+        entryId={selectedEntryId}
+        onSuccess={() => {
+          fetchTable();
+          setDrawerRefreshKey(prev => prev + 1);
+        }}
+      />
+
+      <FinanceTitleDetailsDrawer 
+        open={detailsDrawerOpen} 
+        onClose={() => setDetailsDrawerOpen(false)} 
+        titleId={selectedTitleId}
+        documentNumber={selectedTitleDoc}
+        onEditEntry={(entryId) => {
+          setSelectedEntryId(entryId);
+          setEntryModalOpen(true);
+        }}
+        refreshKey={drawerRefreshKey}
       />
     </Container>
   );
