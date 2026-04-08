@@ -112,3 +112,20 @@ export async function update(transaction, { where }, data) {
     }
   })
 }
+
+/**
+* @param {import('sequelize').Transaction} transaction
+* @param {{ attributes?, include?, where?, limit?, offset?, order? }} params
+* @returns {Promise<{ rows: object[], count: number }>}
+*/
+export async function findAllEntries(transaction, { attributes, include, where, limit, offset, order }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const { rows, count } = await db.FinanceEntry.findAndCountAll({
+      attributes, include, where, limit, offset, order, transaction: t,
+      distinct: true
+    })
+
+    return { rows: rows.map(r => r.toJSON()), count }
+  })
+}

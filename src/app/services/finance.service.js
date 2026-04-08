@@ -51,3 +51,24 @@ export async function update(transaction, id, data) {
   const result = await findOne(transaction, id)
   return result
 }
+
+export async function findAllEntries(transaction, params = {}) {
+  const session = await getSession()
+
+  // Ensure title is included and its companyId matches the session
+  const includeTitleIndex = params.include?.findIndex(inc => inc === 'title' || inc.association === 'title')
+  let titleInclude = { association: 'title', where: { companyId: session.company.id } }
+
+  if (includeTitleIndex !== undefined && includeTitleIndex > -1) {
+    const existingTitleInclude = params.include[includeTitleIndex]
+    if (typeof existingTitleInclude === 'string') {
+      params.include[includeTitleIndex] = titleInclude
+    } else {
+      params.include[includeTitleIndex].where = { ...existingTitleInclude.where, companyId: session.company.id }
+    }
+  } else {
+    params.include = [...(params.include || []), titleInclude]
+  }
+
+  return await financeRepository.findAllEntries(transaction, params)
+}
