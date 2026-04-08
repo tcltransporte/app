@@ -108,6 +108,12 @@ const menuItems = [
     ]
   },
   {
+    text: 'Finanças', icon: <AccountBalance />, subMenu: [
+      { text: 'Contas a pagar', path: '/finance/payable' },
+      { text: 'Contas a receber', path: '/finance/receivable' }
+    ]
+  },
+  {
     text: 'Documentos', icon: <ReceiptLong />, subMenu: []
   },
   /*{ text: 'Finanças', icon: <Category /> },
@@ -307,12 +313,10 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
             ...solicitationTypes.map(tipo => ({
               id: tipo.id,
               text: tipo.description,
-              icon: <Description />,
               path: `/solicitations/${tipo.hash}`
             })),
             solicitationTypes.length === 0 && {
               text: 'Nenhum tipo cadastrado',
-              icon: <Info />,
               disabled: true,
               sx: { opacity: 0.5, fontStyle: 'italic' }
             },
@@ -344,13 +348,11 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
             ...documentTypes.map(type => ({
               id: type.id,
               text: type.surname || type.description,
-              icon: <Description />,
               path: `/documents/${type.initials?.toLowerCase() || type.id}`,
               hideEdit: true
             })),
             documentTypes.length === 0 && {
               text: 'Nenhum tipo cadastrado',
-              icon: <Info />,
               disabled: true,
               sx: { opacity: 0.5, fontStyle: 'italic' }
             }
@@ -383,22 +385,22 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       return dynamicMenuItems;
     }
 
-    const processSitemapItem = (item) => ({
+    const processSitemapItem = (item, isSubItem = false) => ({
       text: item.text,
-      icon: iconMap[item.icon] || <Description />,
+      icon: isSubItem ? (iconMap[item.icon] || null) : (iconMap[item.icon] || <Description />),
       path: item.path,
-      subMenu: item.subMenu ? item.subMenu.map(processSitemapItem) : null
+      subMenu: item.subMenu ? item.subMenu.map(sub => processSitemapItem(sub, true)) : null
     });
 
-    return sitemapMenuItems.map(processSitemapItem);
+    return sitemapMenuItems.map(item => processSitemapItem(item, false));
   }, [sitemapMenuItems, dynamicMenuItems]);
 
 
 
   // Calculate effective drawer state: if mobile, always show full width.
   const isEffectivelyCollapsed = !isMobile && menu === 'recolhido' && !isHovered;
-  const drawerWidth = isEffectivelyCollapsed ? 80 : 280;
-  const subMenuWidth = 280;
+  const drawerWidth = isEffectivelyCollapsed ? 80 : 294;
+  const subMenuWidth = 294;
 
   const commonTransition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
 
@@ -460,7 +462,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
           sx={{
             borderRadius: 1,
             minHeight: 40,
-            pl: isMobile ? 4 : 2,
+            pl: isMobile ? 3 : 2,
             cursor: (isReorderMode || isEditing) ? 'default' : 'pointer',
             color: subItem.action ? primaryColor : (isActiveSub ? primaryColor : (isDarkMenu ? 'rgba(255, 255, 255, 0.7)' : 'text.primary')),
             '& .MuiListItemIcon-root': {
@@ -470,7 +472,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
             '&:hover': {
               backgroundColor: isDarkMenu ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0,0,0,0.04)'
             },
-            pr: isEditing ? 1 : 2
+            pr: isEditing ? 1 : 1
           }}
         >
           {isReorderMode ? (
@@ -524,7 +526,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
           ) : (
             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
               <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 15, fontWeight: subItem.action ? 700 : 500 }} />
-              {!isReorderMode && subItem.id && !subItem.hideEdit && (
+              {!isReorderMode && subItem.id !== undefined && !subItem.hideEdit && (
                 <IconButton
                   className="edit-btn"
                   size="small"
@@ -585,7 +587,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
                     <ListItemButton
                       onClick={() => handleSubItemClick(subItem)}
                       sx={{
-                        borderRadius: 1, minHeight: 40, pl: isMobile ? 4 : 2,
+                        borderRadius: 1, minHeight: 40, pl: isMobile ? 3 : 2, pr: 1,
                         color: primaryColor,
                         '& .MuiListItemIcon-root': { color: primaryColor, minWidth: 40 }
                       }}
@@ -718,7 +720,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
                     sx={{
                       borderRadius: 1,
                       minHeight: 40,
-                      pl: isMobile ? 4 : 2, // indent on mobile
+                      pl: isMobile ? 3 : 2, // indent on mobile
                       cursor: (isEditing || subItem.disabled) ? 'default' : 'pointer',
                       color: subItem.action ? primaryColor : (isActiveSub ? primaryColor : (isDarkMenu ? 'rgba(255, 255, 255, 0.7)' : 'text.primary')),
                       '& .MuiListItemIcon-root': {
@@ -728,7 +730,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
                       '&:hover': {
                         backgroundColor: (isDarkMenu || subItem.disabled) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0,0,0,0.04)'
                       },
-                      pr: isEditing ? 1 : 2,
+                      pr: isEditing ? 1 : 1,
                       ...subItem.sx
                     }}
                   >
@@ -777,7 +779,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
                     ) : (
                       <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
                         <ListItemText primary={subItem.text} primaryTypographyProps={{ fontSize: 15, fontWeight: subItem.action ? 700 : 500 }} />
-                        {subItem.id && !subItem.hideEdit && (
+                        {subItem.id !== undefined && !subItem.hideEdit && (
                           <IconButton
                             className="edit-btn"
                             size="small"
@@ -1040,7 +1042,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       sx={{ display: 'flex', flexShrink: 0, position: 'relative' }}
       onMouseLeave={handleMouseLeaveNav}
     >
-      <Box sx={{ width: { md: menu === 'recolhido' ? 80 : 280 }, transition: commonTransition }}>
+      <Box sx={{ width: { md: menu === 'recolhido' ? 80 : 294 }, transition: commonTransition }}>
         {/* Mobile Drawer */}
         <Drawer
           variant="temporary"
@@ -1051,7 +1053,7 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
             display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
-              width: 280,
+              width: 294,
               backgroundColor: sidebarBg,
               color: sidebarText,
               borderRight: 'none'
