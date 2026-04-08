@@ -96,7 +96,7 @@ export default function FinanceTitleModal({ open, onClose, operationType, onSucc
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title="Adicionar Título Financeiro" width="lg">
+    <Dialog open={open} onClose={onClose} title="Adicionar Título Financeiro" width="md">
       <Formik
         initialValues={initialValues}
         validate={validate}
@@ -106,6 +106,21 @@ export default function FinanceTitleModal({ open, onClose, operationType, onSucc
           <Form>
             <Dialog.Content>
               <Grid container spacing={2}>
+                <Grid item size={{ xs: 12, md: 6 }}>
+                  <Field
+                    name="documentNumber"
+                    component={TextField}
+                    label="Nº Doc."
+                  />
+                </Grid>
+                <Grid item size={{ xs: 12, md: 6 }}>
+                  <Field
+                    name="issueDate"
+                    component={DateField}
+                    label="Data de Emissão"
+                  />
+                </Grid>
+
                 <Grid item size={{ xs: 12, md: 6 }}>
                   <Field
                     name="partner"
@@ -126,21 +141,6 @@ export default function FinanceTitleModal({ open, onClose, operationType, onSucc
                     renderSuggestion={(v) => `${v.code} - ${v.description}`}
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, md: 6 }}>
-                  <Field
-                    name="documentNumber"
-                    component={TextField}
-                    label="Número do Documento"
-                  />
-                </Grid>
-                <Grid item size={{ xs: 12, md: 6 }}>
-                  <Field
-                    name="issueDate"
-                    component={DateField}
-                    label="Data de Emissão"
-                  />
-                </Grid>
-
                 <Grid item size={{ xs: 12 }}>
                   <Box sx={{ mt: 2, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="h6" fontWeight={700}>Parcelas</Typography>

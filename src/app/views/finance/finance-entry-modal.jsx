@@ -69,18 +69,14 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess })
   if (!open) return null
 
   return (
-    <Dialog open={open} onClose={onClose} title="Editar Parcela Financeira" width="md">
-      {loading ? (
-        <Dialog.Content>
-          <Skeleton variant="text" width="60%" height={30} sx={{ mb: 2 }} />
-          <Grid container spacing={2}>
-            <Grid item xs={6}><Skeleton variant="rectangular" height={50} /></Grid>
-            <Grid item xs={6}><Skeleton variant="rectangular" height={50} /></Grid>
-            <Grid item xs={12}><Skeleton variant="rectangular" height={100} /></Grid>
-          </Grid>
-        </Dialog.Content>
-      ) : (
-        <Formik
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      title={`Editar #${entry?.title?.documentNumber || ''}`} 
+      width="sm"
+      loading={loading || !entry}
+    >
+      <Formik
           initialValues={{
             dueDate: entry?.dueDate ? new Date(entry.dueDate) : new Date(),
             installmentValue: entry?.installmentValue || 0,
@@ -95,7 +91,11 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess })
             <Form>
               <Dialog.Content>
                 {/* Header Context (Read-only) */}
-                <FinanceTitleInfoCard title={entry?.title} sx={{ mb: 3 }} />
+                <FinanceTitleInfoCard
+                  title={entry?.title}
+                  onUpdate={fetchEntry}
+                  sx={{ mb: 3 }}
+                />
 
                 <Grid container spacing={2}>
                   <Grid item size={{ xs: 12, md: 4 }}>
@@ -145,13 +145,12 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess })
                   startIcon={isSubmitting ? null : <SaveIcon />}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Atualizando...' : 'Atualizar Parcela'}
+                  {isSubmitting ? 'Atualizando...' : 'Atualizar'}
                 </Button>
               </Dialog.Actions>
             </Form>
           )}
         </Formik>
-      )}
     </Dialog>
   )
 }

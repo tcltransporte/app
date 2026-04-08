@@ -59,87 +59,95 @@ export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, docu
           </IconButton>
         </Box>
 
-        <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
-          <FinanceTitleInfoCard title={entries[0]?.title} sx={{ bgcolor: 'background.paper' }} />
-        </Box>
-
-        <Divider />
-
-        <Box sx={{ p: 2, bgcolor: 'action.hover', pb: 0 }}>
-          <Typography variant="subtitle2" color="text.secondary" fontWeight={700}>
-            TODAS AS PARCELAS VINCULADAS
-          </Typography>
-        </Box>
-
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
               <CircularProgress size={32} />
             </Box>
           ) : (
-            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
-              <Table size="small">
-                <TableHead sx={{ bgcolor: 'action.selected' }}>
-                  <TableRow>
-                    <TableCell width={60}>Nº</TableCell>
-                    <TableCell>Vencimento</TableCell>
-                    <TableCell align="right">Valor</TableCell>
-                    <TableCell align="center">Status</TableCell>
-                    <TableCell width={50} align="center">Ações</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {entries.map((entry) => (
-                    <TableRow key={entry.id} hover>
-                      <TableCell fontWeight={600}>{entry.installmentNumber}</TableCell>
-                      <TableCell>
-                        {entry.dueDate ? new Date(entry.dueDate).toLocaleDateString('pt-BR') : '-'}
-                      </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700 }}>
-                        {parseFloat(entry.installmentValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={entry.paymentId ? 'Pago' : 'Pendente'}
-                          size="small"
-                          variant="outlined"
-                          color={entry.paymentId ? 'success' : 'warning'}
-                          sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => onEditEntry?.(entry.id)}
-                          title="Editar esta parcela"
-                        >
-                          <EditIcon fontSize="inherit" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {entries.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                        Nenhuma parcela encontrada.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-                {entries.length > 0 && (
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: 'action.hover' }}>
-                      <TableCell colSpan={2} sx={{ fontWeight: 700 }}>TOTAL ACUMULADO</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 800, color: 'primary.main' }}>
-                        {entries.reduce((acc, curr) => acc + parseFloat(curr.installmentValue || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </TableCell>
-                      <TableCell colSpan={2} />
-                    </TableRow>
-                  </TableHead>
-                )}
-              </Table>
-            </TableContainer>
+            <>
+              <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
+                <FinanceTitleInfoCard 
+                  title={entries[0]?.title} 
+                  onUpdate={fetchEntries}
+                  sx={{ bgcolor: 'background.paper' }} 
+                />
+              </Box>
+
+              <Divider />
+
+              <Box sx={{ p: 2, bgcolor: 'action.hover', pb: 0 }}>
+                <Typography variant="subtitle2" color="text.secondary" fontWeight={700}>
+                  TODAS AS PARCELAS VINCULADAS
+                </Typography>
+              </Box>
+
+              <Box sx={{ p: 2 }}>
+                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+                  <Table size="small">
+                    <TableHead sx={{ bgcolor: 'action.selected' }}>
+                      <TableRow>
+                        <TableCell width={60}>Nº</TableCell>
+                        <TableCell>Vencimento</TableCell>
+                        <TableCell align="right">Valor</TableCell>
+                        <TableCell align="center">Status</TableCell>
+                        <TableCell width={50} align="center">Ações</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {entries.map((entry) => (
+                        <TableRow key={entry.id} hover>
+                          <TableCell fontWeight={600}>{entry.installmentNumber}</TableCell>
+                          <TableCell>
+                            {entry.dueDate ? new Date(entry.dueDate).toLocaleDateString('pt-BR') : '-'}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700 }}>
+                            {parseFloat(entry.installmentValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              label={entry.paymentId ? 'Pago' : 'Pendente'}
+                              size="small"
+                              variant="outlined"
+                              color={entry.paymentId ? 'success' : 'warning'}
+                              sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
+                            />
+                          </TableCell>
+                          <TableCell align="center">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => onEditEntry?.(entry.id)}
+                              title="Editar esta parcela"
+                            >
+                              <EditIcon fontSize="inherit" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {entries.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                            Nenhuma parcela encontrada.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                    {entries.length > 0 && (
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: 'action.hover' }}>
+                          <TableCell colSpan={2} sx={{ fontWeight: 700 }}>TOTAL ACUMULADO</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                            {entries.reduce((acc, curr) => acc + parseFloat(curr.installmentValue || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </TableCell>
+                          <TableCell colSpan={2} />
+                        </TableRow>
+                      </TableHead>
+                    )}
+                  </Table>
+                </TableContainer>
+              </Box>
+            </>
           )}
         </Box>
       </Box>

@@ -1,29 +1,172 @@
 'use client'
 
-import React from 'react'
-import { Card, CardContent, Box, Typography, Chip } from '@mui/material'
+import React, { useState } from 'react'
+import { Card, CardContent, Box, Typography, IconButton, Grid, Button, Tooltip } from '@mui/material'
+import {
+  Edit as EditIcon,
+  Close as CancelIcon,
+  Save as SaveIcon,
+  CheckCircle as SuccessIcon
+} from '@mui/icons-material'
+import { Formik, Form, Field } from 'formik'
+import { TextField, AutoComplete, DateField } from '@/components/controls'
+import * as partnerAction from '@/app/actions/partner.action'
+import * as accountPlanAction from '@/app/actions/accountPlan.action'
+import * as financeAction from '@/app/actions/finance.action'
+import { alert } from '@/libs/alert'
+import { ServiceStatus } from '@/libs/service'
 
-export default function FinanceTitleInfoCard({ title, sx = {} }) {
+export default function FinanceTitleInfoCard({ title, onUpdate, sx = {} }) {
+  const [isEditing, setIsEditing] = useState(false)
+
   if (!title) return null
 
+  const handleToggleEdit = () => setIsEditing(prev => !prev)
+
+  const handleSubmit = async (values, { setSubmitting }) => {
+    try {
+      const data = {
+        partnerId: values.partner?.id,
+        accountPlanId: values.accountPlan?.id,
+        documentNumber: values.documentNumber,
+        issueDate: values.issueDate ? new Date(values.issueDate).toISOString() : null,
+      }
+
+      const result = await financeAction.update(title.id, data)
+
+      if (result.header.status !== ServiceStatus.SUCCESS) throw result
+
+      alert.success('Sucesso', 'Informações do título atualizadas!')
+      setIsEditing(false)
+      onUpdate?.()
+    } catch (error) {
+      alert.error('Erro', error?.body?.message || 'Erro ao atualizar título')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const searchPartners = async (query) => {
+    const filters = title.type_operation === 1 ? { isSupplier: true } : { isCustomer: true }
+    if (query) filters.surname = query
+    const result = await partnerAction.findAll({ filters, limit: 20 })
+    return result.body.items || []
+  }
+
+  const searchAccountPlans = async (query) => {
+    const filters = {}
+    if (query) filters.description = query
+    const result = await accountPlanAction.findAll({ where: filters, limit: 50 })
+    return result.body || []
+  }
+
   return (
-    <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed', ...sx }}>
+    <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed', position: 'relative', ...sx }}>
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
           <Typography variant="caption" color="text.secondary" fontWeight={700} textTransform="uppercase">
-            Título
+            Informações do Título
           </Typography>
+          {!isEditing && (
+            <Tooltip title="Editar informações do título">
+              <IconButton size="small" onClick={handleToggleEdit} color="primary">
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
-        <Typography variant="body1" fontWeight={700}>
-          {title.partner?.surname || title.partner?.name || 'Parceiro não informado'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Doc: {title.documentNumber || '-'} | Emissão: {title.issueDate ? new Date(title.issueDate).toLocaleDateString('pt-BR') : '-'}
-        </Typography>
-        {title.accountPlan && (
-          <Typography variant="body2" color="primary.main" fontWeight={600} sx={{ mt: 0.5 }}>
-            {title.accountPlan.code} - {title.accountPlan.description}
-          </Typography>
+
+        {isEditing ? (
+          <Formik
+            initialValues={{
+              partner: title.partner,
+              accountPlan: title.accountPlan,
+              documentNumber: title.documentNumber || '',
+              issueDate: title.issueDate ? new Date(title.issueDate) : new Date()
+            }}
+            onSubmit={handleSubmit}
+          >
+            {({ isSubmitting, submitForm }) => (
+              <Box> {/* Usando Box em vez de Form para evitar <form> aninhado */}
+                <Grid container spacing={2}>
+                  <Grid item size={{ xs: 12, md: 6 }}>
+                    <Field
+                      name="documentNumber"
+                      component={TextField}
+                      label="Nº Doc."
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item size={{ xs: 12, md: 6 }}>
+                    <Field
+                      name="issueDate"
+                      component={DateField}
+                      label="Emissão"
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item size={{ xs: 12, md: 12 }}>
+                    <Field
+                      name="partner"
+                      component={AutoComplete}
+                      label="Fornecedor/Cliente"
+                      text={(v) => v.surname || v.name}
+                      onSearch={searchPartners}
+                      renderSuggestion={(v) => v.surname || v.name}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item size={{ xs: 12, md: 12 }}>
+                    <Field
+                      name="accountPlan"
+                      component={AutoComplete}
+                      label="Plano de Contas"
+                      text={(v) => `${v.code} - ${v.description}`}
+                      onSearch={searchAccountPlans}
+                      renderSuggestion={(v) => `${v.code} - ${v.description}`}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item size={{ xs: 12 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
+                      <Button
+                        size="small"
+                        onClick={handleToggleEdit}
+                        disabled={isSubmitting}
+                        startIcon={<CancelIcon />}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={submitForm} // Trigger manual do submit
+                        variant="contained"
+                        color="primary"
+                        disabled={isSubmitting}
+                        startIcon={isSubmitting ? null : <SaveIcon />}
+                      >
+                        {isSubmitting ? 'Salvando...' : 'Salvar'}
+                      </Button>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+          </Formik>
+        ) : (
+          <>
+            <Typography variant="body1" fontWeight={700}>
+              {title.partner?.surname || title.partner?.name || 'Parceiro não informado'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Doc: {title.documentNumber || '-'} | Emissão: {title.issueDate ? new Date(title.issueDate).toLocaleDateString('pt-BR') : '-'}
+            </Typography>
+            {title.accountPlan && (
+              <Typography variant="body2" color="primary.main" fontWeight={600} sx={{ mt: 0.5 }}>
+                {title.accountPlan.code} - {title.accountPlan.description}
+              </Typography>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

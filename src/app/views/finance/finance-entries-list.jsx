@@ -12,14 +12,12 @@ import FinanceTitleModal from './finance-title-modal';
 import FinanceEntryModal from './finance-entry-modal';
 import FinanceTitleDetailsDrawer from './finance-title-details-drawer';
 
-export default function FinanceEntriesList({ operationType, title, initialTable }) {
+export default function FinanceEntriesList({ operationType, title, initialTable, selectedId: propsSelectedId }) {
   const table = useTable({ initialTable });
   const loading = useLoading();
-  const navigation = useNavigation(`/finance/${operationType === 1 ? 'payable' : 'receivable'}`);
+  const navigation = useNavigation(`/finance/${operationType === 1 ? 'receivable' : 'payable'}`, propsSelectedId);
 
   const [titleModalOpen, setTitleModalOpen] = React.useState(false);
-  const [entryModalOpen, setEntryModalOpen] = React.useState(false);
-  const [selectedEntryId, setSelectedEntryId] = React.useState(null);
 
   const [detailsDrawerOpen, setDetailsDrawerOpen] = React.useState(false);
   const [selectedTitleId, setSelectedTitleId] = React.useState(null);
@@ -27,9 +25,8 @@ export default function FinanceEntriesList({ operationType, title, initialTable 
   const [drawerRefreshKey, setDrawerRefreshKey] = React.useState(0);
 
   const handleEdit = React.useCallback((row) => {
-    setSelectedEntryId(row.id);
-    setEntryModalOpen(true);
-  }, []);
+    navigation.setSelectedId(row.id);
+  }, [navigation]);
 
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
@@ -242,9 +239,9 @@ export default function FinanceEntriesList({ operationType, title, initialTable 
       />
 
       <FinanceEntryModal
-        open={entryModalOpen}
-        onClose={() => setEntryModalOpen(false)}
-        entryId={selectedEntryId}
+        open={!!navigation.selectedId}
+        onClose={() => navigation.setSelectedId(undefined)}
+        entryId={navigation.selectedId}
         onSuccess={() => {
           fetchTable();
           setDrawerRefreshKey(prev => prev + 1);
@@ -257,8 +254,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable 
         titleId={selectedTitleId}
         documentNumber={selectedTitleDoc}
         onEditEntry={(entryId) => {
-          setSelectedEntryId(entryId);
-          setEntryModalOpen(true);
+          navigation.setSelectedId(entryId);
         }}
         refreshKey={drawerRefreshKey}
       />
