@@ -8,7 +8,7 @@ import {
 } from '@mui/material'
 import { Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material'
 import { Dialog } from '@/components/common'
-import { TextField, AutoComplete, DateField, NumericField } from '@/components/controls'
+import { TextField, AutoComplete, DateField, NumericField, SelectField } from '@/components/controls'
 import * as partnerAction from '@/app/actions/partner.action'
 import * as accountPlanAction from '@/app/actions/accountPlan.action'
 import * as financeAction from '@/app/actions/finance.action'
@@ -21,6 +21,8 @@ const validate = (values) => {
   if (!values.accountPlan) errors.accountPlan = 'Campo obrigatório'
   if (!values.documentNumber) errors.documentNumber = 'Campo obrigatório'
   if (!values.issueDate) errors.issueDate = 'Campo obrigatório'
+  if (values.totalValue <= 0) errors.totalValue = 'Obrigatório'
+  if (values.installments <= 0) errors.installments = 'Obrigatório'
 
   if (!values.entries || values.entries.length === 0) {
     errors.entries = 'Adicione pelo menos uma parcela'
@@ -41,12 +43,34 @@ const validate = (values) => {
   return errors
 }
 
+const AutoGenerateInstallmentsWatcher = ({ values, setFieldValue }) => {
+  React.useEffect(() => {
+    if (values.totalValue > 0 && values.installments > 0) {
+      const valuePerInstallment = values.totalValue / values.installments
+      const newEntries = Array.from({ length: values.installments }).map((_, i) => {
+        const date = new Date(values.issueDate || new Date())
+        date.setMonth(date.getMonth() + i + 1)
+        return {
+          dueDate: date,
+          installmentValue: valuePerInstallment,
+          installmentNumber: String(i + 1),
+          description: ''
+        }
+      })
+      setFieldValue('entries', newEntries)
+    }
+  }, [values.totalValue, values.installments, values.issueDate, setFieldValue])
+  return null
+}
+
 export default function FinanceTitleModal({ open, onClose, operationType, onSuccess }) {
   const initialValues = {
     partner: null,
     accountPlan: null,
     documentNumber: '',
     issueDate: new Date(),
+    totalValue: 0,
+    installments: 1,
     type_operation: operationType, // 1: Payable, 2: Receivable
     entries: [
       { dueDate: new Date(), installmentValue: 0, installmentNumber: '1', description: '' }
@@ -104,20 +128,37 @@ export default function FinanceTitleModal({ open, onClose, operationType, onSucc
       >
         {({ values, isSubmitting, setFieldValue }) => (
           <Form>
+            <AutoGenerateInstallmentsWatcher values={values} setFieldValue={setFieldValue} />
             <Dialog.Content>
               <Grid container spacing={2}>
-                <Grid item size={{ xs: 12, md: 6 }}>
+                <Grid item size={{ xs: 12, md: 3 }}>
                   <Field
                     name="documentNumber"
                     component={TextField}
                     label="Nº Doc."
                   />
                 </Grid>
-                <Grid item size={{ xs: 12, md: 6 }}>
+                <Grid item size={{ xs: 12, md: 3 }}>
                   <Field
                     name="issueDate"
                     component={DateField}
                     label="Data de Emissão"
+                  />
+                </Grid>
+                <Grid item size={{ xs: 12, md: 3 }}>
+                  <Field
+                    name="totalValue"
+                    component={NumericField}
+                    label="Valor Total"
+                  />
+                </Grid>
+                <Grid item size={{ xs: 12, md: 3 }}>
+                  <Field
+                    name="installments"
+                    component={SelectField}
+                    placeholder={null}
+                    options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}x` }))}
+                    label="Nº Parcelas"
                   />
                 </Grid>
 
@@ -143,7 +184,9 @@ export default function FinanceTitleModal({ open, onClose, operationType, onSucc
                 </Grid>
                 <Grid item size={{ xs: 12 }}>
                   <Box sx={{ mt: 2, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6" fontWeight={700}>Parcelas</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="h6" fontWeight={700}>Parcelas</Typography>
+                    </Box>
                     <Typography variant="subtitle1" color="primary" fontWeight={700}>
                       Total: {(values.entries.reduce((acc, curr) => acc + (Number(curr.installmentValue) || 0), 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </Typography>
