@@ -24,7 +24,7 @@ const validate = (values) => {
   return errors
 }
 
-export default function FinanceEntryModal({ open, onClose, entryId, onSuccess }) {
+export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, onViewEntries }) {
   const [loading, setLoading] = useState(true)
   const [entry, setEntry] = useState(null)
 
@@ -92,8 +92,12 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess })
             <Dialog.Content>
               {/* Header Context (Read-only) */}
               <FinanceTitleInfoCard
-                title={entry?.title}
+                title={{ 
+                  ...entry?.title, 
+                  installmentsCount: entry?.installmentsCount 
+                }}
                 onUpdate={fetchEntry}
+                onViewEntries={() => onViewEntries?.(entry.titleId, entry.title?.documentNumber)}
                 sx={{ mb: 3 }}
               />
 

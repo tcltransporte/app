@@ -11,7 +11,7 @@ import * as financeEntryAction from '@/app/actions/financeEntry.action'
 import { ServiceStatus } from '@/libs/service'
 import FinanceTitleInfoCard from './finance-title-info-card'
 
-export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, documentNumber, onEditEntry, refreshKey }) {
+export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, documentNumber, onEditEntry, refreshKey, onTop }) {
   const [loading, setLoading] = useState(false)
   const [entries, setEntries] = useState([])
 
@@ -44,6 +44,7 @@ export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, docu
       anchor="right"
       open={open}
       onClose={onClose}
+      sx={{ zIndex: (theme) => onTop ? theme.zIndex.modal + 1 : theme.zIndex.drawer }}
       PaperProps={{
         sx: { width: { xs: '100%', sm: 500 }, p: 0 }
       }}

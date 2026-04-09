@@ -143,6 +143,14 @@ export async function findEntry(transaction, id) {
   return await db.withTransaction(transaction, async (t) => {
     const entry = await db.FinanceEntry.findOne({
       where: { id },
+      attributes: {
+        include: [
+          [
+            db.literal(`(SELECT COUNT(*) FROM movimentos_detalhe WHERE movimentos_detalhe.codigo_movimento = financeEntry.codigo_movimento)`),
+            'installmentsCount'
+          ]
+        ]
+      },
       include: [{ association: 'title', include: ['partner', 'accountPlan', 'costCenter'] }],
       transaction: t
     })

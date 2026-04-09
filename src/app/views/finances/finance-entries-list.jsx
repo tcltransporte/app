@@ -18,15 +18,22 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const navigation = useNavigation(`/finance/${operationType === 1 ? 'receivable' : 'payable'}`, propsSelectedId);
 
   const [titleModalOpen, setTitleModalOpen] = React.useState(false);
-
   const [detailsDrawerOpen, setDetailsDrawerOpen] = React.useState(false);
   const [selectedTitleId, setSelectedTitleId] = React.useState(null);
   const [selectedTitleDoc, setSelectedTitleDoc] = React.useState(null);
   const [drawerRefreshKey, setDrawerRefreshKey] = React.useState(0);
+  const [drawerOnTop, setDrawerOnTop] = React.useState(false);
 
   const handleEdit = React.useCallback((row) => {
     navigation.setSelectedId(row.id);
   }, [navigation]);
+
+  const handleOpenDetails = React.useCallback((titleId, documentNumber, onTop = false) => {
+    setSelectedTitleId(titleId);
+    setSelectedTitleDoc(documentNumber);
+    setDrawerOnTop(onTop);
+    setDetailsDrawerOpen(true);
+  }, []);
 
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
@@ -98,9 +105,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
               color="primary"
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedTitleId(row.titleId);
-                setSelectedTitleDoc(row.title?.documentNumber);
-                setDetailsDrawerOpen(true);
+                handleOpenDetails(row.titleId, row.title?.documentNumber);
               }}
               sx={{
                 height: 24,
@@ -255,6 +260,9 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
           fetchTable();
           setDrawerRefreshKey(prev => prev + 1);
         }}
+        onViewEntries={(titleId, docNumber) => {
+          handleOpenDetails(titleId, docNumber, true);
+        }}
       />
 
       <FinanceTitleDetailsDrawer
@@ -263,9 +271,11 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         titleId={selectedTitleId}
         documentNumber={selectedTitleDoc}
         onEditEntry={(entryId) => {
+          setDetailsDrawerOpen(false);
           navigation.setSelectedId(entryId);
         }}
         refreshKey={drawerRefreshKey}
+        onTop={drawerOnTop}
       />
     </Container>
   );
