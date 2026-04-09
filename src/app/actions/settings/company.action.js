@@ -111,3 +111,15 @@ export async function findAllTypes() {
     return ServiceResponse.error(error)
   }
 }
+
+export async function findAll(params = {}) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await companyService.findAll(t, params)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}

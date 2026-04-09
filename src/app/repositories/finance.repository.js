@@ -26,7 +26,7 @@ export async function findAll(transaction, { attributes, include, where, limit, 
 export async function findOne(transaction, { attributes, include, where }) {
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {
-    const title = await db.FinanceTitle.findOne({ attributes, include, where, transaction: t })
+    const title = await db.FinanceTitle.findOne({ attributes, include: [...(include || []), 'company'], where, transaction: t })
     return title?.toJSON()
   })
 }
@@ -151,7 +151,15 @@ export async function findEntry(transaction, id) {
           ]
         ]
       },
-      include: [{ association: 'title', include: ['partner', 'accountPlan', 'costCenter'] }],
+      include: [{ 
+        association: 'title', 
+        include: [
+          'partner', 
+          'accountPlan', 
+          'costCenter', 
+          { association: 'company', attributes: ['id', 'name', 'surname'] }
+        ] 
+      }],
       transaction: t
     })
     return entry?.toJSON()

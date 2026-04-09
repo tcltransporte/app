@@ -27,6 +27,7 @@ const validate = (values) => {
 export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, onViewEntries }) {
   const [loading, setLoading] = useState(true)
   const [entry, setEntry] = useState(null)
+  const [isTitleEditing, setIsTitleEditing] = useState(false)
 
   useEffect(() => {
     if (open && entryId) {
@@ -97,55 +98,60 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
                   installmentsCount: entry?.installmentsCount 
                 }}
                 onUpdate={fetchEntry}
+                onEditingChange={setIsTitleEditing}
                 onViewEntries={() => onViewEntries?.(entry.titleId, entry.title?.documentNumber)}
                 sx={{ mb: 3 }}
               />
 
-              <Grid container spacing={2}>
-                <Grid item size={{ xs: 12, md: 4 }}>
-                  <Field
-                    name="installmentNumber"
-                    component={TextField}
-                    label="Nº Parcela"
-                  />
+              {!isTitleEditing && (
+                <Grid container spacing={2}>
+                  <Grid item size={{ xs: 12, md: 4 }}>
+                    <Field
+                      name="installmentNumber"
+                      component={TextField}
+                      label="Nº Parcela"
+                    />
+                  </Grid>
+                  <Grid item size={{ xs: 12, md: 4 }}>
+                    <Field
+                      name="dueDate"
+                      component={DateField}
+                      label="Vencimento"
+                    />
+                  </Grid>
+                  <Grid item size={{ xs: 12, md: 4 }}>
+                    <Field
+                      name="installmentValue"
+                      component={NumericField}
+                      label="Valor"
+                    />
+                  </Grid>
+                  <Grid item size={{ xs: 12 }}>
+                    <Field
+                      name="description"
+                      component={TextField}
+                      label="Descrição / Observação"
+                      multiline
+                      rows={2}
+                    />
+                  </Grid>
                 </Grid>
-                <Grid item size={{ xs: 12, md: 4 }}>
-                  <Field
-                    name="dueDate"
-                    component={DateField}
-                    label="Vencimento"
-                  />
-                </Grid>
-                <Grid item size={{ xs: 12, md: 4 }}>
-                  <Field
-                    name="installmentValue"
-                    component={NumericField}
-                    label="Valor"
-                  />
-                </Grid>
-                <Grid item size={{ xs: 12 }}>
-                  <Field
-                    name="description"
-                    component={TextField}
-                    label="Descrição / Observação"
-                    multiline
-                    rows={2}
-                  />
-                </Grid>
-              </Grid>
+              )}
 
             </Dialog.Content>
-            <Dialog.Actions>
-              <Button onClick={onClose} color="inherit">Cancelar</Button>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={isSubmitting ? null : <SaveIcon />}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Atualizando...' : 'Atualizar'}
-              </Button>
-            </Dialog.Actions>
+            {!isTitleEditing && (
+              <Dialog.Actions>
+                <Button onClick={onClose} color="inherit">Cancelar</Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  startIcon={isSubmitting ? null : <SaveIcon />}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Atualizando...' : 'Atualizar'}
+                </Button>
+              </Dialog.Actions>
+            )}
           </Form>
         )}
       </Formik>

@@ -1,5 +1,6 @@
 "use server"
 
+import { Op } from 'sequelize'
 import * as companyRepository from "@/app/repositories/company.repository"
 import * as userRepository from "@/app/repositories/user.repository"
 import { AppContext } from "@/database"
@@ -209,4 +210,15 @@ export async function findAllTypes(transaction) {
         transaction
     })
     return { items: types.map(t => t.get({ plain: true })) }
+}
+
+export async function findAll(transaction, options = {}) {
+    const { where = {}, ...others } = options
+    const finalWhere = { ...where }
+
+    if (where.surname) finalWhere.surname = { [Op.like]: `%${where.surname}%` }
+    if (where.name) finalWhere.name = { [Op.like]: `%${where.name}%` }
+
+    const companies = await companyRepository.findAll(transaction, { ...others, where: finalWhere })
+    return { items: companies }
 }

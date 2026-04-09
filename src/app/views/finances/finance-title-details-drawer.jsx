@@ -68,10 +68,10 @@ export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, docu
           ) : (
             <>
               <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
-                <FinanceTitleInfoCard 
-                  title={entries[0]?.title} 
+                <FinanceTitleInfoCard
+                  title={entries[0]?.title}
                   onUpdate={fetchEntries}
-                  sx={{ bgcolor: 'background.paper' }} 
+                  sx={{ bgcolor: 'background.paper' }}
                 />
               </Box>
 
@@ -79,7 +79,7 @@ export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, docu
 
               <Box sx={{ p: 2, bgcolor: 'action.hover', pb: 0 }}>
                 <Typography variant="subtitle2" color="text.secondary" fontWeight={700}>
-                  TODAS AS PARCELAS VINCULADAS
+                  TODAS AS PARCELAS
                 </Typography>
               </Box>
 
@@ -137,7 +137,7 @@ export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, docu
                     {entries.length > 0 && (
                       <TableHead>
                         <TableRow sx={{ bgcolor: 'action.hover' }}>
-                          <TableCell colSpan={2} sx={{ fontWeight: 700 }}>TOTAL ACUMULADO</TableCell>
+                          <TableCell colSpan={2} sx={{ fontWeight: 700 }}>VALOR TOTAL</TableCell>
                           <TableCell align="right" sx={{ fontWeight: 800, color: 'primary.main' }}>
                             {entries.reduce((acc, curr) => acc + parseFloat(curr.installmentValue || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </TableCell>

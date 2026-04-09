@@ -25,7 +25,8 @@ export async function findOne(transaction, id) {
       { association: 'entries' },
       { association: 'partner' },
       { association: 'accountPlan' },
-      { association: 'costCenter' }
+      { association: 'costCenter' },
+      { association: 'company', attributes: ['id', 'name', 'surname'] }
     ]
   })
 
@@ -67,7 +68,8 @@ export async function findAllEntries(transaction, params = {}) {
     include: [
       { association: 'partner' },
       { association: 'accountPlan', required: false },
-      { association: 'costCenter', required: false }
+      { association: 'costCenter', required: false },
+      { association: 'company', required: false, attributes: ['id', 'name', 'surname'] }
     ]
   }
 

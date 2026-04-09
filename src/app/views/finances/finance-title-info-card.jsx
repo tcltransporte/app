@@ -15,15 +15,20 @@ import * as partnerAction from '@/app/actions/partner.action'
 import * as accountPlanAction from '@/app/actions/accountPlan.action'
 import * as costCenterAction from '@/app/actions/costCenter.action'
 import * as financeAction from '@/app/actions/finance.action'
+import * as companyAction from '@/app/actions/settings/company.action'
 import { alert } from '@/libs/alert'
 import { ServiceStatus } from '@/libs/service'
 
-export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewEntries }) {
+export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewEntries, onEditingChange }) {
   const [isEditing, setIsEditing] = useState(false)
 
   if (!title) return null
 
-  const handleToggleEdit = () => setIsEditing(prev => !prev)
+  const handleToggleEdit = () => {
+    const newState = !isEditing;
+    setIsEditing(newState);
+    onEditingChange?.(newState);
+  }
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
@@ -31,6 +36,7 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
         partnerId: values.partner?.id,
         accountPlanId: values.accountPlan?.id,
         costCenterId: values.costCenter?.id,
+        companyId: values.company?.id,
         documentNumber: values.documentNumber,
         issueDate: values.issueDate ? new Date(values.issueDate).toISOString() : null,
       }
@@ -41,6 +47,7 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
 
       alert.success('Sucesso', 'Informações do título atualizadas!')
       setIsEditing(false)
+      onEditingChange?.(false)
       onUpdate?.()
     } catch (error) {
       alert.error('Erro', error?.body?.message || 'Erro ao atualizar título')
@@ -70,6 +77,13 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
     return result.body?.rows || result.body?.items || result.body || []
   }
 
+  const searchCompanies = async (query) => {
+    const filters = {}
+    if (query) filters.surname = query
+    const result = await companyAction.findAll({ where: filters, limit: 50 })
+    return result.body?.rows || result.body?.items || result.body || []
+  }
+
   return (
     <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed', position: 'relative', ...sx }}>
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
@@ -92,6 +106,7 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
               partner: title.partner,
               accountPlan: title.accountPlan,
               costCenter: title.costCenter,
+              company: title.company,
               documentNumber: title.documentNumber || '',
               issueDate: title.issueDate ? new Date(title.issueDate) : new Date()
             }}
@@ -100,6 +115,17 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
             {({ isSubmitting, submitForm }) => (
               <Box> {/* Usando Box em vez de Form para evitar <form> aninhado */}
                 <Grid container spacing={2}>
+                  <Grid item size={{ xs: 12, md: 12 }}>
+                    <Field
+                      name="company"
+                      component={AutoComplete}
+                      label="Empresa / Filial"
+                      text={(v) => v.surname || v.name}
+                      onSearch={searchCompanies}
+                      renderSuggestion={(v) => v.surname || v.name}
+                      size="small"
+                    />
+                  </Grid>
                   <Grid item size={{ xs: 12, md: 6 }}>
                     <Field
                       name="documentNumber"
@@ -177,11 +203,16 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
           </Formik>
         ) : (
           <>
-            <Typography variant="body1" fontWeight={700}>
-              {title.partner?.surname || title.partner?.name || 'Parceiro não informado'}
-            </Typography>
+            {title.company && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontWeight: 600 }}>
+                {title.company.surname || title.company.name}
+              </Typography>
+            )}
             <Typography variant="body2" color="text.secondary">
               Nº Doc: {title.documentNumber || '-'} | Emissão: {title.issueDate ? new Date(title.issueDate).toLocaleDateString('pt-BR') : '-'}
+            </Typography>
+            <Typography variant="body1" fontWeight={700}>
+              {title.partner?.surname || title.partner?.name || 'Parceiro não informado'}
             </Typography>
             {title.accountPlan && (
               <Typography variant="body2" color="primary.main" fontWeight={600} sx={{ mt: 0.5 }}>
@@ -193,7 +224,6 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
                 CC: {title.costCenter.description}
               </Typography>
             )}
-
             {onViewEntries && (
               <Box sx={{ position: 'absolute', bottom: 16, right: 16 }}>
                 <Tooltip title="Ver todas as parcelas">
