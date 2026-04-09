@@ -27,7 +27,7 @@ export async function executePayment(transaction, { settlements, commonData }) {
   // Determine global context
   const firstEntry = entries[0]
   const isReceivable = firstEntry.title?.type_operation === 2
-  const partnerName = firstEntry.title?.partner?.surname || firstEntry.title?.partner?.name
+  const partnerName = (firstEntry.title?.partner?.surname || firstEntry.title?.partner?.name || '').substring(0, 50)
 
   // 2. Map and prepare data for repository
   const mappedSettlements = settlements.map(settlement => {

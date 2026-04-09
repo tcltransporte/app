@@ -257,7 +257,10 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
       const result = await paymentAction.executePayment({
         settlements: values.items.map(item => ({
           entryId: item.entryId,
-          composition: item.composition
+          composition: item.composition.map(c => ({
+            ...c,
+            bankAccountId: c.bankAccountId?.id || c.bankAccountId
+          }))
         })),
         commonData: {
           date: values.date
@@ -300,15 +303,15 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
     const list = formData?.accounts || [];
     if (!q) return list;
     const norm = q.toLowerCase();
-    return list.filter(a => 
+    return list.filter(a =>
       (a.description?.toLowerCase() || '').includes(norm) ||
       (a.bankName?.toLowerCase() || '').includes(norm)
     );
   }, [formData?.accounts]);
 
-  const textFnGlobal = React.useCallback((v) => 
-    (v && typeof v === 'object') ? (v.description || v.bankName || '') : '', 
-  []);
+  const textFnGlobal = React.useCallback((v) =>
+    (v && typeof v === 'object') ? (v.description || v.bankName || '') : '',
+    []);
 
   const handleGlobalChange = (field, value, setFieldValue, currentValues) => {
     const newItems = currentValues.items.map(item => {
@@ -438,7 +441,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
       anchor="right"
       open={open}
       onClose={onClose}
-      PaperProps={{ sx: { width: { xs: '100%', sm: 700 }, display: 'flex', flexDirection: 'column' } }}
+      PaperProps={{ sx: { width: { xs: '100%', sm: 750 }, display: 'flex', flexDirection: 'column' } }}
     >
       <Formik
         innerRef={formikRef}
@@ -472,11 +475,11 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                 <>
                   <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
                     <Grid container spacing={2}>
-                      <Grid item size={{ xs: 12, sm: 4 }}>
+                      <Grid item size={{ xs: 12, sm: 3 }}>
                         <Field
                           name="date"
                           component={DateField}
-                          label="Data Geral"
+                          label="Data"
                           fullWidth
                         />
                       </Grid>
@@ -484,17 +487,17 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                         <Field
                           name="globalPaymentMethodId"
                           component={SelectField}
-                          label="Meio (Padrão)"
+                          label="Meio"
                           options={formData.methods.map(m => ({ value: m.id, label: m.description }))}
                           fullWidth
                           onChange={(val) => handleGlobalChange('paymentMethodId', val, setFieldValue, values)}
                         />
                       </Grid>
-                      <Grid item size={{ xs: 12, sm: 4 }}>
+                      <Grid item size={{ xs: 12, sm: 5 }}>
                         <Field
                           name="globalBankAccount"
                           component={AutoComplete}
-                          label="Conta (Padrão)"
+                          label="Conta"
                           onSearch={handleSearchGlobal}
                           text={textFnGlobal}
                           fullWidth
@@ -504,18 +507,16 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                     </Grid>
                   </Box>
 
-                  <Box sx={{ mt: 2 }}>
+                  <Box>
+                    {/*
                     <Box sx={{ px: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <ListIcon fontSize="small" /> ITENS DA BAIXA
-                      </Typography>
                       {data?.batchMode && (
                         <Button size="small" variant="text" onClick={() => handleReplicate(values, setFieldValue)} startIcon={<ArrowIcon sx={{ transform: 'rotate(90deg)' }} />}>
                           Replicar 1ª para todas
                         </Button>
                       )}
                     </Box>
-
+                    */}
                     <Table size="small">
                       <TableBody>
                         {values.items.map((item, index) => (
