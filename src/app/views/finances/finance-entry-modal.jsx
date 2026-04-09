@@ -69,88 +69,82 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess })
   if (!open) return null
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      title={`Editar #${entry?.title?.documentNumber || ''}`} 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={`Editar #${entry?.title?.documentNumber || ''}`}
       width="sm"
       loading={loading || !entry}
     >
       <Formik
-          initialValues={{
-            dueDate: entry?.dueDate ? new Date(entry.dueDate) : new Date(),
-            installmentValue: entry?.installmentValue || 0,
-            installmentNumber: entry?.installmentNumber || '',
-            description: entry?.description || ''
-          }}
-          validate={validate}
-          onSubmit={handleSubmit}
-          enableReinitialize
-        >
-          {({ isSubmitting }) => (
-            <Form>
-              <Dialog.Content>
-                {/* Header Context (Read-only) */}
-                <FinanceTitleInfoCard
-                  title={entry?.title}
-                  onUpdate={fetchEntry}
-                  sx={{ mb: 3 }}
-                />
+        initialValues={{
+          dueDate: entry?.dueDate ? new Date(entry.dueDate) : new Date(),
+          installmentValue: entry?.installmentValue || 0,
+          installmentNumber: entry?.installmentNumber || '',
+          description: entry?.description || ''
+        }}
+        validate={validate}
+        onSubmit={handleSubmit}
+        enableReinitialize
+      >
+        {({ isSubmitting }) => (
+          <Form>
+            <Dialog.Content>
+              {/* Header Context (Read-only) */}
+              <FinanceTitleInfoCard
+                title={entry?.title}
+                onUpdate={fetchEntry}
+                sx={{ mb: 3 }}
+              />
 
-                <Grid container spacing={2}>
-                  <Grid item size={{ xs: 12, md: 4 }}>
-                    <Field
-                      name="installmentNumber"
-                      component={TextField}
-                      label="Nº Parcela"
-                    />
-                  </Grid>
-                  <Grid item size={{ xs: 12, md: 4 }}>
-                    <Field
-                      name="dueDate"
-                      component={DateField}
-                      label="Vencimento"
-                    />
-                  </Grid>
-                  <Grid item size={{ xs: 12, md: 4 }}>
-                    <Field
-                      name="installmentValue"
-                      component={NumericField}
-                      label="Valor"
-                    />
-                  </Grid>
-                  <Grid item size={{ xs: 12 }}>
-                    <Field
-                      name="description"
-                      component={TextField}
-                      label="Descrição / Observação"
-                      multiline
-                      rows={2}
-                    />
-                  </Grid>
+              <Grid container spacing={2}>
+                <Grid item size={{ xs: 12, md: 4 }}>
+                  <Field
+                    name="installmentNumber"
+                    component={TextField}
+                    label="Nº Parcela"
+                  />
                 </Grid>
+                <Grid item size={{ xs: 12, md: 4 }}>
+                  <Field
+                    name="dueDate"
+                    component={DateField}
+                    label="Vencimento"
+                  />
+                </Grid>
+                <Grid item size={{ xs: 12, md: 4 }}>
+                  <Field
+                    name="installmentValue"
+                    component={NumericField}
+                    label="Valor"
+                  />
+                </Grid>
+                <Grid item size={{ xs: 12 }}>
+                  <Field
+                    name="description"
+                    component={TextField}
+                    label="Descrição / Observação"
+                    multiline
+                    rows={2}
+                  />
+                </Grid>
+              </Grid>
 
-                <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <HistoryIcon fontSize="small" color="disabled" />
-                  <Typography variant="caption" color="text.secondary">
-                    As alterações nesta parcela não afetarão outras parcelas deste mesmo documento.
-                  </Typography>
-                </Box>
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onClick={onClose} color="inherit">Cancelar</Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={isSubmitting ? null : <SaveIcon />}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Atualizando...' : 'Atualizar'}
-                </Button>
-              </Dialog.Actions>
-            </Form>
-          )}
-        </Formik>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onClick={onClose} color="inherit">Cancelar</Button>
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={isSubmitting ? null : <SaveIcon />}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Atualizando...' : 'Atualizar'}
+              </Button>
+            </Dialog.Actions>
+          </Form>
+        )}
+      </Formik>
     </Dialog>
   )
 }

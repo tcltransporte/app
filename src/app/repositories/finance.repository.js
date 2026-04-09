@@ -143,7 +143,7 @@ export async function findEntry(transaction, id) {
   return await db.withTransaction(transaction, async (t) => {
     const entry = await db.FinanceEntry.findOne({
       where: { id },
-      include: [{ association: 'title', include: ['partner', 'accountPlan'] }],
+      include: [{ association: 'title', include: ['partner', 'accountPlan', 'costCenter'] }],
       transaction: t
     })
     return entry?.toJSON()

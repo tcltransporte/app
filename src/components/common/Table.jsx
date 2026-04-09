@@ -1,14 +1,14 @@
 'use client';
 
 import React from 'react';
-import { 
-  Table as MuiTable, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Checkbox, 
+import {
+  Table as MuiTable,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Checkbox,
   Paper,
   Box,
   Typography,
@@ -37,7 +37,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize }) => {
+const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize, isFirst }) => {
   const {
     attributes,
     listeners,
@@ -50,7 +50,7 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize }) => 
   const handleResize = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const startX = e.pageX;
     const startWidth = e.currentTarget.parentElement.offsetWidth;
 
@@ -81,9 +81,9 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize }) => 
     whiteSpace: 'nowrap',
     cursor: 'grab',
     opacity: isDragging ? 0.5 : 1,
-    width: width || col.width || 'auto',
-    minWidth: width || col.width || 'auto',
-    maxWidth: width || col.width || 'auto',
+    width: width || col.width || '100%',
+    minWidth: width || col.width || 100,
+    maxWidth: width || col.width || 'none',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     ...col.headerSx
@@ -94,15 +94,16 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize }) => 
       ref={setNodeRef}
       style={style}
       align={col.align || 'left'}
+      sx={{ pl: isFirst ? 3 : 1, pr: 1 }}
       {...attributes}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%', position: 'relative' }}>
-        <Box 
+        <Box
           {...listeners}
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            flexGrow: 1, 
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flexGrow: 1,
             height: '100%',
             cursor: 'grab',
             minWidth: 0,
@@ -135,7 +136,7 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize }) => 
             </Typography>
           )}
         </Box>
-        
+
         <Box
           onMouseDown={handleResize}
           sx={{
@@ -169,11 +170,11 @@ const slideUp = keyframes`
 `;
 import { useLayout } from '@/context/LayoutContext';
 
-export const Table = ({ 
-  columns, 
-  items, 
-  selecteds = [], 
-  onSelect, 
+export const Table = ({
+  columns,
+  items,
+  selecteds = [],
+  onSelect,
   onSelectAll,
   onRowDoubleClick,
   onSort,
@@ -184,7 +185,8 @@ export const Table = ({
   onResize,
   rowKey = 'id',
   loading = false,
-  containerSx = {}
+  containerSx = {},
+  fixed = false
 }) => {
   const [isMounted, setIsMounted] = React.useState(false);
 
@@ -228,7 +230,7 @@ export const Table = ({
 
     const handleCardTouchEnd = (e, row) => {
       clearTimeout(longPressTimer.current);
-      
+
       // If click was on checkbox or other interactive elements, don't trigger row click logic
       if (e.target.closest('button, input, [role="button"], .MuiCheckbox-root')) {
         return;
@@ -247,24 +249,24 @@ export const Table = ({
     };
 
     return (
-        <Box sx={{ 
-          flexGrow: 1, 
-          overflowY: 'auto', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: 2,
-          animation: `${slideUp} 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards`
-        }}>
+      <Box sx={{
+        flexGrow: 1,
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        animation: `${slideUp} 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards`
+      }}>
         {/* Mobile Select All Header */}
         {items.length > 0 && (
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 1.5, 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1, 
-              border: '1px solid', 
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              border: '1px solid',
               borderColor: 'divider',
               borderRadius: 2,
               backgroundColor: 'background.paper'
@@ -303,7 +305,7 @@ export const Table = ({
         ) : items.length === 0 && !loading ? (
           <Box sx={{ py: 2, px: 1 }}>
             <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                Nenhum resultado encontrado
+              Nenhum resultado encontrado
             </Typography>
           </Box>
         ) : items.map((row) => {
@@ -329,10 +331,10 @@ export const Table = ({
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.5 }}>
-                <Checkbox 
-                  checked={isItemSelected} 
-                  size="small" 
-                  sx={{ p: 0, mr: 1.5, mt: 0.3 }} 
+                <Checkbox
+                  checked={isItemSelected}
+                  size="small"
+                  sx={{ p: 0, mr: 1.5, mt: 0.3 }}
                   onClick={(e) => {
                     e.stopPropagation();
                     onSelect(row);
@@ -352,10 +354,10 @@ export const Table = ({
                       <Typography variant="caption" color="text.secondary" fontWeight={500}>
                         {col.headerName}:
                       </Typography>
-                      <Typography 
-                        variant="caption" 
+                      <Typography
+                        variant="caption"
                         fontWeight={600}
-                        sx={{ 
+                        sx={{
                           textAlign: 'right',
                           ...(typeof col.sx === 'function' ? col.sx(row) : col.sx)
                         }}
@@ -369,36 +371,37 @@ export const Table = ({
             </Paper>
           );
         })}
-        </Box>
+      </Box>
     );
   }
 
   return (
-      <TableContainer
-        component={Paper}
-        elevation={0}
-        sx={{
-          flexGrow: 1,
-          overflow: 'auto',
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          '&::-webkit-scrollbar': { width: 6, height: 6 },
-          '&::-webkit-scrollbar-thumb': { backgroundColor: 'divider', borderRadius: 3 },
-          animation: `${slideUp} 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
-          ...containerSx
-        }}
-      >
+    <TableContainer
+      component={Paper}
+      elevation={0}
+      sx={{
+        flexGrow: 1,
+        overflow: 'auto',
+        overflowX: fixed ? 'hidden' : 'auto',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        '&::-webkit-scrollbar': { width: 6, height: 6 },
+        '&::-webkit-scrollbar-thumb': { backgroundColor: 'divider', borderRadius: 3 },
+        animation: `${slideUp} 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+        ...containerSx
+      }}
+    >
       {isMounted ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <MuiTable stickyHeader size="small">
+          <MuiTable stickyHeader size="small" sx={{ tableLayout: fixed ? 'fixed' : 'auto', width: '100%' }}>
             <TableHead>
               <TableRow>
-                <TableCell padding="checkbox" sx={{ backgroundColor: 'background.paper', zIndex: 3 }}>
+                <TableCell padding="checkbox" sx={{ backgroundColor: 'background.paper', zIndex: 3, width: 80, minWidth: 80, pl: 2, pr: 5 }}>
                   <Checkbox
                     indeterminate={selecteds.length > 0 && selecteds.length < items.length}
                     checked={items.length > 0 && selecteds.length === items.length}
@@ -409,15 +412,16 @@ export const Table = ({
                   items={columns.map(c => c.field)}
                   strategy={horizontalListSortingStrategy}
                 >
-                  {columns.map((col) => (
-                    <SortableHeader 
-                      key={col.field} 
-                      col={col} 
-                      sortBy={sortBy} 
-                      sortOrder={sortOrder} 
+                  {columns.map((col, index) => (
+                    <SortableHeader
+                      key={col.field}
+                      col={col}
+                      sortBy={sortBy}
+                      sortOrder={sortOrder}
                       onSort={onSort}
                       width={widths[col.field]}
                       onResize={onResize}
+                      isFirst={index === 0}
                     />
                   ))}
                 </SortableContext>
@@ -427,20 +431,22 @@ export const Table = ({
               {loading ? (
                 Array.from(new Array(15)).map((_, rowIndex) => (
                   <TableRow key={`skeleton-row-${rowIndex}`}>
-                    <TableCell padding="checkbox">
+                    <TableCell padding="checkbox" sx={{ width: 80, minWidth: 80, pl: 2, pr: 5 }}>
                       <Skeleton variant="rectangular" width={20} height={20} />
                     </TableCell>
                     {columns.map((col, colIndex) => (
-                      <TableCell 
+                      <TableCell
                         key={`skeleton-cell-${col.field}-${colIndex}`}
-                        sx={{ 
-                          width: widths[col.field] || col.width || 'auto',
-                          minWidth: widths[col.field] || col.width || 'auto'
+                        sx={{
+                          width: widths[col.field] || col.width || '100%',
+                          minWidth: widths[col.field] || col.width || 100,
+                          pl: colIndex === 0 ? 3 : 1,
+                          pr: 1
                         }}
                       >
-                        <Skeleton 
-                          variant="text" 
-                          width={`${20 + Math.floor(Math.random() * 60)}%`} 
+                        <Skeleton
+                          variant="text"
+                          width={`${20 + Math.floor(Math.random() * 60)}%`}
                         />
                       </TableCell>
                     ))}
@@ -478,23 +484,25 @@ export const Table = ({
                     onMouseDown={(e) => {
                       if (e.detail > 1) e.preventDefault();
                     }}
-                    sx={{ 
-                      cursor: 'pointer', 
-                      '&.Mui-selected': { backgroundColor: 'primary.lighter' } 
+                    sx={{
+                      cursor: 'pointer',
+                      '&.Mui-selected': { backgroundColor: 'primary.lighter' }
                     }}
                   >
-                    <TableCell padding="checkbox">
+                    <TableCell padding="checkbox" sx={{ width: 80, minWidth: 80, pl: 2, pr: 5 }}>
                       <Checkbox checked={isItemSelected} />
                     </TableCell>
-                    {columns.map((col) => (
-                      <TableCell 
-                        key={col.field} 
+                    {columns.map((col, index) => (
+                      <TableCell
+                        key={col.field}
                         align={col.align || 'left'}
-                        sx={{ 
+                        sx={{
                           fontSize: '0.8125rem',
-                          width: widths[col.field] || col.width || 'auto',
-                          minWidth: widths[col.field] || col.width || 'auto',
-                          maxWidth: widths[col.field] || col.width || 'auto',
+                          width: widths[col.field] || col.width || '100%',
+                          minWidth: widths[col.field] || col.width || 100,
+                          maxWidth: widths[col.field] || col.width || 'none',
+                          pl: index === 0 ? 3 : 1,
+                          pr: 1,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -511,24 +519,26 @@ export const Table = ({
           </MuiTable>
         </DndContext>
       ) : (
-        <MuiTable stickyHeader size="small">
+        <MuiTable stickyHeader size="small" sx={{ tableLayout: fixed ? 'fixed' : 'auto', width: '100%' }}>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox" sx={{ backgroundColor: 'background.paper', zIndex: 3 }}>
+              <TableCell padding="checkbox" sx={{ backgroundColor: 'background.paper', zIndex: 3, width: 80, minWidth: 80, pl: 2, pr: 5 }}>
                 <Checkbox
                   indeterminate={selecteds.length > 0 && selecteds.length < items.length}
                   checked={items.length > 0 && selecteds.length === items.length}
                   onChange={onSelectAll}
                 />
               </TableCell>
-              {columns.map((col) => (
-                <TableCell 
-                  key={col.field} 
+              {columns.map((col, index) => (
+                <TableCell
+                  key={col.field}
                   align={col.align || 'left'}
-                  sx={{ 
-                    fontWeight: 700, 
-                    backgroundColor: 'background.paper', 
+                  sx={{
+                    fontWeight: 700,
+                    backgroundColor: 'background.paper',
                     whiteSpace: 'nowrap',
+                    pl: index === 0 ? 3 : 1,
+                    pr: 1,
                     ...col.headerSx
                   }}
                 >
@@ -542,14 +552,22 @@ export const Table = ({
             {loading ? (
               Array.from(new Array(15)).map((_, rowIndex) => (
                 <TableRow key={`skeleton-row-${rowIndex}`}>
-                  <TableCell padding="checkbox">
+                  <TableCell padding="checkbox" sx={{ width: 80, minWidth: 80, pl: 2, pr: 5 }}>
                     <Skeleton variant="rectangular" width={20} height={20} />
                   </TableCell>
                   {columns.map((col, colIndex) => (
-                    <TableCell key={`skeleton-cell-${col.field}-${colIndex}`}>
-                      <Skeleton 
-                        variant="text" 
-                        width={`${20 + Math.floor(Math.random() * 60)}%`} 
+                    <TableCell 
+                      key={`skeleton-cell-${col.field}-${colIndex}`}
+                      sx={{
+                        width: col.width || '100%',
+                        minWidth: col.width || 100,
+                        pl: colIndex === 0 ? 3 : 1,
+                        pr: 1
+                      }}
+                    >
+                      <Skeleton
+                        variant="text"
+                        width={`${20 + Math.floor(Math.random() * 60)}%`}
                       />
                     </TableCell>
                   ))}
@@ -573,23 +591,25 @@ export const Table = ({
                   onMouseDown={(e) => {
                     if (e.detail > 1) e.preventDefault();
                   }}
-                  sx={{ 
-                    cursor: 'pointer', 
-                    '&.Mui-selected': { backgroundColor: 'primary.lighter' } 
+                  sx={{
+                    cursor: 'pointer',
+                    '&.Mui-selected': { backgroundColor: 'primary.lighter' }
                   }}
                 >
-                  <TableCell padding="checkbox">
+                  <TableCell padding="checkbox" sx={{ width: 80, minWidth: 80, pl: 2, pr: 5 }}>
                     <Checkbox checked={isItemSelected} />
                   </TableCell>
-                  {columns.map((col) => (
-                    <TableCell 
-                      key={col.field} 
+                  {columns.map((col, index) => (
+                    <TableCell
+                      key={col.field}
                       align={col.align || 'left'}
-                      sx={{ 
+                      sx={{
                         fontSize: '0.8125rem',
-                        width: col.width || 'auto',
-                        minWidth: col.width || 'auto',
-                        maxWidth: col.width || 'auto',
+                        width: col.width || '100%',
+                        minWidth: col.width || 100,
+                        maxWidth: col.width || 'none',
+                        pl: index === 0 ? 3 : 1,
+                        pr: 1,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -605,6 +625,6 @@ export const Table = ({
           </TableBody>
         </MuiTable>
       )}
-      </TableContainer>
+    </TableContainer>
   );
 };

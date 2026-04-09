@@ -12,6 +12,7 @@ import { Formik, Form, Field } from 'formik'
 import { TextField, AutoComplete, DateField } from '@/components/controls'
 import * as partnerAction from '@/app/actions/partner.action'
 import * as accountPlanAction from '@/app/actions/accountPlan.action'
+import * as costCenterAction from '@/app/actions/costCenter.action'
 import * as financeAction from '@/app/actions/finance.action'
 import { alert } from '@/libs/alert'
 import { ServiceStatus } from '@/libs/service'
@@ -28,6 +29,7 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {} }) {
       const data = {
         partnerId: values.partner?.id,
         accountPlanId: values.accountPlan?.id,
+        costCenterId: values.costCenter?.id,
         documentNumber: values.documentNumber,
         issueDate: values.issueDate ? new Date(values.issueDate).toISOString() : null,
       }
@@ -57,7 +59,14 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {} }) {
     const filters = {}
     if (query) filters.description = query
     const result = await accountPlanAction.findAll({ where: filters, limit: 50 })
-    return result.body || []
+    return result.body?.rows || result.body?.items || result.body || []
+  }
+
+  const searchCostCenters = async (query) => {
+    const filters = {}
+    if (query) filters.description = query
+    const result = await costCenterAction.findAll({ where: filters, limit: 50 })
+    return result.body?.rows || result.body?.items || result.body || []
   }
 
   return (
@@ -81,6 +90,7 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {} }) {
             initialValues={{
               partner: title.partner,
               accountPlan: title.accountPlan,
+              costCenter: title.costCenter,
               documentNumber: title.documentNumber || '',
               issueDate: title.issueDate ? new Date(title.issueDate) : new Date()
             }}
@@ -127,6 +137,17 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {} }) {
                       size="small"
                     />
                   </Grid>
+                  <Grid item size={{ xs: 12, md: 12 }}>
+                    <Field
+                      name="costCenter"
+                      component={AutoComplete}
+                      label="Centro de Custo"
+                      text={(v) => v.description}
+                      onSearch={searchCostCenters}
+                      renderSuggestion={(v) => v.description}
+                      size="small"
+                    />
+                  </Grid>
                   <Grid item size={{ xs: 12 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
                       <Button
@@ -159,11 +180,16 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {} }) {
               {title.partner?.surname || title.partner?.name || 'Parceiro não informado'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Doc: {title.documentNumber || '-'} | Emissão: {title.issueDate ? new Date(title.issueDate).toLocaleDateString('pt-BR') : '-'}
+              Nº Doc: {title.documentNumber || '-'} | Emissão: {title.issueDate ? new Date(title.issueDate).toLocaleDateString('pt-BR') : '-'}
             </Typography>
             {title.accountPlan && (
               <Typography variant="body2" color="primary.main" fontWeight={600} sx={{ mt: 0.5 }}>
                 {title.accountPlan.code} - {title.accountPlan.description}
+              </Typography>
+            )}
+            {title.costCenter?.description && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {title.costCenter.description}
               </Typography>
             )}
           </>

@@ -70,7 +70,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
 
   const columns = [
     {
-      field: 'documentNumber', headerName: 'Nº Doc.', width: 140,
+      field: 'documentNumber', headerName: 'Nº Doc.', width: 130,
       renderCell: (val, row) => (
         <Box sx={{
           display: 'flex',
@@ -126,16 +126,24 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       renderCell: (val, row) => row.title?.partner?.surname || row.title?.partner?.name || ''
     },
     {
-      field: 'accountPlan', headerName: 'Plano de Contas', width: 300,
+      field: 'description', headerName: 'Descrição', width: 240,
+      renderCell: (val, row) => row.description || row.title?.description || ''
+    },
+    {
+      field: 'accountPlan', headerName: 'Plano de Contas', width: 240,
       renderCell: (val, row) => row.title?.accountPlan ? `${row.title.accountPlan.code} - ${row.title.accountPlan.description}` : ''
     },
     {
-      field: 'dueDate', headerName: 'Vencimento', width: 140,
+      field: 'costCenter', headerName: 'Centro de Custo', width: 180,
+      renderCell: (val, row) => row.title?.costCenter ? row.title.costCenter.description : ''
+    },
+    {
+      field: 'dueDate', headerName: 'Vencimento', width: 120, align: 'center',
       renderCell: (value) => value ? new Date(value).toLocaleDateString('pt-BR') : ''
     },
     {
-      field: 'installmentValue', headerName: 'Valor', width: 120,
-      renderCell: (value) => value ? parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
+      field: 'installmentValue', headerName: 'Valor', width: 100, align: 'right',
+      renderCell: (value) => value ? parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'
     },
     /*{
       field: 'actions', headerName: 'Ações', width: 80, align: 'center',
@@ -209,6 +217,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
           widths={table.columnWidths}
           onResize={table.handleColumnResize}
           loading={table.loading}
+          fixed
         />
       </Container.Content>
 
@@ -248,9 +257,9 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         }}
       />
 
-      <FinanceTitleDetailsDrawer 
-        open={detailsDrawerOpen} 
-        onClose={() => setDetailsDrawerOpen(false)} 
+      <FinanceTitleDetailsDrawer
+        open={detailsDrawerOpen}
+        onClose={() => setDetailsDrawerOpen(false)}
         titleId={selectedTitleId}
         documentNumber={selectedTitleDoc}
         onEditEntry={(entryId) => {

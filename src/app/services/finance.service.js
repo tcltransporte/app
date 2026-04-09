@@ -21,7 +21,12 @@ export async function findOne(transaction, id) {
 
   const result = await financeRepository.findOne(transaction, {
     where: { id, companyId: session.company.id },
-    include: [{ association: 'entries' }, { association: 'partner' }]
+    include: [
+      { association: 'entries' },
+      { association: 'partner' },
+      { association: 'accountPlan' },
+      { association: 'costCenter' }
+    ]
   })
 
   if (!result) {
@@ -61,7 +66,8 @@ export async function findAllEntries(transaction, params = {}) {
     where: { companyId: session.company.id },
     include: [
       { association: 'partner' },
-      { association: 'accountPlan', required: false }
+      { association: 'accountPlan', required: false },
+      { association: 'costCenter', required: false }
     ]
   }
 
