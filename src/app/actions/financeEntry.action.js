@@ -39,3 +39,15 @@ export async function updateEntry(id, data) {
     return ServiceResponse.error(error)
   }
 }
+
+export async function findEntryPaymentHistory(id) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.findEntryPaymentHistory(t, id)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}

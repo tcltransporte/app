@@ -31,6 +31,11 @@ import { FreightLetter } from './models/freightLetter.model.js'
 import { FreightLetterComponentType } from './models/freightLetterComponentType.model.js'
 import { AccountPlan } from './models/accountPlan.model.js'
 import { CostCenter } from './models/costCenter.model.js'
+import { Payment } from './models/payment.model.js'
+import { PaymentEntry } from './models/paymentEntry.model.js'
+import { BankMovement } from './models/bankMovement.model.js'
+import { PaymentMethod } from './models/paymentMethod.model.js'
+import { BankAccount } from './models/bankAccount.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -100,6 +105,11 @@ export class AppContext extends Sequelize {
     this.FreightLetterComponentType = this.define('freightLetterComponentType', new FreightLetterComponentType(), { tableName: 'CompValorCartaFreteTipo' })
     this.AccountPlan = this.define('accountPlan', new AccountPlan(), { tableName: 'PlanoContasContabil' })
     this.CostCenter = this.define('costCenter', new CostCenter(), { tableName: 'CentroCusto' })
+    this.Payment = this.define('payment', new Payment(), { tableName: 'pagamentos' })
+    this.PaymentEntry = this.define('paymentEntry', new PaymentEntry(), { tableName: 'pagamentos_detalhe' })
+    this.BankMovement = this.define('bankMovement', new BankMovement(), { tableName: 'movimento_bancario' })
+    this.PaymentMethod = this.define('paymentMethod', new PaymentMethod(), { tableName: 'tipo_pagamento' })
+    this.BankAccount = this.define('bankAccount', new BankAccount(), { tableName: 'conta_bancaria' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -169,6 +179,17 @@ export class AppContext extends Sequelize {
 
     this.FinanceTitle.hasMany(this.FinanceEntry, { as: 'entries', foreignKey: 'titleId' })
     this.FinanceEntry.belongsTo(this.FinanceTitle, { as: 'title', foreignKey: 'titleId' })
+    this.FinanceEntry.belongsTo(this.Payment, { as: 'payment', foreignKey: 'paymentId' })
+    this.Payment.hasMany(this.FinanceEntry, { as: 'entries', foreignKey: 'paymentId' })
+    this.PaymentEntry.belongsTo(this.Payment, { as: 'payment', foreignKey: 'paymentId' })
+    this.PaymentEntry.belongsTo(this.PaymentMethod, { as: 'paymentMethod', foreignKey: 'paymentMethodId' })
+    this.Payment.hasMany(this.PaymentEntry, { as: 'paymentEntries', foreignKey: 'paymentId' })
+    this.BankMovement.belongsTo(this.PaymentEntry, { as: 'paymentEntry', foreignKey: 'paymentEntryId' })
+    this.BankMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId' })
+    this.BankMovement.belongsTo(this.BankAccount, { as: 'originBankAccount', foreignKey: 'originBankAccountId' })
+    this.BankAccount.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+    this.BankAccount.belongsTo(this.AccountPlan, { as: 'accountPlan', foreignKey: 'accountPlanId' })
+    this.PaymentEntry.hasMany(this.BankMovement, { as: 'bankMovements', foreignKey: 'paymentEntryId' })
     this.FreightLetter.belongsTo(this.Partner, { as: 'payee', foreignKey: 'payeeId' })
     this.FreightLetter.belongsTo(this.FinanceTitle, { as: 'movement', foreignKey: 'movementId' })
     this.FreightLetter.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })

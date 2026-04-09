@@ -173,3 +173,28 @@ export async function updateEntry(transaction, id, data) {
     return findEntry(t, id)
   })
 }
+
+export async function findEntryPaymentHistory(transaction, id) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const entry = await db.FinanceEntry.findOne({
+      where: { id },
+      include: [
+        {
+          association: 'payment',
+          include: [
+            {
+              association: 'paymentEntries',
+              include: [
+                { association: 'bankMovements', include: ['bankAccount'] },
+                'paymentMethod'
+              ]
+            }
+          ]
+        }
+      ],
+      transaction: t
+    })
+    return entry?.toJSON()
+  })
+}

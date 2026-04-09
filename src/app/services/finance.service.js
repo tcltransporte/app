@@ -89,6 +89,17 @@ export async function findAllEntries(transaction, params = {}) {
 
   params.include = [...(params.include || []), titleInclude]
 
+  if (params.range) {
+    const { start, end, field = 'dueDate' } = params.range
+    if (start && end) {
+      params.where = {
+        ...params.where,
+        [field]: { [Op.between]: [start, end] }
+      }
+    }
+    delete params.range
+  }
+
   return await financeRepository.findAllEntries(transaction, params)
 }
 
@@ -108,4 +119,20 @@ export async function updateEntry(transaction, id, data) {
   const { id: _id, titleId: _titleId, ...safeData } = data
 
   return await financeRepository.updateEntry(transaction, id, safeData)
+}
+
+export async function findEntryPaymentHistory(transaction, id) {
+  const session = await getSession()
+  const entry = await financeRepository.findEntryPaymentHistory(transaction, id)
+  
+  // Security check: ensure the entry belongs to a title that belongs to the user's company
+  // Note: we might need to fetch the title first if findEntryPaymentHistory doesn't include it.
+  // In our case, I'll rely on the existing findEntry for validation if needed, or just fetch title here.
+  
+  const validationEntry = await financeRepository.findEntry(transaction, id)
+  if (!validationEntry || validationEntry.title?.companyId !== session.company.id) {
+    throw { code: "NOT_FOUND", message: "Parcela financeira não encontrada" }
+  }
+  
+  return entry
 }

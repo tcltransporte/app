@@ -1,21 +1,44 @@
 'use client';
 
 import React from 'react';
-import { Container, Table, Toolbar } from '@/components/common';
-import { useTable, useNavigation, useLoading } from '@/hooks';
+import { Container, Table, Toolbar, RangeModal } from '@/components/common';
+import { useTable, useNavigation, useLoading, useRangeFilter, useExport } from '@/hooks';
+import { ExportFormat } from '@/hooks/useExport';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import { Button, IconButton, Tooltip, Box, Chip, Typography } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, ListAlt as ListIcon, EditNote as EditNoteIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  ListAlt as ListIcon,
+  EditNote as EditNoteIcon,
+  CalendarMonth as CalendarIcon,
+  FilterList as FilterIcon,
+  Search as SearchIcon,
+  Event as EventIcon,
+  Download as DownloadIcon,
+  Google as GoogleIcon,
+  Payment as PaymentIcon,
+} from '@mui/icons-material';
+import { format, startOfDay, endOfDay, isBefore } from 'date-fns';
 import FinanceTitleModal from './finance-title-modal';
 import FinanceEntryModal from './finance-entry-modal';
 import FinanceTitleDetailsDrawer from './finance-title-details-drawer';
+import FinancePaymentHistoryDrawer from './finance-payment-history-drawer';
 
-export default function FinanceEntriesList({ operationType, title, initialTable, selectedId: propsSelectedId }) {
+export default function FinanceEntriesList({ operationType, title, initialTable, selectedId: propsSelectedId, initialRange }) {
   const table = useTable({ initialTable });
   const loading = useLoading();
   const navigation = useNavigation(`/finance/${operationType === 1 ? 'receivable' : 'payable'}`, propsSelectedId);
+  const rangeFilter = useRangeFilter({
+    initialRange,
+    dateFieldOptions: [
+      { label: 'Data de Vencimento', value: 'dueDate' },
+      { label: 'Data de Emissão', value: 'issueDate' },
+    ]
+  });
+  const exporter = useExport();
 
   const [titleModalOpen, setTitleModalOpen] = React.useState(false);
   const [detailsDrawerOpen, setDetailsDrawerOpen] = React.useState(false);
@@ -23,6 +46,8 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const [selectedTitleDoc, setSelectedTitleDoc] = React.useState(null);
   const [drawerRefreshKey, setDrawerRefreshKey] = React.useState(0);
   const [drawerOnTop, setDrawerOnTop] = React.useState(false);
+  const [historyDrawerOpen, setHistoryDrawerOpen] = React.useState(false);
+  const [selectedHistoryEntryId, setSelectedHistoryEntryId] = React.useState(null);
 
   const handleEdit = React.useCallback((row) => {
     navigation.setSelectedId(row.id);
@@ -35,13 +60,19 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     setDetailsDrawerOpen(true);
   }, []);
 
+  const handleOpenHistory = React.useCallback((ids) => {
+    setSelectedHistoryEntryId(ids);
+    setHistoryDrawerOpen(true);
+  }, []);
+
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
     try {
       const result = await financeEntryAction.findAll({
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
-        where: overrides.where || {}, // Add extra filtering if needed
+        where: overrides.where || {},
+        range: overrides.range || rangeFilter.range,
         operationType,
         sortBy: overrides.sortBy || table.sortBy || undefined,
         sortOrder: overrides.sortOrder || table.sortOrder || undefined
@@ -63,7 +94,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       table.setLoading(false);
       loading.hide();
     }
-  }, [table.page, table.rowsPerPage, table.sortBy, table.sortOrder, operationType]);
+  }, [table.page, table.rowsPerPage, table.sortBy, table.sortOrder, operationType, rangeFilter.range]);
 
   const isFirstMount = React.useRef(true);
   React.useEffect(() => {
@@ -77,7 +108,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
 
   const columns = [
     {
-      field: 'documentNumber', headerName: 'Nº Doc.', width: 130,
+      field: 'documentNumber', headerName: 'Nº Doc.', width: 150,
       renderCell: (val, row) => (
         <Box sx={{
           display: 'flex',
@@ -143,11 +174,58 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       renderCell: (val, row) => row.title?.costCenter ? row.title.costCenter.description : ''
     },
     {
+      field: 'status', headerName: 'Status', width: 90, align: 'center',
+      renderCell: (val, row) => {
+        const isPaid = !!row.paymentId;
+        const dueDate = row.dueDate ? new Date(row.dueDate) : null;
+        const today = startOfDay(new Date());
+
+        let label = 'Aberto';
+        let color = 'default';
+
+        if (isPaid) {
+          label = operationType === 2 ? 'Pago' : 'Recebido';
+          color = 'success';
+        } else if (dueDate && isBefore(dueDate, today)) {
+          label = 'Atrasado';
+          color = 'error';
+        } else {
+          label = 'Aberto';
+          color = 'info';
+        }
+
+        return (
+          <Tooltip title="Ver rastro de pagamento">
+            <Chip
+              label={label}
+              color={color}
+              size="small"
+              variant="outlined"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenHistory([row.id]);
+              }}
+              sx={{
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 20,
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                  borderColor: (theme) => theme.palette[color].main,
+                }
+              }}
+            />
+          </Tooltip>
+        );
+      }
+    },
+    {
       field: 'dueDate', headerName: 'Vencimento', width: 120, align: 'center',
       renderCell: (value) => value ? new Date(value).toLocaleDateString('pt-BR') : ''
     },
     {
-      field: 'installmentValue', headerName: 'Valor', width: 100, align: 'right',
+      field: 'installmentValue', headerName: 'Valor', width: 90, align: 'right',
       renderCell: (value) => value ? parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'
     },
     /*{
@@ -175,6 +253,26 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     }
   }, [table.orderedColumns.length]);
 
+  const handleExport = async (format) => {
+    loading.show('Gerando arquivo...', 'Isso pode levar alguns segundos dependendo da quantidade de dados.')
+    try {
+      await exporter.exportData({
+        format,
+        service: financeEntryAction.findAll,
+        params: {
+          operationType,
+          range: rangeFilter.range,
+          sortBy: table.sortBy,
+          sortOrder: table.sortOrder
+        },
+        columns: table.orderedColumns,
+        title: `Exportação de ${title}`
+      })
+    } finally {
+      loading.hide()
+    }
+  };
+
   return (
     <Container>
       <Container.Title items={[{ label: 'Finanças' }, { label: title }]} />
@@ -196,7 +294,40 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
               color: 'primary'
             }] : [])
           ]}
-          secondary={[]}
+          secondary={[
+            {
+              label: `Pagar${table.selecteds.length > 0 ? ` (${table.selecteds.length})` : ''}`,
+              icon: <PaymentIcon />,
+              onClick: () => handleOpenHistory(table.selecteds.map(s => s.id)),
+              disabled: table.selecteds.length === 0,
+              variant: 'outlined',
+              color: 'success'
+            },
+            {
+              label: rangeFilter.label,
+              icon: <EventIcon fontSize="small" />,
+              onClick: rangeFilter.handleOpen
+            },
+            {
+              label: 'Pesquisar',
+              icon: <SearchIcon fontSize="small" />,
+              variant: 'outlined',
+              color: 'primary',
+              onClick: () => fetchTable(),
+              options: [
+                {
+                  label: 'Exportar para Excel',
+                  icon: <DownloadIcon fontSize="small" />,
+                  onClick: () => handleExport(ExportFormat.EXCEL)
+                },
+                {
+                  label: 'Exportar para Google Sheets',
+                  icon: <GoogleIcon fontSize="small" />,
+                  onClick: () => handleExport(ExportFormat.GOOGLE_SHEETS)
+                }
+              ]
+            }
+          ]}
         />
 
         <Table
@@ -276,6 +407,34 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         }}
         refreshKey={drawerRefreshKey}
         onTop={drawerOnTop}
+      />
+
+      <FinancePaymentHistoryDrawer
+        open={historyDrawerOpen}
+        entryIds={selectedHistoryEntryId}
+        onClose={() => setHistoryDrawerOpen(false)}
+        onSuccess={() => fetchTable()}
+      />
+
+      <RangeModal
+        open={rangeFilter.open}
+        onClose={rangeFilter.handleClose}
+        title="Filtro de Período"
+        initialField={rangeFilter.range.field}
+        initialStart={rangeFilter.range.start}
+        initialEnd={rangeFilter.range.end}
+        fieldOptions={[
+          { label: 'Data de Vencimento', value: 'dueDate' },
+          { label: 'Data de Emissão', value: 'issueDate' },
+        ]}
+        onApply={async (vals) => {
+          const ok = await fetchTable({ range: vals, page: 1 });
+          if (ok) {
+            rangeFilter.setRange(vals);
+            rangeFilter.setOpen(false);
+            table.setPage(1);
+          }
+        }}
       />
     </Container>
   );

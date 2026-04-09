@@ -60,13 +60,33 @@ export const useExport = () => {
       console.error('Result object:', JSON.stringify(result, null, 2));
       console.error('Error caught:', error);
       
-      // Await the auth error handler to prevent Next.js from throwing 
-      // unhandled promise rejection warnings/errors during state transitions
       await handleAuthError(error, () => processResponse(result, { fileName, format }));
       
       if (error && error.code !== 'GOOGLE_AUTH_REQUIRED') {
         alert.error('Erro ao exportar', error?.body?.message || error.message || 'Ocorreu um problema ao processar o arquivo.');
       }
+    }
+  };
+
+  /**
+   * Higher-level export function that orchestrates data fetching and processing
+   */
+  const exportData = async ({ format, service, params = {}, columns = [], title = 'export' }) => {
+    setExporting(true);
+    try {
+      const result = await service({
+        ...params,
+        page: 1,
+        limit: 10000,
+        export: true,
+        format
+      });
+      await processResponse(result, { fileName: title, format });
+    } catch (error) {
+      console.error('exportData error:', error);
+      alert.error('Erro ao exportar', error?.message || 'Falha na comunicação com o servidor.');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -120,60 +140,61 @@ export const useExport = () => {
         const { url } = await urlResp.json();
         if (!url) throw new Error('URL de autenticação não retornada');
 
-      Swal.fire({
-        title: 'Conexão Necessária',
-        html: `
-          <p style="margin-bottom: 20px;">Você precisa conectar sua conta Google para exportar diretamente para o Sheets.</p>
-          <button id="swal-google-connect" class="swal2-confirm swal2-styled" style="background-color: #4285F4; color: white; padding: 12px 24px; font-weight: bold; border-radius: 8px; cursor: pointer;">
-            Conectar com Google
-          </button>
-        `,
-        showConfirmButton: false,
-        showCancelButton: true,
-        cancelButtonText: 'Agora não',
-        customClass: {
-          popup: 'swal2-modal-custom',
-          cancelButton: 'swal2-cancel-custom',
-        },
-        didOpen: () => {
-          const btn = document.getElementById('swal-google-connect');
-          btn.addEventListener('click', () => {
-            const width = 600;
-            const height = 700;
-            const left = window.screen.width / 2 - width / 2;
-            const top = window.screen.height / 2 - height / 2;
-            
-            const popup = window.open(
-              url, 
-              'google-auth', 
-              `width=${width},height=${height},left=${left},top=${top}`
-            );
+        Swal.fire({
+          title: 'Conexão Necessária',
+          html: `
+            <p style="margin-bottom: 20px;">Você precisa conectar sua conta Google para exportar diretamente para o Sheets.</p>
+            <button id="swal-google-connect" class="swal2-confirm swal2-styled" style="background-color: #4285F4; color: white; padding: 12px 24px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+              Conectar com Google
+            </button>
+          `,
+          showConfirmButton: false,
+          showCancelButton: true,
+          cancelButtonText: 'Agora não',
+          customClass: {
+            popup: 'swal2-modal-custom',
+            cancelButton: 'swal2-cancel-custom',
+          },
+          didOpen: () => {
+            const btn = document.getElementById('swal-google-connect');
+            btn.addEventListener('click', () => {
+              const width = 600;
+              const height = 700;
+              const left = window.screen.width / 2 - width / 2;
+              const top = window.screen.height / 2 - height / 2;
+              
+              const popup = window.open(
+                url, 
+                'google-auth', 
+                `width=${width},height=${height},left=${left},top=${top}`
+              );
 
-            if (!popup) {
-              alert.error('Bloqueador de Popups', 'O navegador bloqueou a janela.');
-              return;
-            }
-
-            const handleMessage = async (event) => {
-              if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
-                window.removeEventListener('message', handleMessage);
-                Swal.close();
-                alert.success('Conectado com sucesso!');
-                if (retryFn) retryFn();
+              if (!popup) {
+                alert.error('Bloqueador de Popups', 'O navegador bloqueou a janela.');
+                return;
               }
-            };
-            window.addEventListener('message', handleMessage);
-          });
-        }
-      });
-    } catch (err) {
-      console.error('Erro ao preparar conexão Google:', err);
-      alert.error('Erro de Conexão', 'Não foi possível preparar o login com Google.');
+
+              const handleMessage = async (event) => {
+                if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+                  window.removeEventListener('message', handleMessage);
+                  Swal.close();
+                  alert.success('Conectado com sucesso!');
+                  if (retryFn) retryFn();
+                }
+              };
+              window.addEventListener('message', handleMessage);
+            });
+          }
+        });
+      } catch (err) {
+        console.error('Erro ao preparar conexão Google:', err);
+        alert.error('Erro de Conexão', 'Não foi possível preparar o login com Google.');
+      }
     }
-  }
-}
+  };
 
   return {
+    exportData,
     processResponse,
     downloadClientSide,
     exporting,
