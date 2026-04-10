@@ -180,6 +180,7 @@ export class AppContext extends Sequelize {
     this.FinanceTitle.belongsTo(this.CostCenter, { as: 'costCenter', foreignKey: 'costCenterId' })
 
     this.FinanceTitle.hasMany(this.FinanceEntry, { as: 'entries', foreignKey: 'titleId' })
+    this.FinanceTitle.hasMany(this.Document, { as: 'documents', foreignKey: 'financeTitleId' })
     this.FinanceEntry.belongsTo(this.FinanceTitle, { as: 'title', foreignKey: 'titleId' })
     this.FinanceEntry.belongsTo(this.Payment, { as: 'payment', foreignKey: 'paymentId' })
     this.Payment.hasMany(this.FinanceEntry, { as: 'entries', foreignKey: 'paymentId' })
