@@ -54,12 +54,12 @@ export async function fetchHistory(ids) {
         totalValue: totalValue
       }
 
-      // 3. If no payment is found, it's a new checkout, so we need form data (methods, accounts)
+      // 3. If no payment is found, it's a new checkout, so we need form data (methods)
       if (!response.payment) {
         const formData = await paymentService.getPaymentFormData(t)
         response.methods = formData.methods
-        response.accounts = formData.accounts
       }
+
 
       return ServiceResponse.success(response)
     })

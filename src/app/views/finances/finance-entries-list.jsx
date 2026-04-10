@@ -32,7 +32,8 @@ import EntryStatusChip from './finance-entry-status-chip';
 export default function FinanceEntriesList({ operationType, title, initialTable, selectedId: propsSelectedId, initialRange }) {
   const table = useTable({ initialTable });
   const loading = useLoading();
-  const navigation = useNavigation(`/finance/${operationType === 1 ? 'receivable' : 'payable'}`, propsSelectedId);
+  const navigation = useNavigation(`/finances/${operationType === 1 ? 'receivable' : 'payable'}`, propsSelectedId);
+
   const rangeFilter = useRangeFilter({
     initialRange,
     dateFieldOptions: [

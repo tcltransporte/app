@@ -11,11 +11,8 @@ import {
 } from '@mui/icons-material'
 import { Formik, Form, Field } from 'formik'
 import { TextField, AutoComplete, DateField } from '@/components/controls'
-import * as partnerAction from '@/app/actions/partner.action'
-import * as accountPlanAction from '@/app/actions/accountPlan.action'
-import * as costCenterAction from '@/app/actions/costCenter.action'
 import * as financeAction from '@/app/actions/finance.action'
-import * as companyAction from '@/app/actions/settings/company.action'
+// import * as companyAction from '@/app/actions/settings/company.action'
 import { alert } from '@/libs/alert'
 import { ServiceStatus } from '@/libs/service'
 
@@ -56,33 +53,56 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
     }
   }
 
-  const searchPartners = async (query) => {
-    const filters = title.type_operation === 1 ? { isSupplier: true } : { isCustomer: true }
-    if (query) filters.surname = query
-    const result = await partnerAction.findAll({ filters, limit: 20 })
-    return result.body.items || []
+  const searchPartners = async (search) => {
+    try {
+      const isSupplier = title.type_operation === 1
+      const isCustomer = !isSupplier
+      const response = await fetch('/api/search/partner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ search, isSupplier, isCustomer })
+      })
+      if (!response.ok) throw new Error()
+      return await response.json()
+    } catch { return [] }
   }
 
-  const searchAccountPlans = async (query) => {
-    const filters = {}
-    if (query) filters.description = query
-    const result = await accountPlanAction.findAll({ where: filters, limit: 50 })
-    return result.body?.rows || result.body?.items || result.body || []
+  const searchAccountPlans = async (search) => {
+    try {
+      const response = await fetch('/api/search/account-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ search })
+      })
+      if (!response.ok) throw new Error()
+      return await response.json()
+    } catch { return [] }
   }
 
-  const searchCostCenters = async (query) => {
-    const filters = {}
-    if (query) filters.description = query
-    const result = await costCenterAction.findAll({ where: filters, limit: 50 })
-    return result.body?.rows || result.body?.items || result.body || []
+  const searchCostCenters = async (search) => {
+    try {
+      const response = await fetch('/api/search/cost-center', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ search })
+      })
+      if (!response.ok) throw new Error()
+      return await response.json()
+    } catch { return [] }
   }
 
-  const searchCompanies = async (query) => {
-    const filters = {}
-    if (query) filters.surname = query
-    const result = await companyAction.findAll({ where: filters, limit: 50 })
-    return result.body?.rows || result.body?.items || result.body || []
+  const searchCompanies = async (search) => {
+    try {
+      const response = await fetch('/api/search/company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ search })
+      })
+      if (!response.ok) throw new Error()
+      return await response.json()
+    } catch { return [] }
   }
+
 
   return (
     <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed', position: 'relative', ...sx }}>

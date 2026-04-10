@@ -40,6 +40,7 @@ import { format } from 'date-fns';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { AutoComplete, DateField, NumericField, SelectField } from '@/components/controls';
 import * as paymentAction from '@/app/actions/payment.action';
+// import * as bankAccountAction from '@/app/actions/bankAccount.action';
 
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
@@ -188,7 +189,7 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
 export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, onSuccess, zIndex }) {
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState(null);
-  const [formData, setFormData] = React.useState({ methods: [], accounts: [] });
+  const [formData, setFormData] = React.useState({ methods: [] });
   const formikRef = React.useRef(null);
 
   const fetchHistory = React.useCallback(async () => {
@@ -213,10 +214,10 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
 
       if (!historyData.payment) {
         setFormData({
-          methods: historyData.methods || [],
-          accounts: historyData.accounts || []
+          methods: historyData.methods || []
         });
       }
+
     } catch (error) {
       console.error('Error fetching payment history:', error);
       alert.error('Erro!', 'Não foi possível carregar as informações das parcelas para pagamento.');
@@ -281,14 +282,22 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
   };
 
   const handleSearchGlobal = React.useCallback(async (q) => {
-    const list = formData?.accounts || [];
-    if (!q) return list;
-    const norm = q.toLowerCase();
-    return list.filter(a =>
-      (a.description?.toLowerCase() || '').includes(norm) ||
-      (a.bankName?.toLowerCase() || '').includes(norm)
-    );
-  }, [formData?.accounts]);
+    try {
+      const response = await fetch('/api/search/bankAccount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ search: q })
+      });
+
+      if (!response.ok) throw new Error('Falha na busca');
+      return await response.json();
+    } catch (error) {
+      console.error('Error searching bank accounts:', error);
+      return [];
+    }
+  }, []);
+
+
 
   const textFnGlobal = React.useCallback((v) =>
     (v && typeof v === 'object') ? (v.description || v.bankName || '') : '',

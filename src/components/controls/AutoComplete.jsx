@@ -91,6 +91,8 @@ export const AutoComplete = (props) => {
   const [nothing, setNothing] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [boxPosition, setBoxPosition] = useState({ top: 0, left: 0, width: 0, isAbove: false })
+  const [interacted, setInteracted] = useState(false)
+
 
   const debouncedQuery = useDebounce(query, 300)
   const valueText = value ? text(value) : query
@@ -126,18 +128,20 @@ export const AutoComplete = (props) => {
         form?.setFieldValue?.(name, null)
         onChange?.(null, form)
         setQuery(newQuery)
-        setLoading(true)
+        setInteracted(true)
+        // setLoading(true)
         return
       }
       setQuery(newQuery)
-      setLoading(true)
+      setInteracted(true)
+      // setLoading(true) // Removido para evitar spinner imediato antes do debounce (melhora percepção de real-time)
     },
     [value, form, name, onChange]
   )
 
   const handleClear = useCallback(
     (e) => {
-      e.preventDefault()
+      // e.preventDefault()
       isClearingRef.current = true
 
       form?.setFieldValue?.(name, null)
@@ -148,15 +152,17 @@ export const AutoComplete = (props) => {
       setNothing(false)
       setLoading(false)
       setSelectedIndex(-1)
+      setInteracted(true)
 
       inputRef.current?.focus()
+
     },
     [form, name, onChange]
   )
 
   const handleSearch = useCallback(
     async (e) => {
-      e.preventDefault()
+      // e.preventDefault()
 
       abortControllerRef.current?.abort()
       const controller = new AbortController()
@@ -166,6 +172,9 @@ export const AutoComplete = (props) => {
         setLoading(true)
         setNothing(false)
         setSelectedIndex(0)
+        setInteracted(true)
+        updateBoxPosition()
+
 
         const resultData = await onSearch(query, controller.signal)
         setData(resultData)
@@ -177,8 +186,9 @@ export const AutoComplete = (props) => {
         inputRef.current?.focus()
       }
     },
-    [onSearch, query]
+    [onSearch, query, updateBoxPosition]
   )
+
 
   const handleSuggestionClick = useCallback(
     (item) => {
@@ -240,7 +250,19 @@ export const AutoComplete = (props) => {
       return
     }
 
-    if (!debouncedQuery) return;
+    if (!interacted && !debouncedQuery) {
+      return
+    }
+
+    if (isClearingRef.current) {
+      isClearingRef.current = false
+      setLoading(false)
+      return
+    }
+
+    // if (!debouncedQuery) return; // Removido para permitir pesquisa de campo vazio (ex: mostrar todos)
+
+
 
     abortControllerRef.current?.abort()
     const controller = new AbortController()
@@ -343,6 +365,11 @@ export const AutoComplete = (props) => {
         onBlur={(e) => {
           field?.onBlur(e)
 
+          // Se o novo foco está dentro do componente (ex: clicou na lupa), não fecha
+          if (ref.current && ref.current.contains(e.relatedTarget)) {
+            return
+          }
+
           if (!value && query) {
             isClearingRef.current = true
             setQuery('')
@@ -367,7 +394,7 @@ export const AutoComplete = (props) => {
                 <IconButton
                   size="small"
                   edge="end"
-                  onMouseDown={handleClear}
+                  onClick={handleClear}
                   disabled={props.disabled}
                   tabIndex={-1}
                 >
@@ -377,13 +404,14 @@ export const AutoComplete = (props) => {
                 <IconButton
                   size="small"
                   edge="end"
-                  onMouseDown={handleSearch}
+                  onClick={handleSearch}
                   disabled={props.disabled}
                   tabIndex={-1}
                 >
                   <SearchIcon fontSize="small" />
                 </IconButton>
               )}
+
             </InputAdornment>
           ),
         }}
