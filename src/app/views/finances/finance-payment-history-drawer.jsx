@@ -110,7 +110,7 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ width: 40 }}>Ações</TableCell>
-                  <TableCell>Meio</TableCell>
+                  <TableCell>Forma</TableCell>
                   <TableCell>Conta</TableCell>
                   <TableCell sx={{ width: 120 }} align="right">Valor</TableCell>
                 </TableRow>
@@ -132,7 +132,7 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                             <Field
                               name={`items.${index}.composition.${cIdx}.paymentMethodId`}
                               component={SelectField}
-                              label="Meio"
+                              label="Forma"
                               options={formData.methods.map(m => ({ value: m.id, label: m.description }))}
                               fullWidth
                               size="small"
@@ -473,39 +473,41 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                 renderHistory()
               ) : (
                 <>
-                  <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
-                    <Grid container spacing={2}>
-                      <Grid item size={{ xs: 12, sm: 3 }}>
-                        <Field
-                          name="date"
-                          component={DateField}
-                          label="Data"
-                          fullWidth
-                        />
+                  {values.items.length > 1 && (
+                    <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
+                      <Grid container spacing={2}>
+                        <Grid item size={{ xs: 12, sm: 3 }}>
+                          <Field
+                            name="date"
+                            component={DateField}
+                            label="Data"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item size={{ xs: 12, sm: 4 }}>
+                          <Field
+                            name="globalPaymentMethodId"
+                            component={SelectField}
+                            label="Forma"
+                            options={formData.methods.map(m => ({ value: m.id, label: m.description }))}
+                            fullWidth
+                            onChange={(val) => handleGlobalChange('paymentMethodId', val, setFieldValue, values)}
+                          />
+                        </Grid>
+                        <Grid item size={{ xs: 12, sm: 5 }}>
+                          <Field
+                            name="globalBankAccount"
+                            component={AutoComplete}
+                            label="Conta"
+                            onSearch={handleSearchGlobal}
+                            text={textFnGlobal}
+                            fullWidth
+                            onChange={(val) => handleGlobalChange('bankAccount', val, setFieldValue, values)}
+                          />
+                        </Grid>
                       </Grid>
-                      <Grid item size={{ xs: 12, sm: 4 }}>
-                        <Field
-                          name="globalPaymentMethodId"
-                          component={SelectField}
-                          label="Meio"
-                          options={formData.methods.map(m => ({ value: m.id, label: m.description }))}
-                          fullWidth
-                          onChange={(val) => handleGlobalChange('paymentMethodId', val, setFieldValue, values)}
-                        />
-                      </Grid>
-                      <Grid item size={{ xs: 12, sm: 5 }}>
-                        <Field
-                          name="globalBankAccount"
-                          component={AutoComplete}
-                          label="Conta"
-                          onSearch={handleSearchGlobal}
-                          text={textFnGlobal}
-                          fullWidth
-                          onChange={(val) => handleGlobalChange('bankAccount', val, setFieldValue, values)}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
+                    </Box>
+                  )}
 
                   <Box>
                     {/*
