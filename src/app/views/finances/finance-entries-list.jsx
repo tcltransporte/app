@@ -20,6 +20,7 @@ import {
   Download as DownloadIcon,
   Google as GoogleIcon,
   Payment as PaymentIcon,
+  CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import FinanceTitleModal from './finance-title-modal';
@@ -272,17 +273,16 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
               onClick: () => handleEdit(table.selecteds[0]),
               variant: 'outlined',
               color: 'primary'
+            }] : []),
+            ...(table.selecteds.length > 0 ? [{
+              label: `Baixar${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
+              icon: <CheckIcon />,
+              onClick: () => handleOpenHistory(table.selecteds.map(s => s.id)),
+              variant: 'contained',
+              color: 'success'
             }] : [])
           ]}
           secondary={[
-            {
-              label: `Pagar${table.selecteds.length > 0 ? ` (${table.selecteds.length})` : ''}`,
-              icon: <PaymentIcon />,
-              onClick: () => handleOpenHistory(table.selecteds.map(s => s.id)),
-              disabled: table.selecteds.length === 0,
-              variant: 'outlined',
-              color: 'success'
-            },
             {
               label: rangeFilter.label,
               icon: <EventIcon fontSize="small" />,
