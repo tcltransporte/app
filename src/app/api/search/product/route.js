@@ -13,15 +13,17 @@ export async function POST(request) {
         const db = new AppContext()
 
         const where = {
-            isActive: true
+            isActive: true,
+            companyId: session.company.id
         }
 
-        if (search) {
+        if (search && typeof search === 'string') {
+            const searchPattern = `%${search.replace(/ /g, "%").toUpperCase()}%`
             where[Op.or] = [
-                { name: { [Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` } },
-                { description: { [Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` } },
-                { internalCode: { [Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` } },
-                { productCode: { [Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` } }
+                { name: { [Op.like]: searchPattern } },
+                { description: { [Op.like]: searchPattern } },
+                { internalCode: { [Op.like]: searchPattern } },
+                { productCode: { [Op.like]: searchPattern } }
             ]
         }
 

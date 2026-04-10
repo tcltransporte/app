@@ -14,12 +14,13 @@ export async function POST(request) {
     const db = new AppContext()
     const where = {}
 
-    if (search) {
+    if (search && typeof search === 'string') {
       const searchUpper = search.replace(/ /g, "%").toUpperCase()
       where.description = { [Op.like]: `%${searchUpper}%` }
     }
 
     const rows = await db.CostCenter.findAll({
+      attributes: ['id', 'description'],
       where,
       limit: 50,
       order: [['description', 'ASC']]

@@ -1,36 +1,45 @@
 import { AppContext } from "@/database"
 import { Op } from "sequelize"
+import { getSession } from "@/libs/session"
 
 export async function POST(request) {
     try {
-
         const { search } = await request.json()
+        const session = await getSession()
 
-        //const session = await getServerSession(authOptions)
+        if (!session?.company?.id) {
+            return new Response(JSON.stringify({ message: "Sessão inválida" }), { status: 401 })
+        }
 
         const db = new AppContext()
-
         const where = []
 
-        where.push({ '$Descricao$': { [Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` } })
+        if (search && typeof search === 'string') {
+            const searchUpper = search.replace(/ /g, "%").toUpperCase()
+            const isNumeric = !isNaN(search) && search.trim() !== ''
 
-        //where.push({ '$companyId$': session.company.codigo_empresa_filial })
+            const searchConditions = [
+                { description: { [Op.like]: `%${searchUpper}%` } }
+            ]
+
+            if (isNumeric) {
+                searchConditions.push({ id: search })
+            }
+
+            where.push({ [Op.or]: searchConditions })
+        }
 
         const services = await db.Service.findAll({
-            attributes: ['id', 'name'],
-            order: [['name', 'asc']],
-            where: where,
-            limit: 20,
-            offset: 0,
+            attributes: ['id', 'description'],
+            order: [['description', 'asc']],
+            where,
+            limit: 50
         })
 
-        const data = services.map((partner) => partner.toJSON())
-
-        return Response.json(data)
+        return Response.json(services.map(s => s.toJSON()))
 
     } catch (error) {
-
+        console.error('Error searching services:', error)
         return new Response(JSON.stringify({ message: error.message }), { status: 500 })
-
     }
 }

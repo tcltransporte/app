@@ -4,6 +4,7 @@ import React, { createContext, useState, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { LayoutProvider } from '@/context/LayoutContext';
 import { NotificationProvider } from '@/context/NotificationContext';
+import { LoadingProvider } from '@/context/LoadingContext';
 import FloatingSettings from '@/components/layout/FloatingSettings';
 
 // Define the shape of our context
@@ -160,9 +161,11 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
       <ThemeProvider theme={theme}>
         <NotificationProvider>
           <LayoutProvider>
-            <CssBaseline />
-            {children}
-            <FloatingSettings />
+            <LoadingProvider>
+              <CssBaseline />
+              {children}
+              <FloatingSettings />
+            </LoadingProvider>
           </LayoutProvider>
         </NotificationProvider>
       </ThemeProvider>

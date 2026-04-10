@@ -42,6 +42,7 @@ import { SelectField, NumericField } from '@/components/controls';
 // No longer using AutoComplete here as we have manual filters in modal
 import * as documentTypeAction from '@/app/actions/documentType.action';
 import * as solicitationAction from '@/app/actions/solicitation.action';
+import * as search from "@/libs/search";
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
@@ -218,19 +219,14 @@ function LinkDocumentModal({ open, onClose, onSelect }) {
     if (!search.trim()) return;
     setLoading(true);
     try {
-      const resp = await fetch('/api/search/document', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ search })
-      });
-      const data = await resp.json();
+      const data = await search.document({ search })
       setResults(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error(error);
       setResults([]);
     } finally {
       setLoading(false);
     }
+
   };
 
   return (

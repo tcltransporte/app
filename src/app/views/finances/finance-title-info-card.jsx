@@ -12,7 +12,7 @@ import {
 import { Formik, Form, Field } from 'formik'
 import { TextField, AutoComplete, DateField } from '@/components/controls'
 import * as financeAction from '@/app/actions/finance.action'
-// import * as companyAction from '@/app/actions/settings/company.action'
+import * as search from '@/libs/search'
 import { alert } from '@/libs/alert'
 import { ServiceStatus } from '@/libs/service'
 
@@ -53,55 +53,8 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
     }
   }
 
-  const searchPartners = async (search) => {
-    try {
-      const isSupplier = title.type_operation === 1
-      const isCustomer = !isSupplier
-      const response = await fetch('/api/search/partner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ search, isSupplier, isCustomer })
-      })
-      if (!response.ok) throw new Error()
-      return await response.json()
-    } catch { return [] }
-  }
+  // Handlers transferidos para @/libs/search
 
-  const searchAccountPlans = async (search) => {
-    try {
-      const response = await fetch('/api/search/account-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ search })
-      })
-      if (!response.ok) throw new Error()
-      return await response.json()
-    } catch { return [] }
-  }
-
-  const searchCostCenters = async (search) => {
-    try {
-      const response = await fetch('/api/search/cost-center', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ search })
-      })
-      if (!response.ok) throw new Error()
-      return await response.json()
-    } catch { return [] }
-  }
-
-  const searchCompanies = async (search) => {
-    try {
-      const response = await fetch('/api/search/company', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ search })
-      })
-      if (!response.ok) throw new Error()
-      return await response.json()
-    } catch { return [] }
-  }
 
 
   return (
@@ -141,7 +94,7 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
                       component={AutoComplete}
                       label="Empresa / Filial"
                       text={(v) => v.surname || v.name}
-                      onSearch={searchCompanies}
+                      onSearch={search.company}
                       renderSuggestion={(v) => v.surname || v.name}
                       size="small"
                     />
@@ -168,7 +121,13 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
                       component={AutoComplete}
                       label="Fornecedor/Cliente"
                       text={(v) => v.surname || v.name}
-                      onSearch={searchPartners}
+                      onSearch={(v, s) => 
+                        search.partner({ 
+                          search: v, 
+                          isSupplier: title.type_operation === 1, 
+                          isCustomer: title.type_operation === 2 
+                        }, s)
+                      }
                       renderSuggestion={(v) => v.surname || v.name}
                       size="small"
                     />
@@ -179,7 +138,7 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
                       component={AutoComplete}
                       label="Plano de Contas"
                       text={(v) => `${v.code} - ${v.description}`}
-                      onSearch={searchAccountPlans}
+                      onSearch={search.accountPlan}
                       renderSuggestion={(v) => `${v.code} - ${v.description}`}
                       size="small"
                     />
@@ -190,11 +149,12 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
                       component={AutoComplete}
                       label="Centro de Custo"
                       text={(v) => v.description}
-                      onSearch={searchCostCenters}
+                      onSearch={search.costCenter}
                       renderSuggestion={(v) => v.description}
                       size="small"
                     />
                   </Grid>
+
                   <Grid item size={{ xs: 12 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
                       <Button

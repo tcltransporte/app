@@ -7,7 +7,7 @@ export async function POST(request) {
         const db = new AppContext()
 
         const where = {}
-        if (search) {
+        if (search && typeof search === 'string') {
             where.description = { [Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` }
         }
 

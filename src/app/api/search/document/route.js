@@ -16,7 +16,7 @@ export async function POST(request) {
       where.partnerId = partnerId
     }
 
-    if (search) {
+    if (search && typeof search === 'string') {
       const searchPattern = `%${search.replace(/ /g, "%")}%`
       where[Op.or] = [
         { invoiceNumber: { [Op.like]: searchPattern } },

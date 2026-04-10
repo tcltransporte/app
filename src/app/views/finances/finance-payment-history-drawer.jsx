@@ -40,10 +40,9 @@ import { format } from 'date-fns';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { AutoComplete, DateField, NumericField, SelectField } from '@/components/controls';
 import * as paymentAction from '@/app/actions/payment.action';
-// import * as bankAccountAction from '@/app/actions/bankAccount.action';
-
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
+import * as search from '@/libs/search';
 
 const validatePayment = (values) => {
   const errors = {};
@@ -281,21 +280,8 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
     alert.success('Copiado!', 'Dados da primeira parcela replicados para as demais.');
   };
 
-  const handleSearchGlobal = React.useCallback(async (q) => {
-    try {
-      const response = await fetch('/api/search/bankAccount', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ search: q })
-      });
+  const handleSearchGlobal = search.bankAccount;
 
-      if (!response.ok) throw new Error('Falha na busca');
-      return await response.json();
-    } catch (error) {
-      console.error('Error searching bank accounts:', error);
-      return [];
-    }
-  }, []);
 
 
 

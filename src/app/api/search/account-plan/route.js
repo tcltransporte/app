@@ -17,7 +17,7 @@ export async function POST(request) {
       // idEmpresa: session.company.id // Algumas tabelas usam idEmpresa, outras companyId. Verificando...
     }
 
-    if (search) {
+    if (search && typeof search === 'string') {
       const searchUpper = search.replace(/ /g, "%").toUpperCase()
       const isNumeric = !isNaN(search) && search.trim() !== ''
 
@@ -30,6 +30,7 @@ export async function POST(request) {
     }
 
     const rows = await db.AccountPlan.findAll({
+      attributes: ['id', 'description', 'code'],
       where,
       limit: 50,
       order: [['description', 'ASC']]

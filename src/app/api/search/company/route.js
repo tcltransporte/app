@@ -14,7 +14,7 @@ export async function POST(request) {
     const db = new AppContext()
     const where = {}
 
-    if (search) {
+    if (search && typeof search === 'string') {
       const searchUpper = search.replace(/ /g, "%").toUpperCase()
       const searchClean = search.replace(/[^a-zA-Z0-9]/g, "")
 
@@ -26,6 +26,7 @@ export async function POST(request) {
     }
 
     const rows = await db.Company.findAll({
+      attributes: ['id', 'surname', 'cnpj'],
       where,
       limit: 50,
       order: [['surname', 'ASC']]

@@ -59,7 +59,6 @@ export const AutoComplete = (props) => {
   const selectedItemRef = useRef(null)
   const abortControllerRef = useRef(null)
   const isClearingRef = useRef(false)
-
   const {
     field,
     form,
@@ -70,6 +69,9 @@ export const AutoComplete = (props) => {
     renderSuggestion,
     ...rest
   } = props
+
+  const onSearchRef = useRef(onSearch)
+  onSearchRef.current = onSearch
 
   const value = field?.value || props.value
   const name = field?.name || props.name
@@ -92,6 +94,7 @@ export const AutoComplete = (props) => {
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [boxPosition, setBoxPosition] = useState({ top: 0, left: 0, width: 0, isAbove: false })
   const [interacted, setInteracted] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
 
 
   const debouncedQuery = useDebounce(query, 300)
@@ -100,7 +103,10 @@ export const AutoComplete = (props) => {
 
   // --- Position ---
   const updateBoxPosition = useCallback(() => {
-    const rect = ref.current?.getBoundingClientRect()
+    const container = ref.current
+    const inputBase = container?.querySelector('.MuiInputBase-root')
+    const rect = (inputBase || container)?.getBoundingClientRect()
+
     if (rect) {
       const boxHeight = 300 // max-height
       const spaceBelow = window.innerHeight - rect.bottom
@@ -152,7 +158,7 @@ export const AutoComplete = (props) => {
       setNothing(false)
       setLoading(false)
       setSelectedIndex(-1)
-      setInteracted(true)
+      setInteracted(false)
 
       inputRef.current?.focus()
 
@@ -218,6 +224,8 @@ export const AutoComplete = (props) => {
         e.preventDefault()
         handleSuggestionClick(data[selectedIndex])
       } else if (e.key === 'Escape' && isBoxOpen) {
+        e.preventDefault()
+        e.stopPropagation()
         setData([])
         setNothing(false)
         setLoading(false)
@@ -255,24 +263,27 @@ export const AutoComplete = (props) => {
     }
 
     if (isClearingRef.current) {
-      isClearingRef.current = false
+      if (debouncedQuery === '') {
+        isClearingRef.current = false
+      }
       setLoading(false)
+      return
+    }
+
+    if (!isFocused && data.length === 0) {
       return
     }
 
     // if (!debouncedQuery) return; // Removido para permitir pesquisa de campo vazio (ex: mostrar todos)
 
-
-
     abortControllerRef.current?.abort()
     const controller = new AbortController()
     abortControllerRef.current = controller
 
-    setLoading(true)
-    setSelectedIndex(0)
     updateBoxPosition()
+    setSelectedIndex(0)
 
-    onSearch(debouncedQuery, controller.signal)
+    onSearchRef.current(debouncedQuery, controller.signal)
       .then((result) => {
         if (!controller.signal.aborted) {
           setData(result)
@@ -282,8 +293,12 @@ export const AutoComplete = (props) => {
       .catch((err) => {
         if (err.name !== 'AbortError') console.error(err)
       })
-      .finally(() => setLoading(false))
-  }, [debouncedQuery, value, onSearch, updateBoxPosition])
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+      })
+  }, [debouncedQuery, value, updateBoxPosition, isFocused])
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside)
@@ -362,7 +377,9 @@ export const AutoComplete = (props) => {
         name={name}
         value={valueText}
         onChange={handleInputChange}
+        onFocus={() => setIsFocused(true)}
         onBlur={(e) => {
+          setIsFocused(false)
           field?.onBlur(e)
 
           // Se o novo foco está dentro do componente (ex: clicou na lupa), não fecha
@@ -370,12 +387,11 @@ export const AutoComplete = (props) => {
             return
           }
 
-          if (!value && query) {
-            isClearingRef.current = true
-            setQuery('')
-          }
-
+          // Aborta qualquer busca pendente ao sair do campo
+          abortControllerRef.current?.abort()
           setData([])
+          setLoading(false)
+          setNothing(false)
         }}
         onKeyDown={handleKeyDown}
         fullWidth

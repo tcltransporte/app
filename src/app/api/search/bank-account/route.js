@@ -17,7 +17,7 @@ export async function POST(request) {
       companyId: session.company.id
     }
 
-    if (search) {
+    if (search && typeof search === 'string') {
       const searchUpper = search.replace(/ /g, "%").toUpperCase()
       const searchClean = search.replace(/[^a-zA-Z0-9]/g, "")
       const isNumeric = !isNaN(search) && search.trim() !== ''
@@ -41,10 +41,11 @@ export async function POST(request) {
     }
 
     const accounts = await db.BankAccount.findAll({
+      attributes: ['id', 'description', 'bankName', 'agency', 'accountNumber'],
       where,
       limit: 20,
       order: [['description', 'ASC']],
-      include: ['bank']
+      include: [{ association: 'bank', attributes: ['id', 'description'] }]
     })
 
     const data = accounts.map((acc) => acc.toJSON())

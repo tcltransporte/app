@@ -1,7 +1,6 @@
 import { Inter } from 'next/font/google';
 import { cookies, headers } from 'next/headers';
 import { ThemeContextProvider } from '@/context/ThemeContext';
-import { LoadingProvider } from '@/context/LoadingContext';
 import { Suspense } from 'react';
 import RouteProgressBar from '@/components/RouteProgressBar';
 import '@/styles/swal-custom.css';
@@ -47,9 +46,7 @@ export default async function RootLayout({ children }) {
             <RouteProgressBar />
           </Suspense>
           <ThemeContextProvider initialConfig={themeConfig} initialMobile={isMobile}>
-            <LoadingProvider>
-              {children}
-            </LoadingProvider>
+            {children}
           </ThemeContextProvider>
         </AppRouterCacheProvider>
       </body>

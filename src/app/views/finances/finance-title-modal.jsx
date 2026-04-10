@@ -9,9 +9,8 @@ import {
 import { Add as AddIcon, Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material'
 import { Dialog } from '@/components/common'
 import { TextField, AutoComplete, DateField, NumericField, SelectField } from '@/components/controls'
-import * as partnerAction from '@/app/actions/partner.action'
-import * as accountPlanAction from '@/app/actions/accountPlan.action'
 import * as financeAction from '@/app/actions/finance.action'
+import * as search from '@/libs/search'
 import { alert } from '@/libs/alert'
 import { ServiceStatus } from '@/libs/service'
 
@@ -105,19 +104,8 @@ export default function FinanceTitleModal({ open, onClose, operationType, onSucc
     }
   }
 
-  const searchPartners = async (query) => {
-    const filters = operationType === 1 ? { isSupplier: true } : { isCustomer: true }
-    if (query) filters.surname = query
-    const result = await partnerAction.findAll({ filters, limit: 20 })
-    return result.body.items || []
-  }
+  // Removidos handlers locais em favor do @/libs/search
 
-  const searchAccountPlans = async (query) => {
-    const filters = {}
-    if (query) filters.description = query
-    const result = await accountPlanAction.findAll({ where: filters, limit: 50 })
-    return result.body || []
-  }
 
   return (
     <Dialog open={open} onClose={onClose} title="Adicionar Título Financeiro" width="md">
@@ -168,7 +156,7 @@ export default function FinanceTitleModal({ open, onClose, operationType, onSucc
                     component={AutoComplete}
                     label="Fornecedor/Cliente"
                     text={(v) => v.surname || v.name}
-                    onSearch={searchPartners}
+                    onSearch={(v, s) => search.partner({ search: v, isSupplier: operationType === 1, isCustomer: operationType === 2 }, s)}
                     renderSuggestion={(v) => v.surname || v.name}
                   />
                 </Grid>
@@ -178,7 +166,7 @@ export default function FinanceTitleModal({ open, onClose, operationType, onSucc
                     component={AutoComplete}
                     label="Plano de Contas"
                     text={(v) => `${v.code} - ${v.description}`}
-                    onSearch={searchAccountPlans}
+                    onSearch={search.accountPlan}
                     renderSuggestion={(v) => `${v.code} - ${v.description}`}
                   />
                 </Grid>

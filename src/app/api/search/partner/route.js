@@ -12,28 +12,30 @@ export async function POST(request) {
         const session = await getSession()
         const db = new AppContext()
         const where = []
-        const searchUpper = search.replace(/ /g, "%").toUpperCase()
-        const searchClean = search.replace(/[^a-zA-Z0-9]/g, "")
-        const isNumeric = !isNaN(search) && search.trim() !== ''
+        if (search && typeof search === 'string') {
+            const searchUpper = search.replace(/ /g, "%").toUpperCase()
+            const searchClean = search.replace(/[^a-zA-Z0-9]/g, "")
+            const isNumeric = !isNaN(search) && search.trim() !== ''
 
-        const searchConditions = [
-            { '$nome$': { [Op.like]: `%${searchUpper}%` } },
-            { '$RazaoSocial$': { [Op.like]: `%${searchUpper}%` } },
-            { '$CpfCnpj$': { [Op.like]: `%${searchClean}%` } }
-        ]
+            const searchConditions = [
+                { '$nome$': { [Op.like]: `%${searchUpper}%` } },
+                { '$RazaoSocial$': { [Op.like]: `%${searchUpper}%` } },
+                { '$CpfCnpj$': { [Op.like]: `%${searchClean}%` } }
+            ]
 
-        if (isNumeric) {
-            searchConditions.push(
-                db.where(
-                    db.cast(db.col('codigo_pessoa'), 'NVARCHAR'),
-                    { [Op.like]: `%${search}%` }
+            if (isNumeric) {
+                searchConditions.push(
+                    db.where(
+                        db.cast(db.col('codigo_pessoa'), 'NVARCHAR'),
+                        { [Op.like]: `%${search}%` }
+                    )
                 )
-            )
+            }
+
+            where.push({ [Op.or]: searchConditions })
         }
 
-        where.push({ [Op.or]: searchConditions })
-
-        //where.push({ '$companyId$': session.company.codigo_empresa_filial })
+        where.push({ companyId: session.company.id })
 
         where.push({ '$ativo$': true })
 
