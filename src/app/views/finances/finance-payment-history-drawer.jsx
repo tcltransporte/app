@@ -39,8 +39,8 @@ import {
 import { format } from 'date-fns';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { AutoComplete, DateField, NumericField, SelectField } from '@/components/controls';
-import * as financeEntryAction from '@/app/actions/financeEntry.action';
 import * as paymentAction from '@/app/actions/payment.action';
+
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
@@ -202,39 +202,20 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
 
     setLoading(true);
     try {
-      const allEntriesResult = await financeEntryAction.findAll({
-        where: { id: ids },
-        limit: ids.length
-      });
+      const result = await paymentAction.fetchHistory(ids);
 
-      if (allEntriesResult.header.status !== ServiceStatus.SUCCESS) {
-        throw new Error(allEntriesResult.body?.message || 'Erro ao buscar parcelas');
+      if (result.header.status !== ServiceStatus.SUCCESS) {
+        throw new Error(result.body?.message || 'Erro ao buscar histórico');
       }
 
-      const allEntries = allEntriesResult.body.items || allEntriesResult.body.rows || [];
-      const totalValue = allEntries.reduce((acc, curr) => acc + (Number(curr.installmentValue) || 0), 0);
+      const historyData = result.body;
+      setData(historyData);
 
-      const singleResults = await Promise.all(ids.slice(0, 1).map(id => financeEntryAction.findEntryPaymentHistory(id)));
-      const firstResult = singleResults[0];
-
-      if (firstResult.header.status === ServiceStatus.SUCCESS) {
-        let historyData = firstResult.body;
-
-        historyData = {
-          ...historyData,
-          batchMode: ids.length > 1,
-          selectedEntries: allEntries,
-          totalValue: totalValue
-        };
-
-        setData(historyData);
-
-        if (!historyData.payment) {
-          const formOptions = await paymentAction.getPaymentFormData();
-          if (formOptions.header.status === ServiceStatus.SUCCESS) {
-            setFormData(formOptions.body);
-          }
-        }
+      if (!historyData.payment) {
+        setFormData({
+          methods: historyData.methods || [],
+          accounts: historyData.accounts || []
+        });
       }
     } catch (error) {
       console.error('Error fetching payment history:', error);

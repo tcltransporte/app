@@ -50,6 +50,28 @@ export const alert = {
   },
 
   /**
+   * Info notification
+   */
+  info: (title, text) => {
+    premiumSwal.fire({
+      icon: 'info',
+      title,
+      text,
+    });
+  },
+
+  /**
+   * Warning notification
+   */
+  warning: (title, text) => {
+    premiumSwal.fire({
+      icon: 'warning',
+      title,
+      text,
+    });
+  },
+
+  /**
    * Error notification
    */
   error: (title, text) => {
@@ -60,3 +82,4 @@ export const alert = {
     });
   },
 };
+

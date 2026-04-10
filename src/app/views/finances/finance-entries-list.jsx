@@ -67,6 +67,16 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     setHistoryDrawerOpen(true);
   }, []);
 
+  const handleBaixar = React.useCallback(() => {
+    const hasPaid = table.selecteds.some(s => s.status === 'paid');
+    if (hasPaid) {
+      alert.warning('Operação Inválida', 'Selecione apenas títulos em aberto para realizar a baixa.');
+      return;
+    }
+    handleOpenHistory(table.selecteds.map(s => s.id));
+  }, [table.selecteds, handleOpenHistory]);
+
+
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
     try {
@@ -277,10 +287,11 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
             ...(table.selecteds.length > 0 ? [{
               label: `Baixar${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
               icon: <CheckIcon />,
-              onClick: () => handleOpenHistory(table.selecteds.map(s => s.id)),
+              onClick: handleBaixar,
               variant: 'contained',
               color: 'success'
             }] : [])
+
           ]}
           secondary={[
             {
