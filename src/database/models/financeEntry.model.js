@@ -93,4 +93,15 @@ export class FinanceEntry {
     type: DataTypes.DECIMAL(18, 2),
     allowNull: true
   }
+
+  status = {
+    type: DataTypes.VIRTUAL,
+    get() {
+      const isPaid = !!this.getDataValue('paymentId')
+      if (isPaid) return 'paid'
+      const dueDate = this.getDataValue('dueDate')
+      if (dueDate && new Date(dueDate) < new Date(new Date().toDateString())) return 'late'
+      return 'open'
+    }
+  }
 }

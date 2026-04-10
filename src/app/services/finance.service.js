@@ -136,3 +136,34 @@ export async function findEntryPaymentHistory(transaction, id) {
   
   return entry
 }
+
+export async function findAllBankMovements(transaction, params = {}) {
+  const session = await getSession()
+
+  const where = {
+    ...params.where
+  }
+
+  const include = [
+    { 
+      association: 'bankAccount', 
+      where: { companyId: session.company.id },
+      required: true 
+    }
+  ]
+
+  if (params.range) {
+    const { start, end, field = 'realDate' } = params.range
+    if (start && end) {
+      where[field] = { [Op.between]: [start, end] }
+    }
+    delete params.range
+  }
+
+  return await financeRepository.findAllBankMovements(transaction, { ...params, where, include })
+}
+
+export async function findBankBalances(transaction) {
+  const session = await getSession()
+  return await financeRepository.findBankBalances(transaction, session.company.id)
+}

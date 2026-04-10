@@ -31,6 +31,7 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
 
   useEffect(() => {
     if (open && entryId) {
+      setIsTitleEditing(false)
       fetchEntry()
     }
   }, [open, entryId])

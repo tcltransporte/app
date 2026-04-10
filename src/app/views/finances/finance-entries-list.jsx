@@ -7,7 +7,7 @@ import { ExportFormat } from '@/hooks/useExport';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
-import { Button, IconButton, Tooltip, Box, Chip, Typography } from '@mui/material';
+import { Button, IconButton, Tooltip, Box, Typography, Chip } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -21,11 +21,12 @@ import {
   Google as GoogleIcon,
   Payment as PaymentIcon,
 } from '@mui/icons-material';
-import { format, startOfDay, endOfDay, isBefore } from 'date-fns';
+import { format } from 'date-fns';
 import FinanceTitleModal from './finance-title-modal';
 import FinanceEntryModal from './finance-entry-modal';
 import FinanceTitleDetailsDrawer from './finance-title-details-drawer';
 import FinancePaymentHistoryDrawer from './finance-payment-history-drawer';
+import EntryStatusChip from './finance-entry-status-chip';
 
 export default function FinanceEntriesList({ operationType, title, initialTable, selectedId: propsSelectedId, initialRange }) {
   const table = useTable({ initialTable });
@@ -175,36 +176,12 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     },
     {
       field: 'status', headerName: 'Status', width: 90, align: 'center',
-      renderCell: (val, row) => {
-        const isPaid = !!row.paymentId;
-        const dueDate = row.dueDate ? new Date(row.dueDate) : null;
-        const today = startOfDay(new Date());
-
-        let label = 'Aberto';
-        let color = 'default';
-
-        if (isPaid) {
-          label = operationType === 2 ? 'Pago' : 'Recebido';
-          color = 'success';
-        } else if (dueDate && isBefore(dueDate, today)) {
-          label = 'Atrasado';
-          color = 'error';
-        } else {
-          label = 'Aberto';
-          color = 'info';
-        }
-
-        return (
-          <Tooltip title="Ver rastro de pagamento">
-            <Chip
-              label={label}
-              color={color}
-              size="small"
-              variant="outlined"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenHistory([row.id]);
-              }}
+      renderCell: (val, row) => (
+        <Tooltip title="Ver rastro de pagamento">
+          <span>
+            <EntryStatusChip
+              entry={row}
+              operationType={operationType}
               sx={{
                 fontWeight: 600,
                 fontSize: '0.7rem',
@@ -212,13 +189,16 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
                 cursor: 'pointer',
                 '&:hover': {
                   bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-                  borderColor: (theme) => theme.palette[color].main,
                 }
               }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenHistory([row.id]);
+              }}
             />
-          </Tooltip>
-        );
-      }
+          </span>
+        </Tooltip>
+      )
     },
     {
       field: 'dueDate', headerName: 'Vencimento', width: 120, align: 'center',
@@ -407,6 +387,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         }}
         refreshKey={drawerRefreshKey}
         onTop={drawerOnTop}
+        operationType={operationType}
       />
 
       <FinancePaymentHistoryDrawer

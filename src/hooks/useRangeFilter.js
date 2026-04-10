@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { PRESETS } from '@/components/common/RangeModal';
 
-export function useRangeFilter({ initialRange = null, dateFieldOptions = [] }) {
+export function useRangeFilter({ initialRange = null, dateFieldOptions = [], defaultLabel = 'Hoje' }) {
   const [range, setRange] = useState(initialRange || {
     start: '',
     end: '',
@@ -20,7 +20,7 @@ export function useRangeFilter({ initialRange = null, dateFieldOptions = [] }) {
   }, [JSON.stringify(initialRange)]);
 
   const label = useMemo(() => {
-    if (!range.start && !range.end) return 'Hoje';
+    if (!range.start && !range.end) return defaultLabel;
 
     const matchingPreset = PRESETS.find(p => {
       const { start: s, end: e } = p.getValue();
@@ -38,8 +38,8 @@ export function useRangeFilter({ initialRange = null, dateFieldOptions = [] }) {
     if (range.start) return `>= ${format(parseISO(range.start), 'dd/MM/yyyy')}`;
     if (range.end) return `<= ${format(parseISO(range.end), 'dd/MM/yyyy')}`;
 
-    return 'Hoje';
-  }, [range]);
+    return defaultLabel;
+  }, [range, defaultLabel]);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);

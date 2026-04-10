@@ -36,6 +36,7 @@ import { PaymentEntry } from './models/paymentEntry.model.js'
 import { BankMovement } from './models/bankMovement.model.js'
 import { PaymentMethod } from './models/paymentMethod.model.js'
 import { BankAccount } from './models/bankAccount.model.js'
+import { Bank } from './models/bank.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -110,6 +111,7 @@ export class AppContext extends Sequelize {
     this.BankMovement = this.define('bankMovement', new BankMovement(), { tableName: 'movimento_bancario' })
     this.PaymentMethod = this.define('paymentMethod', new PaymentMethod(), { tableName: 'tipo_pagamento' })
     this.BankAccount = this.define('bankAccount', new BankAccount(), { tableName: 'conta_bancaria' })
+    this.Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -189,6 +191,8 @@ export class AppContext extends Sequelize {
     this.BankMovement.belongsTo(this.BankAccount, { as: 'originBankAccount', foreignKey: 'originBankAccountId' })
     this.BankAccount.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
     this.BankAccount.belongsTo(this.AccountPlan, { as: 'accountPlan', foreignKey: 'accountPlanId' })
+    this.BankAccount.belongsTo(this.Bank, { as: 'bank', foreignKey: 'bankId' })
+    this.Bank.hasMany(this.BankAccount, { as: 'accounts', foreignKey: 'bankId' })
     this.PaymentEntry.hasMany(this.BankMovement, { as: 'bankMovements', foreignKey: 'paymentEntryId' })
     this.FreightLetter.belongsTo(this.Partner, { as: 'payee', foreignKey: 'payeeId' })
     this.FreightLetter.belongsTo(this.FinanceTitle, { as: 'movement', foreignKey: 'movementId' })

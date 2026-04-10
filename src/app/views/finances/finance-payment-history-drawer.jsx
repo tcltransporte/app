@@ -185,7 +185,7 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
   );
 };
 
-export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, onSuccess }) {
+export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, onSuccess, zIndex }) {
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState(null);
   const [formData, setFormData] = React.useState({ methods: [], accounts: [] });
@@ -386,6 +386,11 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                     <BankIcon sx={{ fontSize: 16 }} />
                   </Box>
                   <Box sx={{ flex: 1 }}>
+                    {move.bankAccount?.bank?.description && (
+                      <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.25 }}>
+                        {move.bankAccount.bank.description}
+                      </Typography>
+                    )}
                     <Typography variant="caption" sx={{ fontWeight: 700, color: move.isReconciled ? 'info.main' : 'warning.main', textTransform: 'uppercase' }}>
                       {move.bankAccount ? `${move.bankAccount.bankName} - Ag: ${move.bankAccount.agency} / Cc: ${move.bankAccount.accountNumber}` : (move.isReconciled ? 'MOVIMENTO CONCILIADO' : 'MOVIMENTO PENDENTE')}
                     </Typography>
@@ -441,6 +446,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
       anchor="right"
       open={open}
       onClose={onClose}
+      sx={{ zIndex: zIndex || ((theme) => theme.zIndex.modal + 2) }}
       PaperProps={{ sx: { width: { xs: '100%', sm: 750 }, display: 'flex', flexDirection: 'column' } }}
     >
       <Formik
@@ -455,19 +461,37 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
             {/* Header */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2 }}>
               <Typography variant="h6" fontWeight={600}>
-                {data?.payment
-                  ? 'Histórico de Pagamento'
-                  : `Baixar Títulos: ${data?.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                {loading
+                  ? 'Carregando...'
+                  : data?.payment
+                    ? 'Histórico de Pagamento'
+                    : `Baixar Títulos: ${data?.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
               </Typography>
               <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
             </Box>
             <Divider />
 
             {/* Body */}
-            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
+            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, position: 'relative' }}>
               {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                  <CircularProgress size={36} />
+                <Box sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                  bgcolor: (theme) => theme.palette.mode === 'dark'
+                    ? 'rgba(0,0,0,0.6)'
+                    : 'rgba(255,255,255,0.8)',
+                  backdropFilter: 'blur(2px)',
+                  zIndex: 10,
+                }}>
+                  <CircularProgress size={40} />
+                  <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                    Buscando informações...
+                  </Typography>
                 </Box>
               ) : data?.payment ? (
                 renderHistory()
@@ -540,7 +564,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
             {/* Footer */}
             <Divider />
             <Box sx={{ px: 3, py: 2 }}>
-              {!data?.payment && (
+              {!loading && !data?.payment && (
                 <>
                   <Stack direction="row" spacing={2}>
                     <Button
@@ -563,7 +587,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                   </Stack>
                 </>
               )}
-              {data?.payment && (
+              {!loading && data?.payment && (
                 <Button
                   fullWidth
                   variant="outlined"

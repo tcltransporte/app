@@ -18,7 +18,7 @@ const SuggestionsBox = styled.div`
   max-height: 300px;
   overflow-y: auto;
   background-color: white;
-  z-index: 2000;
+  z-index: 9999;
   border: 1px solid #ccc;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   border-radius: ${(props) => (props.isAbove ? '4px 4px 0 0' : '0 0 4px 4px')};
@@ -233,12 +233,14 @@ export const AutoComplete = (props) => {
 
   // --- Effects ---
   useEffect(() => {
-    if (!debouncedQuery || value) {
+    if (value) {
       setData([])
       setNothing(false)
       setLoading(false)
       return
     }
+
+    if (!debouncedQuery) return;
 
     abortControllerRef.current?.abort()
     const controller = new AbortController()
@@ -308,7 +310,7 @@ export const AutoComplete = (props) => {
           >
             {typeof children === 'function'
               ? children(item)
-              : renderSuggestion(item)}
+              : (renderSuggestion ? renderSuggestion(item) : text(item))}
           </Suggestion>
         ))}
 
