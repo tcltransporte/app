@@ -30,7 +30,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   const loading = useLoading();
   const exporter = useExport();
   const { selectedId: selectedBankAccountId, setSelectedId: setSelectedBankAccountId } = useNavigation('/finances/banks', selectedId);
-  const [bankAccounts, setBankAccounts] = React.useState([]);
+  const [bankAccounts, setBankAccounts] = React.useState(Array.isArray(initialBankAccounts) ? initialBankAccounts : []);
   const [showBankAccounts, setShowBankAccounts] = React.useState(false);
   const [movementModalOpen, setMovementModalOpen] = React.useState(false);
 
@@ -94,19 +94,12 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   }, [fetchTable]);
 
   React.useEffect(() => {
-    (async () => {
-      const ok = await fetchTable({ page: 1 });
-      if (ok) table.setPage(1);
-    })();
-  }, [selectedBankAccountId]);
-
-  React.useEffect(() => {
     setBankAccounts(Array.isArray(initialBankAccounts) ? initialBankAccounts : []);
   }, [initialBankAccounts]);
 
   const selectedBankAccount = React.useMemo(() => {
     if (!selectedBankAccountId) return null;
-    return bankAccounts.find((a) => a.id === selectedBankAccountId) || null;
+    return bankAccounts.find((a) => a.id == selectedBankAccountId) || null;
   }, [bankAccounts, selectedBankAccountId]);
 
 
@@ -301,6 +294,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
                 variant="outlined"
                 onClick={() => {
                   setSelectedBankAccountId(null);
+                  table.setPage(1);
                   setShowBankAccounts(false);
                 }}
                 sx={{
@@ -385,6 +379,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
                   variant="outlined"
                   onClick={() => {
                     setSelectedBankAccountId(acc.id);
+                    table.setPage(1);
                     setShowBankAccounts(false);
                   }}
                   sx={{
