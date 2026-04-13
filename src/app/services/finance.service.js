@@ -157,10 +157,12 @@ export async function findAllBankMovements(transaction, params = {}) {
   if (params.range) {
     const { start, end, field = 'realDate' } = params.range
     if (start && end) {
-      const s = new Date(start)
-      s.setHours(0, 0, 0, 0)
-      const e = new Date(end)
-      e.setHours(23, 59, 59, 999)
+      const [sy, sm, sd] = start.split('-').map(Number)
+      const s = new Date(sy, sm - 1, sd, 0, 0, 0, 0)
+      
+      const [ey, em, ed] = end.split('-').map(Number)
+      const e = new Date(ey, em - 1, ed, 23, 59, 59, 999)
+      
       where[field] = { [Op.between]: [s, e] }
     }
   }
