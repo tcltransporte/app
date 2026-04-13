@@ -8,10 +8,29 @@ import { NavigateNext as NavigateNextIcon } from '@mui/icons-material';
  * Reusable Title component that renders breadcrumbs with responsive behavior.
  * On mobile, it only shows the last breadcrumb item as the title.
  * 
- * @param {Array} items - Array of breadcrumb objects: { label: string, href?: string }
+ * @param {Array} items - Array of breadcrumb objects: { label: React.ReactNode, href?: string, icon?: React.ReactNode }
  */
 export const Title = ({ items = [] }) => {
   if (!items || items.length === 0) return null;
+
+  const renderItemLabel = (item) => (
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+      {item.icon ? <Box component="span" sx={{ display: 'inline-flex', flex: '0 0 auto' }}>{item.icon}</Box> : null}
+      <Box
+        component="span"
+        sx={{
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          display: 'inline-block',
+          verticalAlign: 'middle',
+        }}
+      >
+        {item.label}
+      </Box>
+    </Box>
+  );
 
   return (
     <Breadcrumbs
@@ -41,11 +60,13 @@ export const Title = ({ items = [] }) => {
         if (isLast) {
           return (
             <Typography
-              key={item.label}
+              key={typeof item.label === 'string' ? item.label : index}
               color="text.primary"
               fontWeight={600}
+              sx={{ minWidth: 0 }}
+              component="span"
             >
-              {item.label}
+              {renderItemLabel(item)}
             </Typography>
           );
         }
@@ -53,22 +74,25 @@ export const Title = ({ items = [] }) => {
         if (item.href) {
           return (
             <Link
-              key={item.label}
+              key={typeof item.label === 'string' ? item.label : index}
               underline="hover"
               color="inherit"
               href={item.href}
+              sx={{ display: 'inline-flex', alignItems: 'center', minWidth: 0 }}
             >
-              {item.label}
+              {renderItemLabel(item)}
             </Link>
           );
         }
 
         return (
           <Typography
-            key={item.label}
+            key={typeof item.label === 'string' ? item.label : index}
             color="inherit"
+            sx={{ minWidth: 0 }}
+            component="span"
           >
-            {item.label}
+            {renderItemLabel(item)}
           </Typography>
         );
       })}

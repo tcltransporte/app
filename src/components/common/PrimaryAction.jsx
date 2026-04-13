@@ -63,7 +63,8 @@ export const PrimaryAction = ({
           key={action.label}
           variant={action.variant || (index === 0 ? "contained" : "outlined")}
           color={action.color || "primary"}
-          startIcon={action.icon}
+          startIcon={action.icon || action.startIcon}
+          endIcon={action.endIcon}
           onClick={action.onClick}
           sx={{
             textTransform: 'none',
@@ -73,7 +74,8 @@ export const PrimaryAction = ({
             ...(index === 0 && {
               boxShadow: `0 4px 12px ${theme?.palette.primary.main}44`,
             }),
-            ...props.sx
+            ...props.sx,
+            ...action.sx,
           }}
           {...props}
         >

@@ -1,5 +1,6 @@
 import BanksView from '@/app/views/finances/banks';
 import * as financeAction from '@/app/actions/finance.action';
+import * as bankAccountAction from '@/app/actions/bankAccount.action';
 import { ServiceStatus } from '@/libs/service';
 import { format } from 'date-fns';
 
@@ -15,24 +16,46 @@ export default async function FinanceBanksPage({ params }) {
     const today = format(new Date(), 'yyyy-MM-dd');
     const initialRange = { start: today, end: today, field: 'realDate' };
 
-    const result = await financeAction.findAllBankMovements({
-      page: 1,
-      limit: 50,
-      range: initialRange
-    });
+    const [movementsResult, bankAccountsResult, balancesResult] = await Promise.all([
+      financeAction.findAllBankMovements({
+        page: 1,
+        limit: 50,
+        range: initialRange,
+        sortBy: 'realDate',
+        sortOrder: 'DESC'
+      }),
+      bankAccountAction.findAll(),
+      financeAction.findBankBalances()
+    ])
 
-    if (result?.header?.status !== ServiceStatus.SUCCESS) {
-      throw result;
+    if (movementsResult?.header?.status !== ServiceStatus.SUCCESS) {
+      throw movementsResult;
+    }
+
+    if (bankAccountsResult?.header?.status !== ServiceStatus.SUCCESS) {
+      throw bankAccountsResult;
     }
 
     const initialTable = { 
-      items: result.body.rows || [], 
-      total: result.body.count || 0 
+      items: movementsResult.body.rows || [], 
+      total: movementsResult.body.count || 0,
+      sortBy: 'realDate',
+      sortOrder: 'DESC'
     };
+
+    const balancesById = new Map(
+      (balancesResult?.header?.status === ServiceStatus.SUCCESS ? (balancesResult.body || []) : [])
+        .map((b) => [b.id, b])
+    )
+    const initialBankAccounts = (bankAccountsResult.body || []).map((acc) => ({
+      ...acc,
+      currentBalance: balancesById.get(acc.id)?.currentBalance ?? null,
+    }));
 
     return (
       <BanksView 
         initialTable={initialTable} 
+        initialBankAccounts={initialBankAccounts}
         selectedId={selectedId} 
         initialRange={initialRange} 
       />

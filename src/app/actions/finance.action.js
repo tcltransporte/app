@@ -52,6 +52,18 @@ export async function findAllBankMovements(params) {
   }
 }
 
+export async function createBankMovement(data) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.createBankMovement(t, data)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
 export async function findBankBalances() {
   const db = new AppContext()
   try {

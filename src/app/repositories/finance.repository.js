@@ -211,16 +211,35 @@ export async function findAllBankMovements(transaction, { attributes, include, w
   })
 }
 
+export async function findBankAccount(transaction, { where, attributes, include }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const row = await db.BankAccount.findOne({ where, attributes, include, transaction: t })
+    return row?.toJSON()
+  })
+}
+
+export async function createBankMovement(transaction, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const result = await db.BankMovement.create(data, { transaction: t })
+    return result.toJSON()
+  })
+}
+
 export async function findBankBalances(transaction, companyId) {
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {
     // 1. Get all accounts with initial balance
     const accounts = await db.BankAccount.findAll({
-      //where: { companyId },
+      where: { companyId },
+      include: ['bank'],
       transaction: t
     })
 
-    console.log(accounts)
+    if (accounts.length === 0) {
+      return []
+    }
 
     // 2. Get totals from movements
     const movements = await db.BankMovement.findAll({
@@ -229,6 +248,7 @@ export async function findBankBalances(transaction, companyId) {
         'typeId',
         [db.literal('SUM(valor)'), 'total']
       ],
+      where: { bankAccountId: { [Op.in]: accounts.map(a => a.id) } },
       group: ['bankAccountId', 'typeId'],
       transaction: t
     })

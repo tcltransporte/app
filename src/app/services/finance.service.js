@@ -139,6 +139,8 @@ export async function findEntryPaymentHistory(transaction, id) {
 
 export async function findAllBankMovements(transaction, params = {}) {
   const session = await getSession()
+  const { page = 1, limit = 50, sortBy = 'realDate', sortOrder = 'DESC' } = params
+  const offset = (page - 1) * limit
 
   const where = {
     ...params.where
@@ -155,12 +157,44 @@ export async function findAllBankMovements(transaction, params = {}) {
   if (params.range) {
     const { start, end, field = 'realDate' } = params.range
     if (start && end) {
-      where[field] = { [Op.between]: [start, end] }
+      const s = new Date(start)
+      s.setHours(0, 0, 0, 0)
+      const e = new Date(end)
+      e.setHours(23, 59, 59, 999)
+      where[field] = { [Op.between]: [s, e] }
     }
-    delete params.range
   }
 
-  return await financeRepository.findAllBankMovements(transaction, { ...params, where, include })
+  return await financeRepository.findAllBankMovements(transaction, {
+    ...params,
+    where,
+    include,
+    limit,
+    offset,
+    order: [[sortBy, sortOrder]]
+  })
+}
+
+export async function createBankMovement(transaction, data) {
+  const session = await getSession()
+
+  // Business logic: bank account MUST belong to company
+  const account = await financeRepository.findBankAccount(transaction, {
+    where: { id: data.bankAccountId, companyId: session.company.id }
+  })
+
+  if (!account) {
+    throw { code: "INVALID_ACCOUNT", message: "Conta bancária inválida ou não pertence à empresa" }
+  }
+
+  const finalData = {
+    ...data,
+    entryDate: new Date(), // Data de lançamento é sempre agora
+    realDate: data.realDate || new Date(), // Fallback para hoje se não fornecido
+    isReconciled: false
+  }
+
+  return await financeRepository.createBankMovement(transaction, finalData)
 }
 
 export async function findBankBalances(transaction) {

@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { Container, Table, Toolbar, RangeModal } from '@/components/common';
-import { useTable, useLoading, useRangeFilter, useExport } from '@/hooks';
+import { useTable, useLoading, useRangeFilter, useExport, useNavigation } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
-import { IconButton, Tooltip, Box, Typography, Chip } from '@mui/material';
+import { Box, Typography, Chip, Card, CardContent, Skeleton, Avatar, Divider } from '@mui/material';
 import {
   Search as SearchIcon,
   Event as EventIcon,
@@ -15,14 +15,24 @@ import {
   Google as GoogleIcon,
   CheckCircle as CheckIcon,
   AccountBalance as BankIcon,
+  SwapHoriz as SwapHorizIcon,
   ArrowCircleUp as UpIcon,
   ArrowCircleDown as DownIcon,
+  AllInclusive as AllIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 
-export default function BankMovementsList({ title, initialTable, initialRange }) {
+import FinanceTitleDetailsDrawer from '../finance-title-details-drawer';
+import BankMovementModal from './bank-movement-modal';
+
+export default function BankMovementsList({ title, initialTable, initialRange, initialBankAccounts, selectedId }) {
   const table = useTable({ initialTable });
   const loading = useLoading();
   const exporter = useExport();
+  const { selectedId: selectedBankAccountId, setSelectedId: setSelectedBankAccountId } = useNavigation('/finances/banks', selectedId);
+  const [bankAccounts, setBankAccounts] = React.useState([]);
+  const [showBankAccounts, setShowBankAccounts] = React.useState(false);
+  const [movementModalOpen, setMovementModalOpen] = React.useState(false);
 
   const rangeFilter = useRangeFilter({
     initialRange,
@@ -35,10 +45,15 @@ export default function BankMovementsList({ title, initialTable, initialRange })
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
     try {
+      const where = {
+        ...(overrides.where || {}),
+        ...(selectedBankAccountId ? { bankAccountId: selectedBankAccountId } : {})
+      };
+
       const result = await financeAction.findAllBankMovements({
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
-        where: overrides.where || {},
+        where,
         range: overrides.range || rangeFilter.range,
         sortBy: overrides.sortBy || table.sortBy || undefined,
         sortOrder: overrides.sortOrder || table.sortOrder || undefined
@@ -60,7 +75,14 @@ export default function BankMovementsList({ title, initialTable, initialRange })
       table.setLoading(false);
       loading.hide();
     }
-  }, [table.page, table.rowsPerPage, table.sortBy, table.sortOrder, rangeFilter.range]);
+  }, [
+    table.page,
+    table.rowsPerPage,
+    table.sortBy,
+    table.sortOrder,
+    rangeFilter.range,
+    selectedBankAccountId
+  ]);
 
   const isFirstMount = React.useRef(true);
   React.useEffect(() => {
@@ -70,6 +92,23 @@ export default function BankMovementsList({ title, initialTable, initialRange })
     }
     fetchTable();
   }, [fetchTable]);
+
+  React.useEffect(() => {
+    (async () => {
+      const ok = await fetchTable({ page: 1 });
+      if (ok) table.setPage(1);
+    })();
+  }, [selectedBankAccountId]);
+
+  React.useEffect(() => {
+    setBankAccounts(Array.isArray(initialBankAccounts) ? initialBankAccounts : []);
+  }, [initialBankAccounts]);
+
+  const selectedBankAccount = React.useMemo(() => {
+    if (!selectedBankAccountId) return null;
+    return bankAccounts.find((a) => a.id === selectedBankAccountId) || null;
+  }, [bankAccounts, selectedBankAccountId]);
+
 
   const columns = [
     {
@@ -91,30 +130,40 @@ export default function BankMovementsList({ title, initialTable, initialRange })
         );
       }
     },
-    {
+    /*{
       field: 'typeId', headerName: 'Tipo', width: 100, align: 'center',
       renderCell: (val) => (
         <Chip
-          icon={val === 1 ? <UpIcon /> : <DownIcon />}
-          label={val === 1 ? 'Crédito' : 'Débito'}
+          icon={val == 1 ? <UpIcon /> : <DownIcon />}
+          label={val == 1 ? 'Crédito' : 'Débito'}
           size="small"
-          color={val === 1 ? 'info' : 'error'}
+          color={val == 1 ? 'success' : 'error'}
           variant="outlined"
-          sx={{ fontWeight: 600, fontSize: '0.7rem' }}
+          sx={{ 
+            fontWeight: 600, 
+            fontSize: '0.7rem',
+            ...(val == 1 && {
+              color: 'success.main',
+              borderColor: 'success.main',
+              '& .MuiChip-icon': {
+                color: 'success.main'
+              }
+            })
+          }}
         />
       )
-    },
+    },*/
     {
       field: 'documentNumber', headerName: 'Nº Doc.', width: 120,
     },
     {
       field: 'value', headerName: 'Valor', width: 110, align: 'right',
       renderCell: (val, row) => (
-        <Typography 
-          variant="body2" 
-          sx={{ 
+        <Typography
+          variant="body2"
+          sx={{
             fontWeight: 700,
-            color: row.typeId === 1 ? 'info.main' : 'error.main'
+            color: row.typeId == 1 ? 'success.main' : 'error.main'
           }}
         >
           {val ? parseFloat(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}
@@ -157,20 +206,50 @@ export default function BankMovementsList({ title, initialTable, initialRange })
     }
   };
 
+  const totalBalance = React.useMemo(() => {
+    return bankAccounts.reduce((acc, curr) => acc + (Number(curr.currentBalance) || 0), 0);
+  }, [bankAccounts]);
+
   return (
     <Container>
-      <Container.Title items={[{ label: 'Finanças' }, { label: title }]} />
+      <Container.Title items={[{ label: 'Finanças' }, { label: 'Bancos' }]} />
 
       <Container.Content>
         <Toolbar
           primary={[
-            // Potential actions like "Conciliar" could go here
             {
-              label: 'Bancos',
-              icon: <BankIcon />,
-              variant: 'text',
-              disabled: true
-            }
+              label: selectedBankAccount ? selectedBankAccount.description : 'Todas as contas',
+              icon: selectedBankAccount ? (
+                <Avatar
+                  variant="rounded"
+                  src={selectedBankAccount?.bank?.icon || undefined}
+                  alt={selectedBankAccount?.bank?.description || selectedBankAccount?.bankName || 'Banco'}
+                  sx={{
+                    width: 20,
+                    height: 20,
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                  imgProps={{ loading: 'lazy' }}
+                >
+                  <BankIcon sx={{ fontSize: 14 }} />
+                </Avatar>
+              ) : (
+                <BankIcon fontSize="small" />
+              ),
+              endIcon: <SwapHorizIcon fontSize="small" sx={{ opacity: 0.8 }} />,
+              variant: 'outlined',
+              color: 'primary',
+              onClick: () => setShowBankAccounts((v) => !v),
+            },
+            {
+              label: 'Incluir',
+              icon: <AddIcon />,
+              variant: 'contained',
+              color: 'success',
+              onClick: () => setMovementModalOpen(true),
+            },
           ]}
           secondary={[
             {
@@ -200,12 +279,192 @@ export default function BankMovementsList({ title, initialTable, initialRange })
           ]}
         />
 
+        {showBankAccounts && (
+          <Box
+            sx={{
+              mb: 2,
+              display: 'flex',
+              gap: 2,
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              flexShrink: 0,
+              py: 0.5,
+              px: 0.5,
+              scrollBehavior: 'smooth',
+              WebkitOverflowScrolling: 'touch',
+              alignItems: 'stretch',
+            }}
+          >
+            {bankAccounts.length > 0 && (
+              <Card
+                key="all-accounts-card"
+                variant="outlined"
+                onClick={() => {
+                  setSelectedBankAccountId(null);
+                  setShowBankAccounts(false);
+                }}
+                sx={{
+                  width: 240,
+                  minHeight: 96,
+                  flex: '0 0 240px',
+                  cursor: 'pointer',
+                  borderColor: !selectedBankAccountId ? 'primary.main' : undefined,
+                  bgcolor: !selectedBankAccountId ? 'action.selected' : undefined,
+                  display: 'flex',
+                }}
+              >
+                <CardContent sx={{ pb: '16px !important', height: '100%', display: 'flex', gap: 1, alignItems: 'stretch', width: '100%' }}>
+                  <Box
+                    sx={{
+                      width: 44,
+                      flex: '0 0 44px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                    }}
+                  >
+                    <Avatar
+                      variant="rounded"
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        border: '1px solid',
+                        borderColor: 'primary.dark',
+                      }}
+                    >
+                      <AllIcon />
+                    </Avatar>
+                  </Box>
+
+                  <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
+                      Todas as contas
+                    </Typography>
+
+                    <Typography variant="caption" color="text.secondary" component="div" noWrap>
+                      Soma de saldos
+                    </Typography>
+
+                    <Box
+                      sx={{
+                        mt: 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        gap: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      <Typography variant="caption" component="div" noWrap sx={{ fontWeight: 800, flex: '0 0 auto' }}>
+                        {totalBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            {bankAccounts.length === 0
+              ? Array.from({ length: 3 }).map((_, idx) => (
+                <Card
+                  key={`bank-account-skeleton-${idx}`}
+                  variant="outlined"
+                  sx={{ width: 240, minHeight: 80, flex: '0 0 240px' }}
+                >
+                  <CardContent>
+                    <Skeleton variant="text" width="70%" />
+                    <Skeleton variant="text" width="90%" />
+                  </CardContent>
+                </Card>
+              ))
+              : bankAccounts.map((acc) => (
+                <Card
+                  key={acc.id}
+                  variant="outlined"
+                  onClick={() => {
+                    setSelectedBankAccountId(acc.id);
+                    setShowBankAccounts(false);
+                  }}
+                  sx={{
+                    width: 240,
+                    minHeight: 96,
+                    flex: '0 0 240px',
+                    cursor: 'pointer',
+                    borderColor: selectedBankAccountId === acc.id ? 'primary.main' : undefined,
+                    bgcolor: selectedBankAccountId === acc.id ? 'action.selected' : undefined,
+                  }}
+                >
+                  <CardContent sx={{ pb: '16px !important', height: '100%', display: 'flex', gap: 1, alignItems: 'stretch' }}>
+                    <Box
+                      sx={{
+                        width: 44,
+                        flex: '0 0 44px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                      }}
+                    >
+                      <Avatar
+                        variant="rounded"
+                        src={acc?.bank?.icon || undefined}
+                        alt={acc?.bank?.description || acc?.bankName || 'Banco'}
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          bgcolor: 'background.paper',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                        }}
+                        imgProps={{ loading: 'lazy' }}
+                      >
+                        <BankIcon fontSize="small" />
+                      </Avatar>
+                    </Box>
+
+                    <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
+                        {acc.description}
+                      </Typography>
+
+                      <Typography variant="caption" color="text.secondary" component="div" noWrap>
+                        Ag: {acc.agency} / Cc: {acc.accountNumber}
+                      </Typography>
+
+                      <Box
+                        sx={{
+                          mt: 'auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 1,
+                          minWidth: 0,
+                        }}
+                      >
+                        <Typography variant="caption" color="text.secondary" component="div" noWrap sx={{ minWidth: 0 }}>
+                          {acc.bankName}
+                        </Typography>
+                        <Typography variant="caption" component="div" noWrap sx={{ fontWeight: 800, flex: '0 0 auto' }}>
+                          {acc.currentBalance == null
+                            ? '—'
+                            : Number(acc.currentBalance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+          </Box>
+        )}
+
         <Table
           columns={table.orderedColumns.length > 0 ? table.orderedColumns : columns}
           items={table.items}
           selecteds={table.selecteds}
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}
+          containerSx={{ minHeight: 0 }}
           onSort={async (property) => {
             const isAsc = table.sortBy === property && table.sortOrder === 'ASC';
             const newOrder = isAsc ? 'DESC' : 'ASC';
@@ -264,6 +523,13 @@ export default function BankMovementsList({ title, initialTable, initialRange })
             table.setPage(1);
           }
         }}
+      />
+
+      <BankMovementModal
+        open={movementModalOpen}
+        onClose={() => setMovementModalOpen(false)}
+        initialBankAccount={selectedBankAccount}
+        onSuccess={() => fetchTable()}
       />
     </Container>
   );
