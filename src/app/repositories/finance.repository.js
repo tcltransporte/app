@@ -279,3 +279,16 @@ export async function findBankMovement(transaction, id, { include } = {}) {
   })
 }
 
+export async function findPayment(transaction, id, { include } = {}) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const payment = await db.Payment.findOne({
+      where: { id },
+      include,
+      transaction: t
+    })
+    return payment?.toJSON()
+  })
+}
+
+

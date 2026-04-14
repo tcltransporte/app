@@ -221,11 +221,23 @@ export async function traceBankMovement(transaction, id) {
           association: 'payment',
           include: [
             {
-              association: 'entries', // FinanceEntry
+              association: 'entries',
               include: [
                 {
-                  association: 'title', // FinanceTitle
+                  association: 'title',
                   include: ['partner', 'accountPlan', 'costCenter']
+                }
+              ]
+            },
+            {
+              association: 'paymentEntries',
+              include: [
+                'paymentMethod',
+                { 
+                  association: 'bankMovements', 
+                  include: [
+                    { association: 'bankAccount', include: ['bank'] }
+                  ] 
                 }
               ]
             }
@@ -244,4 +256,6 @@ export async function traceBankMovement(transaction, id) {
 
   return result
 }
+
+
 
