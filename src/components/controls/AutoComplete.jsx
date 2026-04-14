@@ -67,6 +67,9 @@ export const AutoComplete = (props) => {
     onChange,
     children,
     renderSuggestion,
+    // Destructure and ignore props that shouldn't leak to MuiTextField/DOM
+    getOptionLabel,
+    options,
     ...rest
   } = props
 

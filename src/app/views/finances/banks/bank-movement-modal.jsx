@@ -2,10 +2,10 @@
 
 import React from 'react'
 import { Formik, Form, Field } from 'formik'
-import { Grid, Button } from '@mui/material'
-import { Save as SaveIcon } from '@mui/icons-material'
+import { Grid, Button, Avatar, Typography, Box } from '@mui/material'
+import { Save as SaveIcon, AccountBalance as BankIcon } from '@mui/icons-material'
 import { Dialog } from '@/components/common'
-import { TextField, AutoComplete, DateField, NumericField, SelectField } from '@/components/controls'
+import { TextField, AutoComplete, DateField, DateTimeField, NumericField, SelectField } from '@/components/controls'
 import * as financeAction from '@/app/actions/finance.action'
 import * as search from '@/libs/search'
 import { alert } from '@/libs/alert'
@@ -82,7 +82,7 @@ export default function BankMovementModal({ open, onClose, initialBankAccount, o
                 <Grid item size={{ xs: 12, md: 6 }}>
                   <Field
                     name="realDate"
-                    component={DateField}
+                    component={DateTimeField}
                     label="Data do Movimento"
                   />
                 </Grid>
@@ -95,9 +95,23 @@ export default function BankMovementModal({ open, onClose, initialBankAccount, o
                     text={(v) => `${v.description} (${v.bankName})`}
                     onSearch={(v, s) => search.bankAccount({ query: v }, s)}
                     renderSuggestion={(v) => (
-                      <span>
-                        <strong>{v.description}</strong> - {v.bankName} (Ag: {v.agency} / Cc: {v.accountNumber})
-                      </span>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar
+                          variant="rounded"
+                          src={v.bank?.icon || (v.bank?.code ? `/assets/banks/${v.bank.code}.png` : undefined)}
+                          sx={{ width: 24, height: 24, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
+                        >
+                          <BankIcon sx={{ fontSize: 16 }} />
+                        </Avatar>
+                        <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: 'inherit' }} noWrap>
+                            {v.description}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'inherit', opacity: 0.8 }} noWrap>
+                            {v.bankName} (Ag: {v.agency} / Cc: {v.accountNumber})
+                          </Typography>
+                        </Box>
+                      </Box>
                     )}
                   />
                 </Grid>

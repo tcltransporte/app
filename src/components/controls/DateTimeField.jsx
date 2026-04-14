@@ -20,8 +20,9 @@ export const DateTimeField = React.forwardRef(({ field, form, onChange, ...props
     const d = new Date(date);
     if (isNaN(d.getTime())) return '';
     const pad = (n) => String(n).padStart(2, '0');
-    // For Date objects, use UTC as fallback to match most common ISO serialization
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+    
+    // Use local time instead of UTC to avoid timezone shifts in the UI
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
   const handleChange = (e) => {

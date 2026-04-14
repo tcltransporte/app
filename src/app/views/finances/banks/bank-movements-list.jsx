@@ -111,50 +111,26 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
     return bankAccounts.find((a) => a.id == selectedBankAccountId) || null;
   }, [bankAccounts, selectedBankAccountId]);
 
+  const getBankIcon = React.useCallback((bank) => {
+    //if (bank?.icon) return bank.icon;
+    if (bank?.code) return `/assets/banks/${bank.code}.png`;
+    return undefined;
+  }, []);
 
-  const columns = [
+
+  const columns = React.useMemo(() => [
     {
-      field: 'realDate', headerName: 'Data Real', width: 120, align: 'center',
-      renderCell: (value) => value ? new Date(value).toLocaleDateString('pt-BR') : ''
+      field: 'realDate', headerName: 'Data Real', width: 150, align: 'center',
+      renderCell: (value) => value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' }) : ''
     },
     {
       field: 'bankAccount', headerName: 'Conta', width: 220,
       renderCell: (val, row) => {
         const acc = row.bankAccount;
         if (!acc) return '';
-        return (
-          <Box>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>{acc.description}</Typography>
-            <Typography variant="caption" color="text.secondary">
-              {acc.bankName} - Ag: {acc.agency} / Cc: {acc.accountNumber}
-            </Typography>
-          </Box>
-        );
+        return `${acc.bankName} - Ag: ${acc.agency} / Cc: ${acc.accountNumber}`
       }
     },
-    /*{
-      field: 'typeId', headerName: 'Tipo', width: 100, align: 'center',
-      renderCell: (val) => (
-        <Chip
-          icon={val == 1 ? <UpIcon /> : <DownIcon />}
-          label={val == 1 ? 'Crédito' : 'Débito'}
-          size="small"
-          color={val == 1 ? 'success' : 'error'}
-          variant="outlined"
-          sx={{ 
-            fontWeight: 600, 
-            fontSize: '0.7rem',
-            ...(val == 1 && {
-              color: 'success.main',
-              borderColor: 'success.main',
-              '& .MuiChip-icon': {
-                color: 'success.main'
-              }
-            })
-          }}
-        />
-      )
-    },*/
     {
       field: 'documentNumber', headerName: 'Nº Doc.', width: 120,
     },
@@ -181,7 +157,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         val ? <CheckIcon color="success" fontSize="small" /> : null
       )
     }
-  ];
+  ], []);
 
   React.useEffect(() => {
     if (table.orderedColumns.length === 0 && columns.length > 0) {
@@ -224,7 +200,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
               icon: selectedBankAccount ? (
                 <Avatar
                   variant="rounded"
-                  src={selectedBankAccount?.bank?.icon || undefined}
+                  src={getBankIcon(selectedBankAccount?.bank)}
                   alt={selectedBankAccount?.bank?.description || selectedBankAccount?.bankName || 'Banco'}
                   sx={{
                     width: 20,
@@ -414,7 +390,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
                     >
                       <Avatar
                         variant="rounded"
-                        src={acc?.bank?.icon || undefined}
+                        src={getBankIcon(acc?.bank)}
                         alt={acc?.bank?.description || acc?.bankName || 'Banco'}
                         sx={{
                           width: 36,

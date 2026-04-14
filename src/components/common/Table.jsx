@@ -539,6 +539,9 @@ export const Table = ({
                     whiteSpace: 'nowrap',
                     pl: index === 0 ? 3 : 1,
                     pr: 1,
+                    width: col.width || '100%',
+                    minWidth: col.width || 100,
+                    maxWidth: col.width || 'none',
                     ...col.headerSx
                   }}
                 >

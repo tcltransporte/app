@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from 'react'
 import { Formik, Form } from 'formik'
 import {
-  Drawer, Box, Typography, IconButton, Divider, Button, Grid, Stack
+  Drawer, Box, Typography, IconButton, Divider, Button, Grid, Stack, Avatar
 } from '@mui/material'
 import { Close as CloseIcon, Save as SaveIcon, AccountBalance as BankIcon } from '@mui/icons-material'
 import { TextField, AutoComplete, NumericField } from '@/components/controls'
-import * as bankAction from '@/app/actions/bank.action'
+import * as search from '@/libs/search'
 import * as bankAccountAction from '@/app/actions/bankAccount.action'
 import { alert } from '@/libs/alert'
 import { ServiceStatus } from '@/libs/service'
@@ -24,18 +24,6 @@ const validate = (values) => {
 }
 
 export default function BankAccountDrawer({ open, onClose, onSuccess }) {
-  const [banks, setBanks] = useState([])
-
-  useEffect(() => {
-    if (open) {
-      (async () => {
-        const result = await bankAction.findAll()
-        if (result.header.status === ServiceStatus.SUCCESS) {
-          setBanks(result.body || [])
-        }
-      })()
-    }
-  }, [open])
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
@@ -115,8 +103,22 @@ export default function BankAccountDrawer({ open, onClose, onSuccess }) {
                     <AutoComplete
                       name="bank"
                       label="Banco"
-                      options={banks}
-                      getOptionLabel={(option) => option.description || ''}
+                      text={(v) => v.description || ''}
+                      onSearch={(v, s) => search.bank({ query: v }, s)}
+                      renderSuggestion={(v) => (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar
+                            variant="rounded"
+                            src={v.icon || (v.code ? `/assets/banks/${v.code}.png` : undefined)}
+                            sx={{ width: 24, height: 24, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
+                          >
+                            <BankIcon sx={{ fontSize: 16 }} />
+                          </Avatar>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: 'inherit' }} noWrap>
+                            {v.description}
+                          </Typography>
+                        </Box>
+                      )}
                       fullWidth
                     />
                   </Grid>
