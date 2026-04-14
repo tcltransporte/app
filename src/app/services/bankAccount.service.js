@@ -2,13 +2,13 @@
 
 import { Op } from 'sequelize'
 import { getSession } from "@/libs/session"
+import * as bankAccountRepository from "@/app/repositories/bankAccount.repository"
 
 /**
  * @param {import('sequelize').Transaction} transaction
  * @param {{ query?: string, limit?: number }} options
  */
 export async function findAll(transaction, { query, limit = 50 } = {}) {
-  const db = (await import("@/database")).instance || new (await import("@/database")).AppContext()
   const session = await getSession()
 
   const where = {
@@ -24,13 +24,25 @@ export async function findAll(transaction, { query, limit = 50 } = {}) {
     ]
   }
 
-  const rows = await db.BankAccount.findAll({
+  return await bankAccountRepository.findAll(transaction, {
     where,
     limit,
-    order: [['description', 'ASC']],
     include: ['bank'],
-    transaction
   })
+}
 
-  return rows.map(r => r.toJSON())
+/**
+ * @param {import('sequelize').Transaction} transaction
+ * @param {object} data
+ */
+export async function create(transaction, data) {
+  const session = await getSession()
+
+  const finalData = {
+    ...data,
+    companyId: session.company.id,
+    isActive: true
+  }
+
+  return await bankAccountRepository.create(transaction, finalData)
 }

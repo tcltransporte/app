@@ -24,6 +24,7 @@ import {
 
 import FinanceTitleDetailsDrawer from '../finance-title-details-drawer';
 import BankMovementModal from './bank-movement-modal';
+import BankAccountDrawer from './bank-account-drawer';
 
 export default function BankMovementsList({ title, initialTable, initialRange, initialBankAccounts, selectedId }) {
   const table = useTable({ initialTable });
@@ -33,6 +34,14 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   const [bankAccounts, setBankAccounts] = React.useState(Array.isArray(initialBankAccounts) ? initialBankAccounts : []);
   const [showBankAccounts, setShowBankAccounts] = React.useState(false);
   const [movementModalOpen, setMovementModalOpen] = React.useState(false);
+  const [accountDrawerOpen, setAccountDrawerOpen] = React.useState(false);
+
+  const fetchBankAccounts = React.useCallback(async () => {
+    const result = await financeAction.findBankBalances();
+    if (result.header.status === ServiceStatus.SUCCESS) {
+      setBankAccounts(result.body || []);
+    }
+  }, []);
 
   const rangeFilter = useRangeFilter({
     initialRange,
@@ -360,6 +369,8 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
               </Card>
             )}
 
+
+
             {bankAccounts.length === 0
               ? Array.from({ length: 3 }).map((_, idx) => (
                 <Card
@@ -450,6 +461,40 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
                   </CardContent>
                 </Card>
               ))}
+
+            {bankAccounts.length > 0 && (
+              <Card
+                variant="outlined"
+                onClick={() => setAccountDrawerOpen(true)}
+                sx={{
+                  width: 240,
+                  minHeight: 96,
+                  flex: '0 0 240px',
+                  cursor: 'pointer',
+                  borderStyle: 'dashed',
+                  borderColor: 'divider',
+                  bgcolor: 'action.hover',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: 'primary.light',
+                    color: 'primary.main',
+                  }
+                }}
+              >
+                <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <Avatar sx={{ bgcolor: 'transparent', color: 'inherit', border: '1px dashed' }}>
+                    <AddIcon />
+                  </Avatar>
+                  <Typography variant="caption" fontWeight={700}>
+                    CADASTRAR NOVA CONTA
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
           </Box>
         )}
 
@@ -525,6 +570,11 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         onClose={() => setMovementModalOpen(false)}
         initialBankAccount={selectedBankAccount}
         onSuccess={() => fetchTable()}
+      />
+      <BankAccountDrawer
+        open={accountDrawerOpen}
+        onClose={() => setAccountDrawerOpen(false)}
+        onSuccess={fetchBankAccounts}
       />
     </Container>
   );
