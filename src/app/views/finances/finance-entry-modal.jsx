@@ -24,7 +24,7 @@ const validate = (values) => {
   return errors
 }
 
-export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, onViewEntries }) {
+export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, onViewEntries, zIndex }) {
   const [loading, setLoading] = useState(true)
   const [entry, setEntry] = useState(null)
   const [isTitleEditing, setIsTitleEditing] = useState(false)
@@ -77,6 +77,7 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
       title={`Editar #${entry?.title?.documentNumber || ''}`}
       width="sm"
       loading={loading || !entry}
+      zIndex={zIndex}
     >
       <Formik
         initialValues={{

@@ -184,6 +184,15 @@ export async function findEntryPaymentHistory(transaction, id) {
           association: 'payment',
           include: [
             {
+              association: 'entries',
+              include: [
+                {
+                  association: 'title',
+                  include: ['partner', 'accountPlan', 'costCenter']
+                }
+              ]
+            },
+            {
               association: 'paymentEntries',
               include: [
                 { association: 'bankMovements', include: [{ association: 'bankAccount', include: ['bank'] }] },
@@ -192,6 +201,7 @@ export async function findEntryPaymentHistory(transaction, id) {
             }
           ]
         }
+
       ],
       transaction: t
     })

@@ -35,6 +35,7 @@ import {
   Payment as PaymentIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { Formik, Form, Field, FieldArray } from 'formik';
@@ -43,6 +44,8 @@ import * as paymentAction from '@/app/actions/payment.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import * as search from '@/libs/search';
+import FinanceHistoryTimeline from './finance-history-timeline';
+import FinanceEntryModal from './finance-entry-modal';
 
 const validatePayment = (values) => {
   const errors = {};
@@ -97,22 +100,20 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                 <WarningIcon color="warning" fontSize="small" />
               </Tooltip>
             )}
-            <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-              {item.value?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>{Number(item.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</Typography>
           </Box>
         </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell colSpan={3} sx={{ p: 0 }}>
+        <TableCell colSpan={3} sx={{ py: 0, px: 0 }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ width: 40 }}>Ações</TableCell>
-                  <TableCell>Forma</TableCell>
-                  <TableCell>Conta</TableCell>
-                  <TableCell sx={{ width: 120 }} align="right">Valor</TableCell>
+                  <TableCell sx={{ pl: 6 }}>Forma</TableCell>
+                  <TableCell>Conta Bancária</TableCell>
+                  <TableCell align="right" sx={{ pr: 3 }}>Valor</TableCell>
+                  <TableCell width={40}></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -120,44 +121,40 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                   {({ push, remove }) => (
                     <React.Fragment>
                       {item.composition.map((comp, cIdx) => (
-                        <TableRow key={cIdx} hover>
-                          <TableCell sx={{ py: 0.5 }}>
-                            {item.composition.length > 1 && (
-                              <IconButton size="small" color="error" onClick={() => remove(cIdx)}>
-                                <DeleteIcon fontSize="inherit" />
-                              </IconButton>
-                            )}
-                          </TableCell>
-                          <TableCell sx={{ py: 0.5 }}>
+                        <TableRow key={cIdx}>
+                          <TableCell sx={{ pl: 6 }}>
                             <Field
                               name={`items.${index}.composition.${cIdx}.paymentMethodId`}
                               component={SelectField}
-                              label="Forma"
                               options={formData.methods.map(m => ({ value: m.id, label: m.description }))}
-                              fullWidth
                               size="small"
+                              fullWidth
                             />
                           </TableCell>
-                          <TableCell sx={{ py: 0.5, minWidth: 220 }}>
+                          <TableCell>
                             <Field
                               name={`items.${index}.composition.${cIdx}.bankAccountId`}
                               component={AutoComplete}
-                              label="Conta"
                               onSearch={handleSearch}
                               text={textFn}
-                              fullWidth
                               size="small"
+                              fullWidth
                             />
                           </TableCell>
-                          <TableCell sx={{ py: 0.5 }}>
+                          <TableCell align="right" sx={{ pr: 3 }}>
                             <Field
                               name={`items.${index}.composition.${cIdx}.value`}
                               component={NumericField}
-                              label="Valor"
-                              fullWidth
                               size="small"
-                              align="right"
+                              sx={{ width: 120 }}
                             />
+                          </TableCell>
+                          <TableCell>
+                            {item.composition.length > 1 && (
+                              <IconButton size="small" color="error" onClick={() => remove(cIdx)}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -185,11 +182,18 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
   );
 };
 
-export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, onSuccess, zIndex }) {
+export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, onSuccess, zIndex, operationType }) {
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState(null);
   const [formData, setFormData] = React.useState({ methods: [] });
+  const [selectedEntryId, setSelectedEntryId] = React.useState(null);
+  const [entryModalOpen, setEntryModalOpen] = React.useState(false);
   const formikRef = React.useRef(null);
+
+  const handleOpenEntry = (id) => {
+    setSelectedEntryId(id);
+    setEntryModalOpen(true);
+  };
 
   const fetchHistory = React.useCallback(async () => {
     const ids = (Array.isArray(entryIds) ? entryIds : [entryIds])
@@ -262,32 +266,11 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
     }
   };
 
-  const handleReplicate = (values, setFieldValue) => {
-    const first = values.items[0];
-    if (!first) return;
-
-    const newItems = values.items.map((item, idx) => {
-      if (idx === 0) return item;
-      return {
-        ...item,
-        composition: first.composition.map(c => ({
-          ...c,
-          value: first.composition.length === 1 ? item.value : c.value
-        }))
-      };
-    });
-    setFieldValue('items', newItems);
-    alert.success('Copiado!', 'Dados da primeira parcela replicados para as demais.');
-  };
-
-  const handleSearchGlobal = search.bankAccount;
-
-
-
-
   const textFnGlobal = React.useCallback((v) =>
     (v && typeof v === 'object') ? (v.description || v.bankName || '') : '',
     []);
+
+  const handleSearchGlobal = search.bankAccount;
 
   const handleGlobalChange = (field, value, setFieldValue, currentValues) => {
     const newItems = currentValues.items.map(item => {
@@ -310,86 +293,36 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
 
     return (
       <Box sx={{ p: 3 }}>
-        <Box sx={{ mb: 4, position: 'relative' }}>
-          <Box sx={{ position: 'absolute', left: 20, top: 40, bottom: -30, width: 2, bgcolor: 'divider' }} />
-          <Stack direction="row" spacing={2} alignItems="flex-start">
-            <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: 'success.main', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-              <CheckIcon fontSize="small" />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'success.main' }}>PAGAMENTO REALIZADO</Typography>
-              <Paper variant="outlined" sx={{ p: 2, mt: 1, borderRadius: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {payment.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Data da Baixa: {format(new Date(payment.date), 'dd/MM/yyyy')}
-                </Typography>
-              </Paper>
-            </Box>
-          </Stack>
-        </Box>
+        <FinanceHistoryTimeline>
+          <FinanceHistoryTimeline.Payment
+            totalValue={payment.totalValue}
+            date={payment.date}
+            label={operationType === 1 ? 'RECEBIDO' : 'PAGO'}
+          />
 
-        {(payment.paymentEntries || []).map((entry) => (
-          <Box key={entry.id} sx={{ mb: 4, ml: 4, position: 'relative' }}>
-            <Box sx={{ position: 'absolute', left: 20, top: 40, bottom: (entry.bankMovements?.length > 0) ? -30 : 0, width: 2, bgcolor: 'divider', borderLeft: '2px dashed', borderColor: 'divider' }} />
-            <Stack direction="row" spacing={2} alignItems="flex-start">
-              <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: 'primary.light', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                <PaymentIcon fontSize="small" />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  {entry.paymentMethod?.description ? entry.paymentMethod.description.toUpperCase() : 'COMPOSIÇÃO'}
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2, mt: 1, borderRadius: 2, bgcolor: 'action.hover' }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {entry.value?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {entry.paymentMethodNumber ? `Nº Documento: ${entry.paymentMethodNumber}` : 'Sem nº doc.'}
-                    </Typography>
-                    <Typography variant="caption" color="text.disabled">(ID: {entry.id})</Typography>
-                  </Box>
-                </Paper>
-              </Box>
-            </Stack>
-
-            {(entry.bankMovements || []).map((move) => (
-              <Box key={move.id} sx={{ mt: 3, ml: 6 }}>
-                <Stack direction="row" spacing={2} alignItems="flex-start">
-                  <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: move.isReconciled ? 'info.main' : 'warning.main', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                    <BankIcon sx={{ fontSize: 16 }} />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    {move.bankAccount?.bank?.description && (
-                      <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.25 }}>
-                        {move.bankAccount.bank.description}
-                      </Typography>
-                    )}
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: move.isReconciled ? 'info.main' : 'warning.main', textTransform: 'uppercase' }}>
-                      {move.bankAccount ? `${move.bankAccount.bankName} - Ag: ${move.bankAccount.agency} / Cc: ${move.bankAccount.accountNumber}` : (move.isReconciled ? 'MOVIMENTO CONCILIADO' : 'MOVIMENTO PENDENTE')}
-                    </Typography>
-                    <Paper variant="outlined" sx={{ p: 1.5, mt: 0.5, borderRadius: 2, borderStyle: 'dotted' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{move.value?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</Typography>
-                        <Tooltip title="Data Real do Lançamento">
-                          <Stack direction="row" spacing={0.5} alignItems="center">
-                            <TimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary">{move.realDate ? format(new Date(move.realDate), 'dd/MM/yyyy') : 'Aguardando'}</Typography>
-                          </Stack>
-                        </Tooltip>
-                      </Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontStyle: 'italic' }}>
-                        "{move.description || 'Sem descrição no extrato'}"
-                      </Typography>
-                    </Paper>
-                  </Box>
-                </Stack>
-              </Box>
-            ))}
-          </Box>
-        ))}
+          {(payment.paymentEntries || []).map((entry) => (
+            <FinanceHistoryTimeline.Composition
+              key={entry.id}
+              description={entry.paymentMethod?.description}
+              value={entry.value}
+              methodNumber={entry.paymentMethodNumber}
+              id={entry.id}
+              hasChildren={entry.bankMovements?.length > 0}
+            >
+              {(entry.bankMovements || []).map((move) => (
+                <FinanceHistoryTimeline.Movement
+                  key={move.id}
+                  bank={move.bankAccount?.bank}
+                  accountInfo={move.bankAccount ? `${move.bankAccount.bankName} - Ag: ${move.bankAccount.agency} / Cc: ${move.bankAccount.accountNumber}` : null}
+                  value={move.value}
+                  realDate={move.realDate}
+                  description={move.description}
+                  isReconciled={move.isReconciled}
+                />
+              ))}
+            </FinanceHistoryTimeline.Composition>
+          ))}
+        </FinanceHistoryTimeline>
       </Box>
     );
   };
@@ -418,167 +351,168 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
   }, [data]);
 
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
-      sx={{ zIndex: zIndex || ((theme) => theme.zIndex.modal + 2) }}
-      PaperProps={{ sx: { width: { xs: '100%', sm: 750 }, display: 'flex', flexDirection: 'column' } }}
-    >
-      <Formik
-        innerRef={formikRef}
-        initialValues={initialValues}
-        validate={validatePayment}
-        onSubmit={handleSubmit}
-        enableReinitialize
+<>
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={onClose}
+        sx={{ zIndex: zIndex || ((theme) => theme.zIndex.modal + 2) }}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 700 }, display: 'flex', flexDirection: 'column' } }}
       >
-        {({ values, isSubmitting, setFieldValue, submitForm }) => (
-          <Form style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2 }}>
-              <Typography variant="h6" fontWeight={600}>
-                {loading
-                  ? 'Carregando...'
-                  : data?.payment
-                    ? 'Histórico de Pagamento'
-                    : `Baixar Títulos: ${data?.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
-              </Typography>
-              <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-            </Box>
-            <Divider />
-
-            {/* Body */}
-            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, position: 'relative' }}>
-              {loading ? (
-                <Box sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 2,
-                  bgcolor: (theme) => theme.palette.mode === 'dark'
-                    ? 'rgba(0,0,0,0.6)'
-                    : 'rgba(255,255,255,0.8)',
-                  backdropFilter: 'blur(2px)',
-                  zIndex: 10,
-                }}>
-                  <CircularProgress size={40} />
-                  <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                    Buscando informações...
+        <Formik
+          innerRef={formikRef}
+          initialValues={initialValues}
+          validate={validatePayment}
+          onSubmit={handleSubmit}
+          enableReinitialize
+        >
+          {({ values, isSubmitting, setFieldValue, submitForm }) => (
+            <Form style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.dark', color: 'white' }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {data?.payment ? <HistoryIcon /> : <ReceiptIcon />}
+                  <Typography variant="h6" fontWeight={700}>
+                    {loading
+                      ? 'Carregando...'
+                      : data?.payment
+                        ? 'Histórico de Pagamento'
+                        : `Baixar Títulos: ${data?.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
                   </Typography>
-                </Box>
-              ) : data?.payment ? (
-                renderHistory()
-              ) : (
-                <>
-                  {values.items.length > 1 && (
-                    <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
-                      <Grid container spacing={2}>
-                        <Grid item size={{ xs: 12, sm: 3 }}>
-                          <Field
-                            name="date"
-                            component={DateField}
-                            label="Data"
-                            fullWidth
-                          />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 4 }}>
-                          <Field
-                            name="globalPaymentMethodId"
-                            component={SelectField}
-                            label="Forma"
-                            options={formData.methods.map(m => ({ value: m.id, label: m.description }))}
-                            fullWidth
-                            onChange={(val) => handleGlobalChange('paymentMethodId', val, setFieldValue, values)}
-                          />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 5 }}>
-                          <Field
-                            name="globalBankAccount"
-                            component={AutoComplete}
-                            label="Conta"
-                            onSearch={handleSearchGlobal}
-                            text={textFnGlobal}
-                            fullWidth
-                            onChange={(val) => handleGlobalChange('bankAccount', val, setFieldValue, values)}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  )}
+                </Stack>
+                <IconButton onClick={onClose} size="small" sx={{ color: 'inherit' }}>
+                  <CloseIcon />
+                </IconButton>
+              </Box>
 
-                  <Box>
-                    {/*
-                    <Box sx={{ px: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      {data?.batchMode && (
-                        <Button size="small" variant="text" onClick={() => handleReplicate(values, setFieldValue)} startIcon={<ArrowIcon sx={{ transform: 'rotate(90deg)' }} />}>
-                          Replicar 1ª para todas
-                        </Button>
-                      )}
+              <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 0, position: 'relative', bgcolor: 'background.default' }}>
+                {loading ? (
+                  <Box sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 2,
+                    bgcolor: (theme) => theme.palette.mode === 'dark'
+                      ? 'rgba(0,0,0,0.6)'
+                      : 'rgba(255,255,255,0.8)',
+                    backdropFilter: 'blur(2px)',
+                    zIndex: 10,
+                  }}>
+                    <CircularProgress size={40} />
+                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                      Buscando informações...
+                    </Typography>
+                  </Box>
+                ) : data?.payment ? (
+                  <>
+                    <FinanceHistoryTimeline.Installments 
+                      entries={data.payment.entries} 
+                      onEdit={handleOpenEntry}
+                    />
+                    {renderHistory()}
+                  </>
+                ) : (
+                  <Box sx={{ p: 2 }}>
+                    {values.items.length > 1 && (
+                      <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={3}>
+                            <Field
+                              name="date"
+                              component={DateField}
+                              label="Data"
+                              fullWidth
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Field
+                              name="globalPaymentMethodId"
+                              component={SelectField}
+                              label="Forma"
+                              options={formData.methods.map(m => ({ value: m.id, label: m.description }))}
+                              fullWidth
+                              onChange={(val) => handleGlobalChange('paymentMethodId', val, setFieldValue, values)}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={5}>
+                            <Field
+                              name="globalBankAccount"
+                              component={AutoComplete}
+                              label="Conta"
+                              onSearch={handleSearchGlobal}
+                              text={textFnGlobal}
+                              fullWidth
+                              onChange={(val) => handleGlobalChange('bankAccount', val, setFieldValue, values)}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Box>
+                    )}
+
+                    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper' }}>
+                      <Table size="small">
+                        <TableBody>
+                          {values.items.map((item, index) => (
+                            <InstallmentRow
+                              key={item.entryId}
+                              item={item}
+                              index={index}
+                              formData={formData}
+                              data={data}
+                              handleSearch={handleSearchGlobal}
+                              textFn={textFnGlobal}
+                            />
+                          ))}
+                        </TableBody>
+                      </Table>
                     </Box>
-                    */}
-                    <Table size="small">
-                      <TableBody>
-                        {values.items.map((item, index) => (
-                          <InstallmentRow
-                            key={item.entryId}
-                            item={item}
-                            index={index}
-                            formData={formData}
-                            data={data}
-                            handleSearch={handleSearchGlobal}
-                            textFn={textFnGlobal}
-                          />
-                        ))}
-                      </TableBody>
-                    </Table>
+                  </Box>
+                )}
+              </Box>
+
+              {!loading && !data?.payment && (
+                <>
+                  <Divider />
+                  <Box sx={{ px: 3, py: 2, bgcolor: 'background.paper' }}>
+                    <Stack direction="row" spacing={2}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        onClick={onClose}
+                        sx={{ textTransform: 'none', fontWeight: 700 }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        onClick={submitForm}
+                        disabled={isSubmitting}
+                        sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 3 }}
+                      >
+                        {isSubmitting ? 'Processando...' : 'Confirmar Pagamento'}
+                      </Button>
+                    </Stack>
                   </Box>
                 </>
               )}
-            </Box>
+            </Form>
+          )}
+        </Formik>
+      </Drawer>
 
-            {/* Footer */}
-            <Divider />
-            <Box sx={{ px: 3, py: 2 }}>
-              {!loading && !data?.payment && (
-                <>
-                  <Stack direction="row" spacing={2}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      onClick={onClose}
-                      sx={{ textTransform: 'none', fontWeight: 600 }}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={submitForm}
-                      disabled={isSubmitting}
-                      sx={{ textTransform: 'none', fontWeight: 600 }}
-                    >
-                      {isSubmitting ? 'Processando...' : 'Confirmar'}
-                    </Button>
-                  </Stack>
-                </>
-              )}
-              {!loading && data?.payment && (
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={onClose}
-                  sx={{ textTransform: 'none', fontWeight: 600 }}
-                >
-                  Fechar
-                </Button>
-              )}
-            </Box>
-          </Form>
-        )}
-      </Formik>
-    </Drawer>
+      <FinanceEntryModal
+        open={entryModalOpen}
+        onClose={() => setEntryModalOpen(false)}
+        entryId={selectedEntryId}
+        onSuccess={() => {
+          fetchHistory();
+          onSuccess?.();
+        }}
+        zIndex={3000}
+      />
+    </>
   );
 }

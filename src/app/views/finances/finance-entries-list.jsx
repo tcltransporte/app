@@ -407,6 +407,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         entryIds={selectedHistoryEntryId}
         onClose={() => setHistoryDrawerOpen(false)}
         onSuccess={() => fetchTable()}
+        operationType={operationType}
       />
 
       <RangeModal
