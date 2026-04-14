@@ -266,3 +266,16 @@ export async function findBankBalances(transaction, companyId) {
     })
   })
 }
+
+export async function findBankMovement(transaction, id, { include } = {}) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const movement = await db.BankMovement.findOne({
+      where: { id },
+      include,
+      transaction: t
+    })
+    return movement?.toJSON()
+  })
+}
+

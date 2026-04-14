@@ -203,3 +203,45 @@ export async function findBankBalances(transaction) {
   const session = await getSession()
   return await financeRepository.findBankBalances(transaction, session.company.id)
 }
+
+export async function traceBankMovement(transaction, id) {
+  const session = await getSession()
+  
+  const include = [
+    {
+      association: 'bankAccount',
+      where: { companyId: session.company.id },
+      required: true
+    },
+    {
+      association: 'paymentEntry',
+      required: false,
+      include: [
+        {
+          association: 'payment',
+          include: [
+            {
+              association: 'entries', // FinanceEntry
+              include: [
+                {
+                  association: 'title', // FinanceTitle
+                  include: ['partner', 'accountPlan', 'costCenter']
+                }
+              ]
+            }
+          ]
+        },
+        'paymentMethod'
+      ]
+    }
+  ]
+
+  const result = await financeRepository.findBankMovement(transaction, id, { include })
+  
+  if (!result) {
+    throw { code: "NOT_FOUND", message: "Movimento bancário não encontrado" }
+  }
+
+  return result
+}
+

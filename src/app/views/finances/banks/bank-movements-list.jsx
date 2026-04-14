@@ -7,7 +7,7 @@ import { ExportFormat } from '@/hooks/useExport';
 import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
-import { Box, Typography, Chip, Card, CardContent, Skeleton, Avatar, Divider } from '@mui/material';
+import { Box, Typography, Chip, Card, CardContent, Skeleton, Avatar, Divider, IconButton } from '@mui/material';
 import {
   Search as SearchIcon,
   Event as EventIcon,
@@ -20,11 +20,13 @@ import {
   ArrowCircleDown as DownIcon,
   AllInclusive as AllIcon,
   Add as AddIcon,
+  AccountTree as HistoryIcon,
 } from '@mui/icons-material';
 
 import FinanceTitleDetailsDrawer from '../finance-title-details-drawer';
 import BankMovementModal from './bank-movement-modal';
 import BankAccountDrawer from './bank-account-drawer';
+import BankMovementTraceDrawer from './bank-movement-trace-drawer';
 
 export default function BankMovementsList({ title, initialTable, initialRange, initialBankAccounts, selectedId }) {
   const table = useTable({ initialTable });
@@ -35,6 +37,8 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   const [showBankAccounts, setShowBankAccounts] = React.useState(false);
   const [movementModalOpen, setMovementModalOpen] = React.useState(false);
   const [accountDrawerOpen, setAccountDrawerOpen] = React.useState(false);
+  const [traceMovementId, setTraceMovementId] = React.useState(null);
+  const [traceOpen, setTraceOpen] = React.useState(false);
 
   const fetchBankAccounts = React.useCallback(async () => {
     const result = await financeAction.findBankBalances();
@@ -155,6 +159,22 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
       field: 'isReconciled', headerName: 'Conc.', width: 80, align: 'center',
       renderCell: (val) => (
         val ? <CheckIcon color="success" fontSize="small" /> : null
+      )
+    },
+    {
+      field: 'trace', headerName: 'Rastreio', width: 80, align: 'center',
+      renderCell: (val, row) => (
+        <IconButton
+          size="small"
+          onClick={() => {
+            setTraceMovementId(row.id);
+            setTraceOpen(true);
+          }}
+          disabled={!row.paymentEntryId}
+          title={row.paymentEntryId ? "Rastrear Origem" : "Sem Informação de Origem"}
+        >
+          <HistoryIcon fontSize="small" color={row.paymentEntryId ? "primary" : "disabled"} />
+        </IconButton>
       )
     }
   ], []);
@@ -551,6 +571,11 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         open={accountDrawerOpen}
         onClose={() => setAccountDrawerOpen(false)}
         onSuccess={fetchBankAccounts}
+      />
+      <BankMovementTraceDrawer
+        open={traceOpen}
+        onClose={() => setTraceOpen(false)}
+        movementId={traceMovementId}
       />
     </Container>
   );
