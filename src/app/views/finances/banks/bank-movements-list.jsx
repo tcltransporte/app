@@ -5,6 +5,7 @@ import { Container, Table, Toolbar, RangeModal } from '@/components/common';
 import { useTable, useLoading, useRangeFilter, useExport, useNavigation } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import * as financeAction from '@/app/actions/finance.action';
+import * as bankAccountAction from '@/app/actions/bankAccount.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import { Box, Typography, Chip, Card, CardContent, Skeleton, Avatar, Divider, IconButton } from '@mui/material';
@@ -149,7 +150,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
             color: row.typeId == 1 ? 'success.main' : 'error.main'
           }}
         >
-          {val ? parseFloat(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}
+          {val ? (Math.round(parseFloat(val) * 100) / 100 === 0 ? 0 : parseFloat(val)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}
         </Typography>
       )
     },
@@ -206,7 +207,9 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   };
 
   const totalBalance = React.useMemo(() => {
-    return bankAccounts.reduce((acc, curr) => acc + (Number(curr.currentBalance) || 0), 0);
+    const total = bankAccounts.reduce((acc, curr) => acc + (Number(curr.currentBalance) || 0), 0);
+    const rounded = Math.round(total * 100) / 100;
+    return rounded === 0 ? 0 : rounded;
   }, [bankAccounts]);
 
   return (
@@ -458,7 +461,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
                         <Typography variant="caption" component="div" noWrap sx={{ fontWeight: 800, flex: '0 0 auto' }}>
                           {acc.currentBalance == null
                             ? '—'
-                            : Number(acc.currentBalance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            : (Math.round(Number(acc.currentBalance) * 100) / 100 === 0 ? 0 : Number(acc.currentBalance)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </Typography>
                       </Box>
                     </Box>
@@ -573,7 +576,10 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         open={movementModalOpen}
         onClose={() => setMovementModalOpen(false)}
         initialBankAccount={selectedBankAccount}
-        onSuccess={() => fetchTable()}
+        onSuccess={() => {
+          fetchTable();
+          fetchBankAccounts();
+        }}
       />
       <BankAccountDrawer
         open={accountDrawerOpen}
@@ -584,6 +590,10 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         open={traceOpen}
         onClose={() => setTraceOpen(false)}
         movementId={traceMovementId}
+        onSuccess={() => {
+          fetchTable();
+          fetchBankAccounts();
+        }}
       />
       <BankTransferModal
         open={transferModalOpen}

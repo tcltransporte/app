@@ -98,7 +98,7 @@ export default function BankMovementModal({ open, onClose, initialBankAccount, o
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Avatar
                           variant="rounded"
-                          src={v.bank?.icon || (v.bank?.code ? `/assets/banks/${v.bank.code}.png` : undefined)}
+                          src={v.bank?.code ? `/assets/banks/${v.bank.code}.png` : undefined}
                           sx={{ width: 24, height: 24, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
                         >
                           <BankIcon sx={{ fontSize: 16 }} />

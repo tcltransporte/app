@@ -26,7 +26,7 @@ import FinanceEntryModal from '../finance-entry-modal';
 import FinanceTitleDetailsDrawer from '../finance-title-details-drawer';
 import FinanceHistoryTimeline from '../finance-history-timeline';
 
-export default function BankMovementTraceDrawer({ open, onClose, movementId }) {
+export default function BankMovementTraceDrawer({ open, onClose, movementId, onSuccess }) {
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
@@ -174,6 +174,7 @@ export default function BankMovementTraceDrawer({ open, onClose, movementId }) {
         entryId={selectedEntryId}
         onSuccess={() => {
           fetchData();
+          if (onSuccess) onSuccess();
         }}
         onViewEntries={handleViewEntries}
         zIndex={3000}
