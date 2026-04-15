@@ -36,6 +36,7 @@ async function syncEntries(transaction, titleId, entries) {
   return await db.withTransaction(transaction, async (t) => {
     if (entries) {
       const existingEntries = await db.FinanceEntry.findAll({
+        attributes: ['id'],
         where: { titleId },
         transaction: t
       })
@@ -242,8 +243,9 @@ export async function findBankBalances(transaction, companyId) {
   return await db.withTransaction(transaction, async (t) => {
     // 1. Get all accounts with initial balance
     const accounts = await db.BankAccount.findAll({
+      attributes: ['id', 'initialBalance', 'companyId', 'bankId'],
       where: { companyId },
-      include: ['bank'],
+      include: [{ association: 'bank', attributes: ['id', 'name', 'surname'] }],
       transaction: t
     })
 

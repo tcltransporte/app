@@ -59,7 +59,7 @@ export async function findAll(transaction, { page = 1, limit = 50, filters = {},
       { association: 'payments', attributes: ['value'] },
       { association: 'products', attributes: ['id', 'value', 'quantity'] },
       { association: 'services', attributes: ['id', 'value', 'quantity'] },
-      { association: 'documents' },
+      { association: 'documents', attributes: ['id', 'invoiceNumber', 'invoiceValue', 'invoiceDate'] },
     ]
   })
 
@@ -108,9 +108,9 @@ export async function create(transaction, data) {
     number: data.number || 0
   }, {
     include: [
-      { association: 'products' },
-      { association: 'services' },
-      { association: 'payments' }
+      { association: 'products', attributes: ['id'] },
+      { association: 'services', attributes: ['id'] },
+      { association: 'payments', attributes: ['id'] }
     ]
   })
 
@@ -236,7 +236,7 @@ export async function generateDocuments(transaction, solicitationIds = []) {
         attributes: ['id', 'itemId', 'value', 'quantity', 'description'],
         include: [{ association: 'service', attributes: ['name'] }]
       },
-      { association: 'documents' },
+      { association: 'documents', attributes: ['id', 'invoiceNumber', 'invoiceValue'] },
       { association: 'type', attributes: ['id', 'description', 'requestType'] },
       { association: 'status', attributes: ['id', 'generateDocumentTypeId'] }
     ],
@@ -329,8 +329,8 @@ export async function generateFreightLetters(transaction, solicitationIds = []) 
     where: { id: solicitationIds, companyId: session.company.id },
     include: [
       { association: 'partner', attributes: ['id', 'name', 'surname'] },
-      { association: 'payments' },
-      { association: 'freightLetters' }
+      { association: 'payments', attributes: ['id', 'value', 'dueDate'] },
+      { association: 'freightLetters', attributes: ['id'] }
     ],
     transaction
   })

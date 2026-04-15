@@ -30,6 +30,7 @@ export async function findAll(transaction, { page = 1, limit = 50, filters = {} 
     }
 
     const { rows, count } = await typeRepository.findAll(t, {
+      attributes: ['id', 'description', 'requestType', 'hash', 'order'],
       where,
       limit,
       offset,
@@ -46,6 +47,7 @@ export async function findOne(transaction, id) {
   
   return await db.withTransaction(transaction, async (t) => {
     const tipo = await typeRepository.findOne(t, {
+      attributes: ['id', 'description', 'requestType', 'hash', 'order', 'generateDocumentTypeId'],
       where: {
         id: id,
         companyId: session.company.id

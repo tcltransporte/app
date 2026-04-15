@@ -27,6 +27,7 @@ import FinanceTitleDetailsDrawer from '../finance-title-details-drawer';
 import BankMovementModal from './bank-movement-modal';
 import BankAccountDrawer from './bank-account-drawer';
 import BankMovementTraceDrawer from './bank-movement-trace-drawer';
+import BankTransferModal from './bank-transfer-modal';
 
 export default function BankMovementsList({ title, initialTable, initialRange, initialBankAccounts, selectedId }) {
   const table = useTable({ initialTable });
@@ -39,6 +40,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   const [accountDrawerOpen, setAccountDrawerOpen] = React.useState(false);
   const [traceMovementId, setTraceMovementId] = React.useState(null);
   const [traceOpen, setTraceOpen] = React.useState(false);
+  const [transferModalOpen, setTransferModalOpen] = React.useState(false);
 
   const fetchBankAccounts = React.useCallback(async () => {
     const result = await financeAction.findBankBalances();
@@ -247,6 +249,13 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
               variant: 'contained',
               color: 'success',
               onClick: () => setMovementModalOpen(true),
+            },
+            {
+              label: 'Transferência',
+              icon: <SwapHorizIcon />,
+              variant: 'outlined',
+              color: 'primary',
+              onClick: () => setTransferModalOpen(true),
             },
           ]}
           secondary={[
@@ -576,6 +585,14 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         open={traceOpen}
         onClose={() => setTraceOpen(false)}
         movementId={traceMovementId}
+      />
+      <BankTransferModal
+        open={transferModalOpen}
+        onClose={() => setTransferModalOpen(false)}
+        onSuccess={() => {
+          fetchTable();
+          fetchBankAccounts();
+        }}
       />
     </Container>
   );

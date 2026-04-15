@@ -39,6 +39,7 @@ async function syncAssociations(transaction, documentId, data) {
     // 1. Sync Products (items)
     if (items) {
       const existingItems = await db.DocumentProduct.findAll({
+        attributes: ['id'],
         where: { documentId },
         transaction: t
       })
@@ -74,6 +75,7 @@ async function syncAssociations(transaction, documentId, data) {
     // 2. Sync Services
     if (services) {
       const existingServices = await db.DocumentService.findAll({
+        attributes: ['id'],
         where: { documentId },
         transaction: t
       })

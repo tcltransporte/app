@@ -28,6 +28,8 @@ export default async function FinanceBanksPage({ params }) {
       financeAction.findBankBalances()
     ])
 
+    console.log(balancesResult)
+
     if (movementsResult?.header?.status !== ServiceStatus.SUCCESS) {
       throw movementsResult;
     }
@@ -36,8 +38,8 @@ export default async function FinanceBanksPage({ params }) {
       throw bankAccountsResult;
     }
 
-    const initialTable = { 
-      items: movementsResult.body.rows || [], 
+    const initialTable = {
+      items: movementsResult.body.rows || [],
       total: movementsResult.body.count || 0,
       sortBy: 'realDate',
       sortOrder: 'DESC'
@@ -53,11 +55,11 @@ export default async function FinanceBanksPage({ params }) {
     }));
 
     return (
-      <BanksView 
-        initialTable={initialTable} 
+      <BanksView
+        initialTable={initialTable}
         initialBankAccounts={initialBankAccounts}
-        selectedId={selectedId} 
-        initialRange={initialRange} 
+        selectedId={selectedId}
+        initialRange={initialRange}
       />
     );
 

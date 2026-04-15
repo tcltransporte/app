@@ -15,6 +15,7 @@ export async function findAll(transaction, { slug, page = 1, limit = 50, filters
 
   if (slug) {
     const docType = await db.DocumentType.findOne({
+      attributes: ['id'],
       where: { initials: slug.toUpperCase() },
       transaction
     })
@@ -57,12 +58,12 @@ export async function findOne(transaction, id) {
   const item = await documentRepository.findOne(transaction, {
     where: { id },
     include: [
-      { association: 'partner' },
-      { association: 'documentType' },
-      { association: 'requestType' },
-      { association: 'items', include: ['product'] },
-      { association: 'services', include: ['service'] },
-      { association: 'financeTitle', include: ['entries'] }
+      { association: 'partner', attributes: ['id', 'name', 'surname', 'document', 'city', 'state'] },
+      { association: 'documentType', attributes: ['id', 'description', 'initials'] },
+      { association: 'requestType', attributes: ['id', 'description'] },
+      { association: 'items', include: [{ association: 'product', attributes: ['id', 'name', 'productCode'] }] },
+      { association: 'services', include: [{ association: 'service', attributes: ['id', 'name'] }] },
+      { association: 'financeTitle', attributes: ['id', 'documentNumber', 'totalValue'], include: [{ association: 'entries', attributes: ['id', 'installmentNumber', 'installmentValue', 'dueDate'] }] }
     ]
   })
 
@@ -127,6 +128,7 @@ export async function prepareFinanceTitleData(transaction, ids, financeEntries =
   const idList = Array.isArray(ids) ? ids : [ids]
 
   const docs = await db.Document.findAll({
+    attributes: ['id', 'invoiceNumber', 'invoiceValue', 'invoiceDate', 'partnerId', 'description', 'companyId'],
     where: { id: idList, companyId: session.company.id },
     transaction
   })

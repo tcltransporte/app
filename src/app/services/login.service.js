@@ -90,6 +90,7 @@ export async function signIn(transaction, { username, password, companyBusinessI
     throw ServiceResponse.badRequest("SELECT_COMPANY", "Selecione a filial!", { companies })
 
   const existingSessions = await sessionRepository.findAll(transaction, {
+    attributes: ["id"],
     where: { userId: user.userId }
   });
 

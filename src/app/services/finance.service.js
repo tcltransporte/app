@@ -22,10 +22,10 @@ export async function findOne(transaction, id) {
   const result = await financeRepository.findOne(transaction, {
     where: { id, companyId: session.company.id },
     include: [
-      { association: 'entries' },
-      { association: 'partner' },
-      { association: 'accountPlan' },
-      { association: 'costCenter' },
+      { association: 'entries', attributes: ['id', 'installmentNumber', 'installmentValue', 'dueDate', 'paymentId'] },
+      { association: 'partner', attributes: ['id', 'name', 'surname'] },
+      { association: 'accountPlan', attributes: ['id', 'description', 'code'] },
+      { association: 'costCenter', attributes: ['id', 'description'] },
       { association: 'company', attributes: ['id', 'name', 'surname'] }
     ]
   })
@@ -66,9 +66,9 @@ export async function findAllEntries(transaction, params = {}) {
     association: 'title',
     where: { companyId: session.company.id },
     include: [
-      { association: 'partner' },
-      { association: 'accountPlan', required: false },
-      { association: 'costCenter', required: false },
+      { association: 'partner', attributes: ['id', 'name', 'surname'] },
+      { association: 'accountPlan', required: false, attributes: ['id', 'description', 'code'] },
+      { association: 'costCenter', required: false, attributes: ['id', 'description'] },
       { association: 'company', required: false, attributes: ['id', 'name', 'surname'] }
     ]
   }
@@ -114,7 +114,7 @@ export async function findEntry(transaction, id) {
 
 export async function updateEntry(transaction, id, data) {
   await findEntry(transaction, id) // Validate existence and company permissions first
-  
+
   // Prevent updating security fields if present in data
   const { id: _id, titleId: _titleId, ...safeData } = data
 
@@ -124,16 +124,16 @@ export async function updateEntry(transaction, id, data) {
 export async function findEntryPaymentHistory(transaction, id) {
   const session = await getSession()
   const entry = await financeRepository.findEntryPaymentHistory(transaction, id)
-  
+
   // Security check: ensure the entry belongs to a title that belongs to the user's company
   // Note: we might need to fetch the title first if findEntryPaymentHistory doesn't include it.
   // In our case, I'll rely on the existing findEntry for validation if needed, or just fetch title here.
-  
+
   const validationEntry = await financeRepository.findEntry(transaction, id)
   if (!validationEntry || validationEntry.title?.companyId !== session.company.id) {
     throw { code: "NOT_FOUND", message: "Parcela financeira não encontrada" }
   }
-  
+
   return entry
 }
 
@@ -147,10 +147,10 @@ export async function findAllBankMovements(transaction, params = {}) {
   }
 
   const include = [
-    { 
-      association: 'bankAccount', 
+    {
+      association: 'bankAccount',
       where: { companyId: session.company.id },
-      required: true 
+      required: true
     }
   ]
 
@@ -159,10 +159,10 @@ export async function findAllBankMovements(transaction, params = {}) {
     if (start && end) {
       const [sy, sm, sd] = start.split('-').map(Number)
       const s = new Date(sy, sm - 1, sd, 0, 0, 0, 0)
-      
+
       const [ey, em, ed] = end.split('-').map(Number)
       const e = new Date(ey, em - 1, ed, 23, 59, 59, 999)
-      
+
       where[field] = { [Op.between]: [s, e] }
     }
   }
@@ -182,6 +182,7 @@ export async function createBankMovement(transaction, data) {
 
   // Business logic: bank account MUST belong to company
   const account = await financeRepository.findBankAccount(transaction, {
+    attributes: ['id', 'description', 'companyId'],
     where: { id: data.bankAccountId, companyId: session.company.id }
   })
 
@@ -206,7 +207,7 @@ export async function findBankBalances(transaction) {
 
 export async function traceBankMovement(transaction, id) {
   const session = await getSession()
-  
+
   const include = [
     {
       association: 'bankAccount',
@@ -216,45 +217,86 @@ export async function traceBankMovement(transaction, id) {
     {
       association: 'paymentEntry',
       required: false,
+      attributes: ['id', 'paymentId', 'paymentMethodId', 'value'],
       include: [
         {
           association: 'payment',
+          attributes: ['id', 'date', 'totalValue'],
           include: [
             {
               association: 'entries',
+              attributes: ['id', 'installmentNumber', 'installmentValue', 'dueDate', 'titleId'],
               include: [
                 {
                   association: 'title',
-                  include: ['partner', 'accountPlan', 'costCenter']
+                  attributes: ['id', 'documentNumber', 'partnerId', 'accountPlanId', 'costCenterId'],
+                  include: [
+                    { association: 'partner', attributes: ['id', 'name', 'surname'] },
+                    { association: 'accountPlan', attributes: ['id', 'description', 'code'] },
+                    { association: 'costCenter', attributes: ['id', 'description'] }
+                  ]
                 }
               ]
             },
             {
               association: 'paymentEntries',
+              attributes: ['id', 'paymentId', 'paymentMethodId', 'value'],
               include: [
-                'paymentMethod',
-                { 
-                  association: 'bankMovements', 
+                { association: 'paymentMethod', attributes: ['id', 'description'] },
+                {
+                  association: 'bankMovements',
+                  attributes: ['id', 'bankAccountId', 'value', 'realDate'],
                   include: [
-                    { association: 'bankAccount', include: ['bank'] }
-                  ] 
+                    { association: 'bankAccount', attributes: ['id', 'bankName', 'description', 'bankId', 'agency', 'accountNumber'], include: [{ association: 'bank', attributes: ['id', 'description'] }] }
+                  ]
                 }
               ]
             }
           ]
         },
-        'paymentMethod'
+        { association: 'paymentMethod', attributes: ['id', 'description'] }
       ]
     }
   ]
 
   const result = await financeRepository.findBankMovement(transaction, id, { include })
-  
+
   if (!result) {
     throw { code: "NOT_FOUND", message: "Movimento bancário não encontrado" }
   }
 
   return result
+}
+
+export async function createBankTransfer(transaction, { originAccountId, destinationAccountId, value, realDate, description }) {
+  const session = await getSession()
+
+  if (originAccountId === destinationAccountId) {
+    throw { code: "INVALID_TRANSFER", message: "A conta de origem e destino devem ser diferentes" }
+  }
+
+  // Use createBankMovement for both sides to leverage its validation and logic
+  const debit = await createBankMovement(transaction, {
+    bankAccountId: originAccountId,
+    originBankAccountId: destinationAccountId,
+    typeId: 2, // Saída / Débito
+    value,
+    realDate,
+    description: description || `Transferência para conta destino`,
+    documentNumber: 0
+  })
+
+  const credit = await createBankMovement(transaction, {
+    bankAccountId: destinationAccountId,
+    originBankAccountId: originAccountId,
+    typeId: 1, // Entrada / Crédito
+    value,
+    realDate,
+    description: description || `Transferência da conta origem`,
+    documentNumber: 0
+  })
+
+  return { debit, credit }
 }
 
 

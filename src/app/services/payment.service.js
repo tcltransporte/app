@@ -60,8 +60,13 @@ export async function getPaymentFormData(transaction) {
   const db = (await import("@/database")).instance || new (await import("@/database")).AppContext()
   
   const [methods, accounts] = await Promise.all([
-    db.PaymentMethod.findAll({ order: [['description', 'ASC']], transaction }),
+    db.PaymentMethod.findAll({ 
+      attributes: ['id', 'description'],
+      order: [['description', 'ASC']], 
+      transaction 
+    }),
     db.BankAccount.findAll({ 
+      attributes: ['id', 'description', 'bankId'],
       where: { isActive: true }, 
       order: [['description', 'ASC']], 
       transaction 

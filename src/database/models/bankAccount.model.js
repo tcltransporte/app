@@ -79,4 +79,5 @@ export class BankAccount {
     type: DataTypes.STRING(15),
     allowNull: true
   }
+
 }

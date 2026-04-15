@@ -148,8 +148,9 @@ export async function findAllowedTransitions(transaction, fromStatusIds, typeId)
         uniqueFromStatusIds.map(async (fromId) => {
             const dbFromId = (fromId === 0 || fromId === null) ? null : fromId;
             const transitions = await db.SolicitationStatusWorkflow.findAll({
+                attributes: ['fromStatusId', 'toStatusId'],
                 where: { fromStatusId: dbFromId },
-                include: [{ as: 'toStatus', model: db.SolicitationStatus, required: true }],
+                include: [{ as: 'toStatus', model: db.SolicitationStatus, required: true, attributes: ['id', 'description'] }],
                 transaction
             })
             return transitions.map(t => t.toStatus.get({ plain: true }))
@@ -171,8 +172,9 @@ export async function findAllowedTransitions(transaction, fromStatusIds, typeId)
     // Filter by typeId if provided
     if (typeId) {
         const allowedByType = await db.SolicitationStatusTipo.findAll({
+            attributes: ['statusId', 'typeId'],
             where: { typeId },
-            include: [{ as: 'status', model: db.SolicitationStatus }],
+            include: [{ as: 'status', model: db.SolicitationStatus, attributes: ['id', 'description'] }],
             transaction
         })
         const typeStatusIds = allowedByType.map(t => t.statusId)
@@ -185,9 +187,10 @@ export async function findAllowedTransitions(transaction, fromStatusIds, typeId)
 export async function findAllStatusTypes(transaction) {
     const db = new AppContext()
     const items = await db.SolicitationStatusTipo.findAll({
+        attributes: ['statusId', 'typeId'],
         include: [
-            { model: db.SolicitationStatus, as: 'status' },
-            { model: db.SolicitationType, as: 'type' }
+            { model: db.SolicitationStatus, as: 'status', attributes: ['id', 'description'] },
+            { model: db.SolicitationType, as: 'type', attributes: ['id', 'description'] }
         ],
         transaction
     })
@@ -196,7 +199,10 @@ export async function findAllStatusTypes(transaction) {
 
 export async function findAllStatusRelationships(transaction) {
     const db = new AppContext()
-    const relationships = await db.SolicitationStatusWorkflow.findAll({ transaction })
+    const relationships = await db.SolicitationStatusWorkflow.findAll({ 
+        attributes: ['fromStatusId', 'toStatusId'],
+        transaction 
+    })
     return { items: relationships.map(r => r.get({ plain: true })) }
 }
 

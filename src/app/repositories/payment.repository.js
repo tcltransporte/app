@@ -11,7 +11,10 @@ export async function createPayment(transaction, { settlements, commonData }) {
     const results = []
 
     for (const item of settlements) {
-      const entry = await db.FinanceEntry.findByPk(item.entryId, { transaction: t })
+      const entry = await db.FinanceEntry.findByPk(item.entryId, { 
+        attributes: ['id', 'installmentValue', 'installmentNumber'],
+        transaction: t 
+      })
       if (!entry) continue
 
       const entryValue = Number(entry.installmentValue) || 0

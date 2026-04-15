@@ -39,6 +39,7 @@ async function syncAssociations(transaction, solicitationId, data) {
     // 1. Sync Products
     if (updatedProducts) {
       const existingProducts = await db.SolicitationProduct.findAll({
+        attributes: ['id'],
         where: { solicitationId },
         transaction: t
       })
@@ -74,6 +75,7 @@ async function syncAssociations(transaction, solicitationId, data) {
     // 2. Sync Services
     if (updatedServices) {
       const existingServices = await db.SolicitationService.findAll({
+        attributes: ['id'],
         where: { solicitationId },
         transaction: t
       })
@@ -111,6 +113,7 @@ async function syncAssociations(transaction, solicitationId, data) {
       const incomingPayments = updatedPayments
 
       const existingPayments = await db.SolicitationFinance.findAll({
+        attributes: ['id'],
         where: { solicitationId },
         transaction: t
       })
