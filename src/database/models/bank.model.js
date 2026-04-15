@@ -21,12 +21,6 @@ export class Bank {
     allowNull: false
   }
 
-  icon = {
-    field: 'icon',
-    type: DataTypes.STRING(200),
-    allowNull: true
-  }
-
   cnpj = {
     field: 'CNPJ',
     type: DataTypes.STRING(14),

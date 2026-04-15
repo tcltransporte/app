@@ -30,7 +30,7 @@ export async function findAll(transaction, { query, limit = 50 } = {}) {
     const accounts = await bankAccountRepository.findAll(t, {
       where,
       limit,
-      include: [{ association: 'bank', attributes: ['id', 'description'] }],
+      include: [{ association: 'bank', attributes: ['id', 'description', 'code'] }],
     })
 
     if (accounts.length === 0) return []

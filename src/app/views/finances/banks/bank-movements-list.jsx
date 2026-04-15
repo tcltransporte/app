@@ -118,7 +118,6 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   }, [bankAccounts, selectedBankAccountId]);
 
   const getBankIcon = React.useCallback((bank) => {
-    //if (bank?.icon) return bank.icon;
     if (bank?.code) return `/assets/banks/${bank.code}.png`;
     return undefined;
   }, []);
@@ -130,7 +129,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
       renderCell: (value) => value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' }) : ''
     },
     {
-      field: 'bankAccount', headerName: 'Conta', width: 220,
+      field: 'bankAccountId', headerName: 'Conta', width: 220,
       renderCell: (val, row) => {
         const acc = row.bankAccount;
         if (!acc) return '';
