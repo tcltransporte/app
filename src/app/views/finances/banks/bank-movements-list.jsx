@@ -43,7 +43,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   const [transferModalOpen, setTransferModalOpen] = React.useState(false);
 
   const fetchBankAccounts = React.useCallback(async () => {
-    const result = await financeAction.findBankBalances();
+    const result = await bankAccountAction.findAll();
     if (result.header.status === ServiceStatus.SUCCESS) {
       setBankAccounts(result.body || []);
     }

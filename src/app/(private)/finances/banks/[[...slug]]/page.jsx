@@ -16,7 +16,7 @@ export default async function FinanceBanksPage({ params }) {
     const today = format(new Date(), 'yyyy-MM-dd');
     const initialRange = { start: today, end: today, field: 'realDate' };
 
-    const [movementsResult, bankAccountsResult, balancesResult] = await Promise.all([
+    const [movementsResult, bankAccountsResult] = await Promise.all([
       financeAction.findAllBankMovements({
         page: 1,
         limit: 50,
@@ -24,11 +24,8 @@ export default async function FinanceBanksPage({ params }) {
         sortBy: 'realDate',
         sortOrder: 'DESC'
       }),
-      bankAccountAction.findAll(),
-      financeAction.findBankBalances()
+      bankAccountAction.findAll()
     ])
-
-    console.log(balancesResult)
 
     if (movementsResult?.header?.status !== ServiceStatus.SUCCESS) {
       throw movementsResult;
@@ -45,14 +42,7 @@ export default async function FinanceBanksPage({ params }) {
       sortOrder: 'DESC'
     };
 
-    const balancesById = new Map(
-      (balancesResult?.header?.status === ServiceStatus.SUCCESS ? (balancesResult.body || []) : [])
-        .map((b) => [b.id, b])
-    )
-    const initialBankAccounts = (bankAccountsResult.body || []).map((acc) => ({
-      ...acc,
-      currentBalance: balancesById.get(acc.id)?.currentBalance ?? null,
-    }));
+    const initialBankAccounts = bankAccountsResult.body || [];
 
     return (
       <BanksView

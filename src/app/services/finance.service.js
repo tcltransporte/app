@@ -200,10 +200,6 @@ export async function createBankMovement(transaction, data) {
   return await financeRepository.createBankMovement(transaction, finalData)
 }
 
-export async function findBankBalances(transaction) {
-  const session = await getSession()
-  return await financeRepository.findBankBalances(transaction, session.company.id)
-}
 
 export async function traceBankMovement(transaction, id) {
   const session = await getSession()
