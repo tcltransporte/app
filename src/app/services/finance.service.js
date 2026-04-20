@@ -35,6 +35,7 @@ export async function findOne(transaction, id) {
   }
 
   return result
+
 }
 
 export async function create(transaction, data) {

@@ -512,15 +512,12 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
           onSelect={table.onSelect}
           onSelectAll={table.onSelectAll}
           containerSx={{ minHeight: 0 }}
-          onSort={async (property) => {
+          onSort={(property) => {
             const isAsc = table.sortBy === property && table.sortOrder === 'ASC';
             const newOrder = isAsc ? 'DESC' : 'ASC';
-            const ok = await fetchTable({ sortBy: property, sortOrder: newOrder, page: 1 });
-            if (ok) {
-              table.setSortOrder(newOrder);
-              table.setSortBy(property);
-              table.setPage(1);
-            }
+            table.setSortOrder(newOrder);
+            table.setSortBy(property);
+            table.setPage(1);
           }}
           sortBy={table.sortBy}
           sortOrder={table.sortOrder}
@@ -537,17 +534,13 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         page={table.page}
         rowsPerPage={table.rowsPerPage}
         selectedCount={table.selecteds.length}
-        onPageChange={async (e, p) => {
-          const ok = await fetchTable({ page: p });
-          if (ok) table.setPage(p);
+        onPageChange={(e, p) => {
+          table.setPage(p);
         }}
-        onRowsPerPageChange={async (e) => {
+        onRowsPerPageChange={(e) => {
           const l = Number(e.target.value);
-          const ok = await fetchTable({ page: 1, rowsPerPage: l });
-          if (ok) {
-            table.setRowsPerPage(l);
-            table.setPage(1);
-          }
+          table.setRowsPerPage(l);
+          table.setPage(1);
         }}
       />
 
@@ -562,13 +555,10 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
           { label: 'Data Real', value: 'realDate' },
           { label: 'Data de Lançamento', value: 'entryDate' },
         ]}
-        onApply={async (vals) => {
-          const ok = await fetchTable({ range: vals, page: 1 });
-          if (ok) {
-            rangeFilter.setRange(vals);
-            rangeFilter.setOpen(false);
-            table.setPage(1);
-          }
+        onApply={(vals) => {
+          rangeFilter.setRange(vals);
+          rangeFilter.setOpen(false);
+          table.setPage(1);
         }}
       />
 
