@@ -100,20 +100,16 @@ export default function DistributionView({
     }
   }, [table.page, table.rowsPerPage, filter.filters, rangeFilter.range, table.sortBy, table.sortOrder])
 
-  React.useEffect(() => {
-    fetchTable()
-  }, [])
-
   const columns = [
-    { field: 'id', headerName: 'ID', width: 80 },
+    //{ field: 'id', headerName: 'ID', width: 80 },
     { field: 'nsu', headerName: 'NSU', width: 150 },
-    { 
+    {
       field: 'idSchema', headerName: 'Schema', width: 140,
       renderCell: (value, row) => row.schemaInfo?.schema || row.idSchema
     },
     { field: 'cnpj', headerName: 'CNPJ', width: 150 },
     { field: 'xNome', headerName: 'Razão Social', width: 250 },
-    { 
+    {
       field: 'vNF', headerName: 'Valor', width: 120,
       renderCell: (value) => value ? Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
     },
@@ -121,7 +117,7 @@ export default function DistributionView({
       field: 'dhEmi', headerName: 'Emissão', width: 180,
       renderCell: (value) => value ? new Date(value).toLocaleString() : ''
     },
-    {
+    /*{
       field: 'isUnPack', headerName: 'Descompactado', width: 140,
       renderCell: (value) => (
         <Chip 
@@ -131,8 +127,8 @@ export default function DistributionView({
           variant="outlined" 
         />
       )
-    },
-    { field: 'idDFeLoteDistOrigem', headerName: 'ID Origem', width: 120 },
+    },*/
+    //{ field: 'idDFeLoteDistOrigem', headerName: 'ID Origem', width: 120 },
     {
       field: 'actions', headerName: 'Ações', width: 80,
       renderCell: (value, row) => (
@@ -155,12 +151,6 @@ export default function DistributionView({
       onClick: filter.handleOpen
     },
     {
-      label: 'Atualizar',
-      icon: <SyncIcon fontSize="small" />,
-      onClick: handleSync,
-      color: 'secondary'
-    },
-    {
       label: 'Pesquisar',
       icon: <SearchIcon fontSize="small" />,
       variant: 'outlined',
@@ -175,7 +165,14 @@ export default function DistributionView({
 
       <Container.Content>
         <Toolbar
-          primary={[]}
+          primary={[
+            {
+              label: 'Atualizar',
+              icon: <SyncIcon fontSize="small" />,
+              onClick: handleSync,
+              color: 'primary'
+            }
+          ]}
           secondary={secondaryActions}
         />
 

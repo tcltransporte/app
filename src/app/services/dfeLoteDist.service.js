@@ -1,6 +1,6 @@
 "use server"
 
-import { Op } from 'sequelize'
+import Sequelize, { Op } from 'sequelize'
 import * as dfeLoteDistRepository from "@/app/repositories/dfeLoteDist.repository"
 import { getSession } from "@/libs/session"
 import zlib from 'zlib'
@@ -30,19 +30,26 @@ export async function findAll(transaction, { page = 1, limit = 50, filters = {},
     const field = range.field || 'data'
     
     if (field === 'dhEmi') {
-      // String comparison for ISO dates inside XML (approximate range search)
-      const startDate = new Date(range.start).toISOString().split('T')[0]
-      const endDate = new Date(range.end).toISOString().split('T')[0]
+      const start = range.start.split('T')[0] + ' 00:00:00'
+      const end = range.end.split('T')[0] + ' 23:59:59'
       
-      // If same day, simple LIKE
-      if (startDate === endDate) {
-        where[Op.and] = [...(where[Op.and] || []), { docXml: { [Op.like]: `%<dhEmi>${startDate}%` } }]
-      } else {
-        // For ranges, we filter by the synchronization date for performance, 
-        // as searching multiple LIKEs in a large XML column is extremely slow.
-        // However, we allow the user to see the column correctly.
-        where.data = { [Op.between]: [new Date(range.start), new Date(range.end)] }
-      }
+      // Namespace declaration inside XQuery (equivalent to WITH XMLNAMESPACES)
+      const nsPrefix = 'declare namespace ns="http://www.portalfiscal.inf.br/nfe";'
+      
+      // Separate XQuery paths as 'union' (|) is NOT supported in this SQL Server version
+      const resXPath = `DocXml.value('${nsPrefix} (/ns:resNFe/ns:dhEmi/text())[1]', 'datetimeoffset')`
+      const nfeXPath = `DocXml.value('${nsPrefix} (/ns:NFe/ns:infNFe/ns:ide/ns:dhEmi/text())[1]', 'datetimeoffset')`
+      
+      // Combine using COALESCE to find the date in either path
+      const sqlValue = `COALESCE(${resXPath}, ${nfeXPath})`
+
+      where[Op.and] = [
+        ...(where[Op.and] || []),
+        Sequelize.where(
+          Sequelize.literal(`CAST(${sqlValue} AS DATETIME)`),
+          { [Op.between]: [start, end] }
+        )
+      ]
     } else {
       where.data = { [Op.between]: [new Date(range.start), new Date(range.end)] }
     }
@@ -51,9 +58,17 @@ export async function findAll(transaction, { page = 1, limit = 50, filters = {},
   // XML content filters
   if (filters.cnpj || filters.xNome || filters.vNF) {
     const xmlConditions = [];
-    if (filters.cnpj) xmlConditions.push({ docXml: { [Op.like]: `%<CNPJ>${filters.cnpj}</CNPJ>%` } });
-    if (filters.xNome) xmlConditions.push({ docXml: { [Op.like]: `%<xNome>%${filters.xNome}%</xNome>%` } });
-    if (filters.vNF) xmlConditions.push({ docXml: { [Op.like]: `%<vNF>${filters.vNF}</vNF>%` } });
+    const docXmlCol = Sequelize.cast(Sequelize.col('docXml'), 'NVARCHAR(MAX)');
+
+    if (filters.cnpj) {
+      xmlConditions.push(Sequelize.where(docXmlCol, { [Op.like]: `%<CNPJ>${filters.cnpj}</CNPJ>%` }));
+    }
+    if (filters.xNome) {
+      xmlConditions.push(Sequelize.where(docXmlCol, { [Op.like]: `%<xNome>%${filters.xNome}%</xNome>%` }));
+    }
+    if (filters.vNF) {
+      xmlConditions.push(Sequelize.where(docXmlCol, { [Op.like]: `%<vNF>${filters.vNF}</vNF>%` }));
+    }
     
     where[Op.and] = [...(where[Op.and] || []), ...xmlConditions];
   }
