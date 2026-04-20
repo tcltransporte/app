@@ -1,27 +1,24 @@
 'use client';
 
 import React from 'react';
-import { Box, TextField, MenuItem } from '@mui/material';
+import { Grid } from '@mui/material';
+import { Field } from 'formik';
 import { FilterDrawer } from '@/components/common';
+import { TextField, SelectField } from '@/components/controls';
 
 export default function DistributionFilter({ open, filters, onClose, onApply }) {
-  const [localFilters, setLocalFilters] = React.useState(filters);
-
-  React.useEffect(() => {
-    setLocalFilters(filters);
-  }, [filters]);
-
-  const handleChange = (field) => (event) => {
-    setLocalFilters({ ...localFilters, [field]: event.target.value });
+  const initialValues = {
+    nsu: filters.nsu || '',
+    idSchema: filters.idSchema || '',
+    cnpj: filters.cnpj || '',
+    xNome: filters.xNome || '',
+    vNF: filters.vNF || '',
+    isUnPack: (filters.isUnPack !== undefined && filters.isUnPack !== null && filters.isUnPack !== '') ? String(filters.isUnPack) : ''
   };
 
-  const handleApply = () => {
-    onApply(localFilters);
-  };
-
-  const handleClear = () => {
-    const cleared = { nsu: '', idSchema: '', isUnPack: '' };
-    setLocalFilters(cleared);
+  const handleClear = (setValues) => {
+    const cleared = { nsu: '', idSchema: '', cnpj: '', xNome: '', vNF: '', isUnPack: '' };
+    setValues(cleared);
     onApply(cleared);
   };
 
@@ -29,37 +26,41 @@ export default function DistributionFilter({ open, filters, onClose, onApply }) 
     <FilterDrawer
       open={open}
       onClose={onClose}
-      onApply={handleApply}
+      initialValues={initialValues}
+      onApply={onApply}
       onClear={handleClear}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 1 }}>
-        <TextField
-          label="NSU"
-          value={localFilters.nsu || ''}
-          onChange={handleChange('nsu')}
-          fullWidth
-          size="small"
-        />
-        <TextField
-          label="ID Schema"
-          value={localFilters.idSchema || ''}
-          onChange={handleChange('idSchema')}
-          fullWidth
-          size="small"
-        />
-        <TextField
-          select
-          label="Descompactado"
-          value={localFilters.isUnPack || ''}
-          onChange={handleChange('isUnPack')}
-          fullWidth
-          size="small"
-        >
-          <MenuItem value="">Todos</MenuItem>
-          <MenuItem value="true">Sim</MenuItem>
-          <MenuItem value="false">Não</MenuItem>
-        </TextField>
-      </Box>
+      <Grid container spacing={2}>
+        <Grid item size={12}>
+          <Field component={TextField} name="nsu" label="NSU" fullWidth size="small" />
+        </Grid>
+        <Grid item size={12}>
+          <Field component={TextField} name="idSchema" label="ID Schema" fullWidth size="small" />
+        </Grid>
+        <Grid item size={12}>
+          <Field component={TextField} name="cnpj" label="CNPJ (resNFe)" fullWidth size="small" />
+        </Grid>
+        <Grid item size={12}>
+          <Field component={TextField} name="xNome" label="Razão Social (resNFe)" fullWidth size="small" />
+        </Grid>
+        <Grid item size={12}>
+          <Field component={TextField} name="vNF" label="Valor (resNFe)" fullWidth size="small" />
+        </Grid>
+        <Grid item size={12}>
+          <Field
+            component={SelectField}
+            name="isUnPack"
+            label="Descompactado"
+            fullWidth
+            size="small"
+            options={[
+              { value: '', label: 'Todos' },
+              { value: 'true', label: 'Sim' },
+              { value: 'false', label: 'Não' }
+            ]}
+          />
+        </Grid>
+      </Grid>
     </FilterDrawer>
   );
 }

@@ -22,7 +22,7 @@ export default function DistributionPage() {
         isUnPack: ''
       }}
       initialRange={{
-        field: 'data',
+        field: 'dhEmi',
         start: null,
         end: null
       }}

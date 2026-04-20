@@ -24,7 +24,10 @@ export default function DistributionView({
   initialTable,
   initialFilters,
   initialRange,
-  dateFieldOptions = [{ value: 'data', label: 'Data' }]
+  dateFieldOptions = [
+    { value: 'dhEmi', label: 'Emissão' },
+    { value: 'data', label: 'Sincronização' }
+  ]
 }) {
   const table = useTable({ initialTable })
   const filter = useFilter({ initialFilters })
@@ -108,8 +111,14 @@ export default function DistributionView({
       field: 'idSchema', headerName: 'Schema', width: 140,
       renderCell: (value, row) => row.schemaInfo?.schema || row.idSchema
     },
+    { field: 'cnpj', headerName: 'CNPJ', width: 150 },
+    { field: 'xNome', headerName: 'Razão Social', width: 250 },
+    { 
+      field: 'vNF', headerName: 'Valor', width: 120,
+      renderCell: (value) => value ? Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
+    },
     {
-      field: 'data', headerName: 'Data', width: 180,
+      field: 'dhEmi', headerName: 'Emissão', width: 180,
       renderCell: (value) => value ? new Date(value).toLocaleString() : ''
     },
     {

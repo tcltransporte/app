@@ -13,7 +13,24 @@ export async function findAll(transaction, { attributes, include, where, limit, 
       distinct: true
     })
 
-    return { rows: rows.map(r => r.toJSON()), count }
+    return {
+      rows: rows.map(r => {
+        const item = r.toJSON()
+        if (item.idSchema === 2 && item.docXml) {
+          const cnpjMatch = item.docXml.match(/<CNPJ>([^<]+)<\/CNPJ>/)
+          const xNomeMatch = item.docXml.match(/<xNome>([^<]+)<\/xNome>/)
+          const vNFMatch = item.docXml.match(/<vNF>([^<]+)<\/vNF>/)
+          const dhEmiMatch = item.docXml.match(/<dhEmi>([^<]+)<\/dhEmi>/)
+
+          item.cnpj = cnpjMatch ? cnpjMatch[1] : ''
+          item.xNome = xNomeMatch ? xNomeMatch[1] : ''
+          item.vNF = vNFMatch ? vNFMatch[1] : ''
+          item.dhEmi = dhEmiMatch ? dhEmiMatch[1] : ''
+        }
+        return item
+      }),
+      count
+    }
   })
 }
 
