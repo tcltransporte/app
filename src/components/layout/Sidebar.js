@@ -51,7 +51,8 @@ import {
   ChevronRight,
   Edit,
   Check,
-  LocalShipping
+  LocalShipping,
+  CloudDownload
 } from '@mui/icons-material';
 import {
   DndContext,
@@ -105,6 +106,11 @@ const menuItems = [
   {
     text: 'Solicitações', icon: <Assignment />, subMenu: [
       { text: 'Gestão de Tipos', path: '/solicitations/types' }
+    ]
+  },
+  {
+    text: 'Sefaz', icon: <CloudDownload />, subMenu: [
+      { text: 'Distribuição', path: '/sefaz/distribution' }
     ]
   },
   {
