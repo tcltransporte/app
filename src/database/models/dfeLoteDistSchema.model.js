@@ -12,13 +12,13 @@ export class DFeLoteDistSchema {
   descricao = {
     field: 'Descricao',
     allowNull: true,
-    type: DataTypes.NVARCHAR(50)
+    type: DataTypes.STRING(50)
   }
 
   schema = {
     field: 'Schema',
     allowNull: false,
-    type: DataTypes.NVARCHAR(50)
+    type: DataTypes.STRING(50)
   }
 
 }

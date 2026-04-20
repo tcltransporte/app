@@ -29,3 +29,77 @@ export async function findOne(transaction, { attributes, include, where }) {
     return item?.toJSON()
   })
 }
+/**
+* @param {import('sequelize').Transaction} transaction
+* @param {{ where }} params
+* @returns {Promise<string>}
+*/
+export async function findLastNSU(transaction, { where }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const item = await db.DFeLoteDist.findOne({
+      where,
+      order: [['nsu', 'DESC']],
+      transaction: t
+    })
+    return item?.nsu || '0'
+  })
+}
+
+/**
+* @param {import('sequelize').Transaction} transaction
+* @param {any[]} data
+* @returns {Promise<object[]>}
+*/
+export async function bulkCreate(transaction, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    return await db.DFeLoteDist.bulkCreate(data, { transaction: t })
+  })
+}
+
+/**
+* @param {import('sequelize').Transaction} transaction
+* @param {string} schemaName
+* @returns {Promise<number>}
+*/
+export async function findOrCreateSchema(transaction, schemaName) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const [schema] = await db.DFeLoteDistSchema.findOrCreate({
+      where: { schema: schemaName },
+      defaults: { descricao: schemaName },
+      transaction: t
+    })
+    return schema.id
+  })
+}
+
+/**
+ * @param {import('sequelize').Transaction} transaction
+ * @param {string[]} schemaNames
+ * @returns {Promise<object[]>}
+ */
+export async function findAllSchemas(transaction, schemaNames) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const list = await db.DFeLoteDistSchema.findAll({
+      where: { schema: schemaNames },
+      transaction: t
+    })
+    return list.map(i => i.toJSON())
+  })
+}
+
+/**
+ * @param {import('sequelize').Transaction} transaction
+ * @param {any[]} data
+ * @returns {Promise<object[]>}
+ */
+export async function bulkCreateSchemas(transaction, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const list = await db.DFeLoteDistSchema.bulkCreate(data, { transaction: t })
+    return list.map(i => i.toJSON())
+  })
+}

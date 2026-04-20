@@ -38,6 +38,7 @@ import { PaymentMethod } from './models/paymentMethod.model.js'
 import { BankAccount } from './models/bankAccount.model.js'
 import { Bank } from './models/bank.model.js'
 import { DFeLoteDist } from './models/dfeLoteDist.model.js'
+import { DFeLoteDistSchema } from './models/dfeLoteDistSchema.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -114,6 +115,7 @@ export class AppContext extends Sequelize {
     this.BankAccount = this.define('bankAccount', new BankAccount(), { tableName: 'conta_bancaria' })
     this.Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
     this.DFeLoteDist = this.define('dfeLoteDist', new DFeLoteDist(), { tableName: 'DFeLoteDist' })
+    this.DFeLoteDistSchema = this.define('dfeLoteDistSchema', new DFeLoteDistSchema(), { tableName: 'DFeLoteDistSchema' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -203,6 +205,7 @@ export class AppContext extends Sequelize {
     this.FreightLetter.belongsTo(this.FreightLetterComponentType, { as: 'componentType', foreignKey: 'freightLetterComponentTypeId' })
 
 
+    this.DFeLoteDist.belongsTo(this.DFeLoteDistSchema, { as: 'schemaInfo', foreignKey: 'idSchema' })
 
     /*
     this.Company.addHook('afterFind', afterFind)

@@ -39,3 +39,14 @@ export async function getDecodedDoc(id) {
     return ServiceResponse.error(error)
   }
 }
+export async function sync() {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await dfeLoteDistService.syncDistributions(t)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}

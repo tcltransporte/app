@@ -8,6 +8,7 @@ import {
   Event as EventIcon,
   CloudDownload as DownloadIcon,
   Visibility as ViewIcon,
+  Sync as SyncIcon,
 } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 
@@ -51,6 +52,22 @@ export default function DistributionView({
     }
   }
 
+  const handleSync = async () => {
+    loading.show()
+    try {
+      const result = await dfeLoteDistAction.sync()
+      if (result.header.status !== ServiceStatus.SUCCESS)
+        throw result
+
+      alert.success('Sucesso!', `${result.body.count} documento(s) sincronizado(s).`)
+      fetchTable()
+    } catch (error) {
+      alert.error('Ops!', error?.body?.message || error.message)
+    } finally {
+      loading.hide()
+    }
+  }
+
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true)
     try {
@@ -87,7 +104,10 @@ export default function DistributionView({
   const columns = [
     { field: 'id', headerName: 'ID', width: 80 },
     { field: 'nsu', headerName: 'NSU', width: 150 },
-    { field: 'idSchema', headerName: 'Schema', width: 100 },
+    { 
+      field: 'idSchema', headerName: 'Schema', width: 140,
+      renderCell: (value, row) => row.schemaInfo?.schema || row.idSchema
+    },
     {
       field: 'data', headerName: 'Data', width: 180,
       renderCell: (value) => value ? new Date(value).toLocaleString() : ''
@@ -124,6 +144,12 @@ export default function DistributionView({
       label: 'Filtros',
       icon: <FilterIcon fontSize="small" />,
       onClick: filter.handleOpen
+    },
+    {
+      label: 'Atualizar',
+      icon: <SyncIcon fontSize="small" />,
+      onClick: handleSync,
+      color: 'secondary'
     },
     {
       label: 'Pesquisar',
