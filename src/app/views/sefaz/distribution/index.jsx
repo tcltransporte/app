@@ -9,6 +9,8 @@ import {
   CloudDownload as DownloadIcon,
   Visibility as ViewIcon,
   Sync as SyncIcon,
+  CheckCircle as AceiteIcon,
+  Cancel as RecusaIcon
 } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 
@@ -35,6 +37,10 @@ export default function DistributionView({
   const loading = useLoading()
 
   const [xmlViewer, setXmlViewer] = React.useState({ open: false, xml: '', nsu: '' })
+
+  const handleManifest = (id, type) => {
+    alert.info(`Em desenvolvimento em breve... (${type})`)
+  }
 
   const handleViewXml = async (id, nsu) => {
     loading.show()
@@ -130,11 +136,32 @@ export default function DistributionView({
     },*/
     //{ field: 'idDFeLoteDistOrigem', headerName: 'ID Origem', width: 120 },
     {
-      field: 'actions', headerName: 'Ações', width: 80,
+      field: 'actions', headerName: 'Ações', width: 140,
       renderCell: (value, row) => (
-        <IconButton size="small" color="primary" onClick={() => handleViewXml(row.id, row.nsu)} title="Visualizar XML">
-          <ViewIcon fontSize="small" />
-        </IconButton>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 0.5,
+          opacity: 0,
+          transition: 'opacity 0.2s',
+          '.MuiTableRow-root:hover &': {
+            opacity: 1
+          }
+        }}>
+          <IconButton size="small" color="primary" onClick={() => handleViewXml(row.id, row.nsu)} title="Visualizar XML">
+            <ViewIcon fontSize="small" />
+          </IconButton>
+
+          {row.idSchema === 2 && (
+            <>
+              <IconButton size="small" color="success" onClick={() => handleManifest(row.id, 'Aceite')} title="Aceite / Confirmação">
+                <AceiteIcon fontSize="small" />
+              </IconButton>
+              <IconButton size="small" color="error" onClick={() => handleManifest(row.id, 'Recusa')} title="Recusa / Desconhecimento">
+                <RecusaIcon fontSize="small" />
+              </IconButton>
+            </>
+          )}
+        </Box>
       )
     }
   ]
