@@ -50,3 +50,15 @@ export async function sync() {
     return ServiceResponse.error(error)
   }
 }
+
+export async function manifest(id) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await dfeLoteDistService.manifest(t, id)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}

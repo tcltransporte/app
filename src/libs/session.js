@@ -29,7 +29,7 @@ export async function getSession(transaction = null) {
       include: [
         { model: db.User, as: 'user', attributes: ['id', 'userName'] },
         {
-          model: db.Company, as: 'company', attributes: ['id', 'name', 'surname'],
+          model: db.Company, as: 'company', attributes: ['id', 'name', 'surname', 'cnpj', 'certificate'],
           include: [
             { model: db.CompanyBusiness, as: 'companyBusiness', attributes: ['id', 'name'] }
           ]

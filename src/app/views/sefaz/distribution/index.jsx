@@ -38,8 +38,25 @@ export default function DistributionView({
 
   const [xmlViewer, setXmlViewer] = React.useState({ open: false, xml: '', nsu: '' })
 
-  const handleManifest = (id, type) => {
-    alert.info(`Em desenvolvimento em breve... (${type})`)
+  const handleManifest = async (id, type) => {
+    if (type !== 'Aceite') {
+      alert.info(`Em desenvolvimento em breve... (${type})`)
+      return
+    }
+
+    loading.show()
+    try {
+      const result = await dfeLoteDistAction.manifest(id)
+      if (result.header.status !== ServiceStatus.SUCCESS)
+        throw result
+
+      alert.success('Sucesso!', 'Manifestação registrada com sucesso.')
+      fetchTable()
+    } catch (error) {
+      alert.error('Ops!', error?.body?.message || error.message)
+    } finally {
+      loading.hide()
+    }
   }
 
   const handleViewXml = async (id, nsu) => {
