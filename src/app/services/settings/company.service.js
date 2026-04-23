@@ -31,6 +31,35 @@ export async function findOne(transaction) {
     }
 }
 
+export async function updateCompany(transaction, values) {
+    const session = await getSession(transaction)
+    const db = new AppContext()
+
+    const rawCityId = values.city?.id ?? values.cityId
+    const cityId =
+        rawCityId != null && rawCityId !== "" && Number.isFinite(Number(rawCityId))
+            ? Number(rawCityId)
+            : null
+
+    const cnpjDigits = values.cnpj != null ? String(values.cnpj).replace(/\D/g, "") : ""
+
+    await db.Company.update(
+        {
+            cnpj: cnpjDigits || null,
+            name: values.name ?? null,
+            surname: values.surname ?? null,
+            zipCode: values.zipCode ?? null,
+            street: values.street ?? null,
+            number: values.number ?? null,
+            district: values.district ?? null,
+            cityId,
+        },
+        { where: { id: session.company.id }, transaction }
+    )
+
+    return { ok: true }
+}
+
 export async function saveStatusConfig(transaction, { id, description, workflowIds, typeIds, isInitialOption }) {
     const session = await getSession()
     const db = new AppContext()

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Grid, Typography, Button, Avatar, IconButton, Paper, InputAdornment } from '@mui/material';
+import { Box, Grid, Typography, Button, Avatar, CircularProgress, InputAdornment } from '@mui/material';
 import { Edit as EditIcon, Save as SaveIcon, LocationOn as LocationIcon } from '@mui/icons-material';
 import { Formik, Form, Field } from 'formik';
 import { TextField, AutoComplete } from '@/components/controls';
@@ -10,6 +10,7 @@ import * as search from '@/libs/search';
 export function CompanyTab({ company, onSave }) {
   return (
     <Formik
+      enableReinitialize
       initialValues={{
         cnpj: company?.cnpj || '',
         name: company?.name || '',
@@ -18,12 +19,13 @@ export function CompanyTab({ company, onSave }) {
         street: company?.street || '',
         number: company?.number || '',
         district: company?.district || '',
+        complement: company?.complement || '',
         city: company?.city || null,
         state: company?.state || null,
       }}
       onSubmit={onSave}
     >
-      {({ values, setFieldValue }) => (
+      {({ values, setFieldValue, isSubmitting }) => (
         <Form>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {/* Logo Section */}
@@ -119,10 +121,17 @@ export function CompanyTab({ company, onSave }) {
               <Button
                 type="submit"
                 variant="contained"
-                startIcon={<SaveIcon />}
+                disabled={isSubmitting}
+                startIcon={
+                  isSubmitting ? (
+                    <CircularProgress size={18} color="inherit" aria-label="Salvando" />
+                  ) : (
+                    <SaveIcon />
+                  )
+                }
                 sx={{ px: 4, py: 1, textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
               >
-                Salvar
+                {isSubmitting ? 'Salvando...' : 'Salvar'}
               </Button>
             </Box>
           </Box>

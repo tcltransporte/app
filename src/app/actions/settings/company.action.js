@@ -16,6 +16,18 @@ export async function findOne() {
   }
 }
 
+export async function updateCompany(data) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await companyService.updateCompany(t, data)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
 export async function saveStatusConfig(data) {
   const db = new AppContext()
   try {

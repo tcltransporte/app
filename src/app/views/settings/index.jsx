@@ -6,6 +6,7 @@ import { useState } from "react"
 import * as loginAction from "@/app/actions/login.action"
 import * as companyAction from "@/app/actions/settings/company.action"
 import { ServiceStatus } from "@/libs/service"
+import { alert } from "@/libs/alert"
 import { useRouter } from "next/navigation"
 import { Container } from "@/components/common"
 import { Typography, Box, Tabs, Tab, Paper, Avatar, IconButton } from "@mui/material"
@@ -25,6 +26,7 @@ import {
 import { CompanyTab } from "./company-tab"
 import { StatusesTab } from "./statuses-tab"
 import { PlaceholderTab } from "./placeholder-tab"
+import { CertificateTab } from "./certificate-tab"
 
 export function SettingsView({ initialCompany, initialUser, activeSlug = 'empresa', initialStatusesConfig }) {
     try {
@@ -56,14 +58,39 @@ export function SettingsView({ initialCompany, initialUser, activeSlug = 'empres
         }
 
         const handleSaveCompany = async (values) => {
-            console.log('Saving company:', values);
-            // Implement update logic when ready
+            try {
+                const result = await companyAction.updateCompany({
+                    cnpj: values.cnpj,
+                    name: values.name,
+                    surname: values.surname,
+                    zipCode: values.zipCode,
+                    street: values.street,
+                    number: values.number,
+                    district: values.district,
+                    city: values.city ? { id: values.city.id } : null,
+                })
+                if (result.header.status !== ServiceStatus.SUCCESS) {
+                    throw new Error(result.body?.message || "Não foi possível salvar.")
+                }
+                alert.success("Empresa salva com sucesso!")
+                const refreshed = await companyAction.findOne()
+                if (refreshed.header.status === ServiceStatus.SUCCESS) {
+                    setCompany({
+                        ...refreshed.body.company,
+                        city: values.city,
+                        state: values.state,
+                    })
+                    setUser(refreshed.body.user)
+                }
+            } catch (error) {
+                alert.error("Erro ao salvar empresa", error?.body?.message || error?.message || String(error))
+            }
         }
 
         const tabs = [
             { label: 'Empresa', slug: 'empresa', icon: <CompanyIcon fontSize="small" />, component: <CompanyTab company={company} onSave={handleSaveCompany} /> },
             { label: 'Status', slug: 'status', icon: <StatusIcon fontSize="small" />, component: <StatusesTab initialStatusesConfig={initialStatusesConfig} /> },
-            { label: 'Certificado', slug: 'certificado', icon: <CertificateIcon fontSize="small" />, component: <PlaceholderTab title="Certificado" /> },
+            { label: 'Certificado', slug: 'certificado', icon: <CertificateIcon fontSize="small" />, component: <CertificateTab /> },
             { label: 'Usuários', slug: 'usuarios', icon: <UsersIcon fontSize="small" />, component: <PlaceholderTab title="Usuários" /> },
             { label: 'Bancos', slug: 'bancos', icon: <BanksIcon fontSize="small" />, component: <PlaceholderTab title="Bancos" /> },
             { label: 'Categorias', slug: 'categorias', icon: <CategoriesIcon fontSize="small" />, component: <PlaceholderTab title="Categorias" /> },
