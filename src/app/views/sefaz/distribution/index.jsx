@@ -19,6 +19,7 @@ import DFeDistributionXmlViewer from './xml-viewer';
 import { useTable, useNavigation, useRangeFilter, useFilter, useLoading } from '@/hooks';
 import { Container, Table, Toolbar, RangeModal } from '@/components/common';
 import * as dfeLoteDistAction from '@/app/actions/dfeLoteDist.action';
+import { ManifestationType } from '@/libs/dfeManifestationType';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
@@ -38,19 +39,15 @@ export default function DistributionView({
 
   const [xmlViewer, setXmlViewer] = React.useState({ open: false, xml: '', nsu: '' })
 
-  const handleManifest = async (id, type) => {
-    if (type !== 'Aceite') {
-      alert.info(`Em desenvolvimento em breve... (${type})`)
-      return
-    }
-
+  const handleManifest = async (id, manifestation) => {
     loading.show()
     try {
-      const result = await dfeLoteDistAction.manifest(id)
+      const result = await dfeLoteDistAction.manifest(id, manifestation)
       if (result.header.status !== ServiceStatus.SUCCESS)
         throw result
 
-      alert.success('Sucesso!', 'Manifestação registrada com sucesso.')
+      const label = result.body?.label || manifestation.label
+      alert.success(`Manifestação (${label}) registrada com sucesso.`)
       fetchTable()
     } catch (error) {
       alert.error('Ops!', error?.body?.message || error.message)
@@ -170,10 +167,10 @@ export default function DistributionView({
 
           {row.idSchema === 2 && (
             <>
-              <IconButton size="small" color="success" onClick={() => handleManifest(row.id, 'Aceite')} title="Aceite / Confirmação">
+              <IconButton size="small" color="success" onClick={() => handleManifest(row.id, ManifestationType.Aceite)} title="Aceite / Confirmação">
                 <AceiteIcon fontSize="small" />
               </IconButton>
-              <IconButton size="small" color="error" onClick={() => handleManifest(row.id, 'Recusa')} title="Recusa / Desconhecimento">
+              <IconButton size="small" color="error" onClick={() => handleManifest(row.id, ManifestationType.Recusa)} title="Recusa / Desconhecimento">
                 <RecusaIcon fontSize="small" />
               </IconButton>
             </>

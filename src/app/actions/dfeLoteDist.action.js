@@ -2,6 +2,7 @@
 
 import { AppContext } from "@/database"
 import * as dfeLoteDistService from "@/app/services/dfeLoteDist.service"
+import { normalizeManifestation, ManifestationType } from "@/libs/dfeManifestationType"
 import { ServiceResponse } from "@/libs/service"
 
 export async function findAll(options) {
@@ -51,11 +52,19 @@ export async function sync() {
   }
 }
 
-export async function manifest(id) {
+export async function manifest(id, manifestation) {
+  const resolved = normalizeManifestation(manifestation)
+  if (!resolved) {
+    return ServiceResponse.badRequest(
+      "INVALID_MANIFESTATION",
+      `Informe um tipo válido: ${ManifestationType.Aceite.code} (Aceite) ou ${ManifestationType.Recusa.code} (Recusa).`
+    )
+  }
+
   const db = new AppContext()
   try {
     return await db.withTransaction(null, async (t) => {
-      const result = await dfeLoteDistService.manifest(t, id)
+      const result = await dfeLoteDistService.manifest(t, id, resolved)
       return ServiceResponse.success(result)
     })
   } catch (error) {

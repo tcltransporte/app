@@ -3,6 +3,7 @@
 import Sequelize, { Op } from 'sequelize'
 import * as dfeLoteDistRepository from "@/app/repositories/dfeLoteDist.repository"
 import { getSession } from "@/libs/session"
+import { normalizeManifestation } from "@/libs/dfeManifestationType"
 import zlib from 'zlib'
 
 export async function findAll(transaction, { page = 1, limit = 50, filters = {}, range = {}, sortBy = 'id', sortOrder = 'DESC' }) {
@@ -122,11 +123,11 @@ export async function syncDistributions(transaction) {
   }
 
   const body = `
-    <Distribuicao>
+    <Distribuition>
       <ufAutor>GO</ufAutor>
       <documento>${session.company.cnpj}</documento>
       <ultNSU>${lastNsu}</ultNSU>
-    </Distribuicao>
+    </Distribuition>
   `
 
   const response = await fetch(`${process.env.SERVICE_API}/dfe/nfe/distribuition`, {
@@ -204,22 +205,42 @@ export async function syncDistributions(transaction) {
   return { count: syncedData.length }
 }
 
-export async function manifest(transaction, id) {
-  const db = dfeLoteDistRepository
+function extractChNFeFromDocXml(docXml) {
+  if (!docXml || typeof docXml !== "string") return null
+  const chTag = docXml.match(/<chNFe>([^<]+)<\/chNFe>/i)
+  if (chTag?.[1]) return chTag[1].trim()
+  const idAttr = docXml.match(/<infNFe[^>]*\bId\s*=\s*["']NFe(\d{44})["']/i)
+  if (idAttr?.[1]) return idAttr[1]
+  return null
+}
+
+function escapeXmlText(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
+export async function manifest(transaction, id, manifestation) {
   const session = await getSession()
 
+  const resolved = normalizeManifestation(manifestation)
+  if (!resolved) {
+    throw new Error("Tipo de manifestação inválido.")
+  }
+  const { code, label } = resolved
+
   const record = await findOne(transaction, id)
-  if (!record) throw new Error('Registro não encontrado.')
+  if (!record) throw new Error("Registro não encontrado.")
 
-  // Extract chNFe from DocXml
-  const chNFeMatch = record.docXml.match(/<chNFe>([^<]+)<\/chNFe>/)
-  if (!chNFeMatch) throw new Error('Chave da NF-e (chNFe) não encontrada no documento.')
+  const chNFe = extractChNFeFromDocXml(record.docXml)
+  if (!chNFe) {
+    throw new Error("Chave da NF-e (chNFe) não encontrada no documento.")
+  }
 
-  const chNFe = chNFeMatch[1]
-
-  // Parse certificate if string
   let certificate = session.company.certificate
-  if (typeof certificate === 'string') {
+  if (typeof certificate === "string") {
     try {
       certificate = JSON.parse(certificate)
     } catch (e) {
@@ -228,21 +249,21 @@ export async function manifest(transaction, id) {
   }
 
   const body = `
-    <Distribuicao>
-      <ufAutor>GO</ufAutor>
-      <documento>${session.company.cnpj}</documento>
-      <chNFe>${chNFe}</chNFe>
-    </Distribuicao>
-  `
+<Manifestation>
+  <documento>${session.company.cnpj}</documento>
+  <code>${escapeXmlText(code)}</code>
+  <chNFE>${escapeXmlText(chNFe)}</chNFE>
+</Manifestation>
+`.trim()
 
-  const response = await fetch(`${process.env.SERVICE_API}/dfe/nfe/distribuition`, {
+  const response = await fetch(`${process.env.SERVICE_API}/dfe/nfe/manifestation`, {
     method: "POST",
     headers: {
       "content-type": "application/xml",
       "x-cert-base64": certificate.base64 || "",
       "x-cert-password": certificate.password || "",
     },
-    body
+    body,
   })
 
   if (!response.ok) {
@@ -254,11 +275,11 @@ export async function manifest(transaction, id) {
   const cStatMatch = xmlResponse.match(/<cStat>([^<]+)<\/cStat>/)
   const xMotivoMatch = xmlResponse.match(/<xMotivo>([^<]+)<\/xMotivo>/)
   const cStat = cStatMatch ? cStatMatch[1] : null
-  const xMotivo = xMotivoMatch ? xMotivoMatch[1] : 'Erro desconhecido na manifestação'
+  const xMotivo = xMotivoMatch ? xMotivoMatch[1] : "Resposta recebida sem motivo detalhado."
 
-  if (cStat && !['128', '135', '136'].includes(cStat)) {
+  if (cStat && !["128", "135", "136"].includes(cStat)) {
     throw new Error(xMotivo)
   }
 
-  return { cStat, xMotivo }
+  return { cStat, xMotivo, code, chNFe, label }
 }
