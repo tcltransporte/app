@@ -39,6 +39,7 @@ import { BankAccount } from './models/bankAccount.model.js'
 import { Bank } from './models/bank.model.js'
 import { DFeLoteDist } from './models/dfeLoteDist.model.js'
 import { DFeLoteDistSchema } from './models/dfeLoteDistSchema.model.js'
+import { ManifestEvent } from './models/manifestEvent.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -116,6 +117,7 @@ export class AppContext extends Sequelize {
     this.Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
     this.DFeLoteDist = this.define('dfeLoteDist', new DFeLoteDist(), { tableName: 'DFeLoteDist' })
     this.DFeLoteDistSchema = this.define('dfeLoteDistSchema', new DFeLoteDistSchema(), { tableName: 'DFeLoteDistSchema' })
+    this.ManifestEvent = this.define('manifestEvent', new ManifestEvent(), { tableName: 'ManifestEvent' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -206,6 +208,9 @@ export class AppContext extends Sequelize {
 
 
     this.DFeLoteDist.belongsTo(this.DFeLoteDistSchema, { as: 'schemaInfo', foreignKey: 'idSchema' })
+    this.DFeLoteDist.belongsTo(this.ManifestEvent, { as: 'lastManifestEvent', foreignKey: 'lastManifestEventId' })
+    this.DFeLoteDist.hasMany(this.ManifestEvent, { as: 'manifestEvents', foreignKey: 'distributionId' })
+    this.ManifestEvent.belongsTo(this.DFeLoteDist, { as: 'distribution', foreignKey: 'distributionId' })
 
     /*
     this.Company.addHook('afterFind', afterFind)

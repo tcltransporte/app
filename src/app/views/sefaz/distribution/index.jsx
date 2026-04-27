@@ -6,22 +6,69 @@ import {
   FilterList as FilterIcon,
   Search as SearchIcon,
   Event as EventIcon,
-  CloudDownload as DownloadIcon,
   Visibility as ViewIcon,
   Sync as SyncIcon,
-  CheckCircle as AceiteIcon,
-  Cancel as RecusaIcon
+  History as HistoryIcon,
+  TipsAndUpdates as AwarenessIcon,
+  CheckCircle as ConfirmationIcon,
+  Cancel as UnknownOperationIcon,
+  Block as OperationNotPerformedIcon
 } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 
 import DistributionFilter from './filter';
 import DFeDistributionXmlViewer from './xml-viewer';
+import DistributionManifestEventsDrawer from './manifest-events-drawer';
 import { useTable, useNavigation, useRangeFilter, useFilter, useLoading } from '@/hooks';
 import { Container, Table, Toolbar, RangeModal } from '@/components/common';
 import * as dfeLoteDistAction from '@/app/actions/dfeLoteDist.action';
 import { ManifestationType } from '@/libs/dfeManifestationType';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
+
+/** Resumo (resNFe) aceita manifestação; NF-e processada (procNFe / nfeProc) não. */
+function distributionCanManifest(row) {
+  const lastCode = row.lastManifestEvent?.manifestationCode
+  if (lastCode === ManifestationType.Awareness.code) return true
+
+  const schemaLower = (row.schemaInfo?.schema || '').toLowerCase()
+  if (schemaLower.includes('procnfe')) return false
+  return schemaLower.includes('resnfe') || row.idSchema === 2
+}
+
+function hasLastManifestEvent(row) {
+  const v = row.lastManifestEventId
+  return v != null && v !== ''
+}
+
+/**
+ * Sem evento ainda: apenas Ciência da Operação.
+ * Se último evento foi Ciência: Confirmação, Desconhecimento e Operação não realizada.
+ */
+function orderedManifestationTypes(row) {
+  const lastCode = row.lastManifestEvent?.manifestationCode
+
+  if (!hasLastManifestEvent(row)) {
+    return [ManifestationType.Awareness]
+  }
+
+  if (lastCode === ManifestationType.Awareness.code) {
+    return [
+      ManifestationType.Confirmation,
+      ManifestationType.UnknownOperation,
+      ManifestationType.OperationNotPerformed,
+    ]
+  }
+
+  return []
+}
+
+const MANIFESTATION_UI = {
+  [ManifestationType.Awareness.code]: { Icon: AwarenessIcon, color: 'info', title: ManifestationType.Awareness.label },
+  [ManifestationType.Confirmation.code]: { Icon: ConfirmationIcon, color: 'success', title: ManifestationType.Confirmation.label },
+  [ManifestationType.UnknownOperation.code]: { Icon: UnknownOperationIcon, color: 'error', title: ManifestationType.UnknownOperation.label },
+  [ManifestationType.OperationNotPerformed.code]: { Icon: OperationNotPerformedIcon, color: 'warning', title: ManifestationType.OperationNotPerformed.label },
+}
 
 export default function DistributionView({
   initialTable,
@@ -38,6 +85,12 @@ export default function DistributionView({
   const loading = useLoading()
 
   const [xmlViewer, setXmlViewer] = React.useState({ open: false, xml: '', nsu: '' })
+  const [manifestEventsDrawer, setManifestEventsDrawer] = React.useState({
+    open: false,
+    nsu: '',
+    items: null,
+    loading: false,
+  })
 
   const handleManifest = async (id, manifestation) => {
     loading.show()
@@ -50,6 +103,32 @@ export default function DistributionView({
       alert.success(`Manifestação (${label}) registrada com sucesso.`)
       fetchTable()
     } catch (error) {
+      alert.error('Ops!', error?.body?.message || error.message)
+    } finally {
+      loading.hide()
+    }
+  }
+
+  const handleViewManifestEvents = async (row) => {
+    setManifestEventsDrawer({
+      open: true,
+      nsu: row.nsu ?? '',
+      items: null,
+      loading: true,
+    })
+    loading.show()
+    try {
+      const result = await dfeLoteDistAction.findManifestEvents(row.id)
+      if (result.header.status !== ServiceStatus.SUCCESS)
+        throw result
+
+      setManifestEventsDrawer((prev) => ({
+        ...prev,
+        items: result.body || [],
+        loading: false,
+      }))
+    } catch (error) {
+      setManifestEventsDrawer((prev) => ({ ...prev, items: [], loading: false }))
       alert.error('Ops!', error?.body?.message || error.message)
     } finally {
       loading.hide()
@@ -99,8 +178,8 @@ export default function DistributionView({
         limit: overrides.rowsPerPage || table.rowsPerPage,
         filters: overrides.filters || filter.filters,
         range: overrides.range || rangeFilter.range,
-        sortBy: overrides.sortBy || table.sortBy || 'id',
-        sortOrder: overrides.sortOrder || table.sortOrder || 'DESC'
+        sortBy: overrides.sortBy || table.sortBy || 'dhEmi',
+        sortOrder: overrides.sortOrder || table.sortOrder || 'ASC'
       })
 
       if (result.header.status !== ServiceStatus.SUCCESS)
@@ -123,6 +202,10 @@ export default function DistributionView({
   const columns = [
     //{ field: 'id', headerName: 'ID', width: 80 },
     { field: 'nsu', headerName: 'NSU', width: 150 },
+    {
+      field: 'chNFe', headerName: 'Chave de acesso', width: 340,
+      renderCell: (value) => (value ? <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{value}</Typography> : '')
+    },
     {
       field: 'idSchema', headerName: 'Schema', width: 140,
       renderCell: (value, row) => row.schemaInfo?.schema || row.idSchema
@@ -150,11 +233,12 @@ export default function DistributionView({
     },*/
     //{ field: 'idDFeLoteDistOrigem', headerName: 'ID Origem', width: 120 },
     {
-      field: 'actions', headerName: 'Ações', width: 140,
+      field: 'actions', headerName: 'Ações', width: 260,
       renderCell: (value, row) => (
         <Box sx={{ 
           display: 'flex', 
           gap: 0.5,
+          flexWrap: 'wrap',
           opacity: 0,
           transition: 'opacity 0.2s',
           '.MuiTableRow-root:hover &': {
@@ -165,16 +249,31 @@ export default function DistributionView({
             <ViewIcon fontSize="small" />
           </IconButton>
 
-          {row.idSchema === 2 && (
-            <>
-              <IconButton size="small" color="success" onClick={() => handleManifest(row.id, ManifestationType.Aceite)} title="Aceite / Confirmação">
-                <AceiteIcon fontSize="small" />
+          <IconButton
+            size="small"
+            color="secondary"
+            onClick={() => handleViewManifestEvents(row)}
+            title="Eventos de manifestação"
+          >
+            <HistoryIcon fontSize="small" />
+          </IconButton>
+
+          {distributionCanManifest(row) && orderedManifestationTypes(row).map((mt) => {
+            const ui = MANIFESTATION_UI[mt.code]
+            if (!ui) return null
+            const { Icon, color, title } = ui
+            return (
+              <IconButton
+                key={mt.code}
+                size="small"
+                color={color}
+                onClick={() => handleManifest(row.id, mt)}
+                title={title}
+              >
+                <Icon fontSize="small" />
               </IconButton>
-              <IconButton size="small" color="error" onClick={() => handleManifest(row.id, ManifestationType.Recusa)} title="Recusa / Desconhecimento">
-                <RecusaIcon fontSize="small" />
-              </IconButton>
-            </>
-          )}
+            )
+          })}
         </Box>
       )
     }
@@ -275,6 +374,21 @@ export default function DistributionView({
           xml={xmlViewer.xml}
           nsu={xmlViewer.nsu}
           onClose={() => setXmlViewer(prev => ({ ...prev, open: false }))}
+        />
+
+        <DistributionManifestEventsDrawer
+          open={manifestEventsDrawer.open}
+          nsu={manifestEventsDrawer.nsu}
+          items={manifestEventsDrawer.items}
+          loading={manifestEventsDrawer.loading}
+          onClose={() =>
+            setManifestEventsDrawer((prev) => ({
+              ...prev,
+              open: false,
+              items: null,
+              loading: false,
+            }))
+          }
         />
       </Container.Content>
 

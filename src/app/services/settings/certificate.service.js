@@ -83,7 +83,7 @@ export async function submit(transaction, { file, password }) {
   const arrayBuffer = await file.arrayBuffer()
   const base64 = Buffer.from(arrayBuffer).toString("base64")
 
-  const response = await fetch(`${process.env.SERVICE_API}/application/services/certificate/info`, {
+  const response = await fetch(`${process.env.SERVICE_API}/certificate/info`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

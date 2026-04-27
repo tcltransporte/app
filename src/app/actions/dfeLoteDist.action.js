@@ -40,6 +40,18 @@ export async function getDecodedDoc(id) {
     return ServiceResponse.error(error)
   }
 }
+
+export async function findManifestEvents(distributionId) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await dfeLoteDistService.findManifestEventsByDistributionId(t, distributionId)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
 export async function sync() {
   const db = new AppContext()
   try {
@@ -53,19 +65,22 @@ export async function sync() {
 }
 
 export async function manifest(id, manifestation) {
+  
   const resolved = normalizeManifestation(manifestation)
+
   if (!resolved) {
-    return ServiceResponse.badRequest(
-      "INVALID_MANIFESTATION",
-      `Informe um tipo válido: ${ManifestationType.Aceite.code} (Aceite) ou ${ManifestationType.Recusa.code} (Recusa).`
-    )
+    return ServiceResponse.badRequest("INVALID_MANIFESTATION", `Informe um tipo válido: ${ManifestationType.Confirmation.code} (Confirmação), ${ManifestationType.Awareness.code} (Ciência), ${ManifestationType.UnknownOperation.code} (Desconhecimento) ou ${ManifestationType.OperationNotPerformed.code} (Operação não Realizada).`)
   }
 
   const db = new AppContext()
+  
   try {
+    
     return await db.withTransaction(null, async (t) => {
+      
       const result = await dfeLoteDistService.manifest(t, id, resolved)
       return ServiceResponse.success(result)
+
     })
   } catch (error) {
     return ServiceResponse.error(error)

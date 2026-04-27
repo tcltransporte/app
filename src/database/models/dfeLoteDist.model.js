@@ -51,6 +51,13 @@ export class DFeLoteDist {
     type: DataTypes.BIGINT
   }
 
+  /** Latest row in ManifestEvent for this distribution. */
+  lastManifestEventId = {
+    field: 'LastManifestEventId',
+    allowNull: true,
+    type: DataTypes.UUID
+  }
+
   companyId = {
     field: 'IDEmpresaFilial',
     allowNull: true,

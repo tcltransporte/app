@@ -1,37 +1,37 @@
 import React from 'react';
 import DistributionView from '@/app/views/sefaz/distribution';
-import * as dfeLoteDistService from '@/app/services/dfeLoteDist.service';
+import * as dfeLoteDistAction from '@/app/actions/dfeLoteDist.action';
+import { ServiceStatus } from '@/libs/service';
 
 export const metadata = {
   title: 'Distribuição DF-e - TCL',
 }
 
 export default async function DistributionPage() {
+
   const today = new Date().toISOString().split('T')[0];
+
   const initialRange = {
     field: 'dhEmi',
     start: today,
     end: today
   };
 
-  const initialData = await dfeLoteDistService.findAll(null, {
+  const result = await dfeLoteDistAction.findAll({
     page: 1,
     limit: 50,
-    sortBy: 'id',
+    sortBy: 'dhEmi',
     sortOrder: 'DESC',
     range: initialRange
-  })
+  });
+
+  const initialTable = result?.header?.status === ServiceStatus.SUCCESS
+    ? result.body
+    : { items: [], total: 0 };
 
   return (
     <DistributionView 
-      initialTable={{
-        items: initialData.items || [],
-        total: initialData.total || 0,
-        page: 1,
-        rowsPerPage: 50,
-        sortBy: 'id',
-        sortOrder: 'DESC'
-      }}
+      initialTable={initialTable}
       initialFilters={{
         nsu: '',
         idSchema: '',

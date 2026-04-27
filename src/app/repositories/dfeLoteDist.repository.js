@@ -1,6 +1,31 @@
 import { AppContext } from '@/database'
 
 /**
+ * Preenche cnpj / xNome / vNF / dhEmi a partir do docXml na listagem.
+ * Antes só rodava para idSchema === 2 (resumo resNFe no banco legado).
+ * NF-e completa (procNFe / nfeProc) usa outro IdSchema em DFeLoteDistSchema.
+ * @param {{ docXml?: string, idSchema?: number, schemaInfo?: { schema?: string } }} item
+ */
+function shouldEnrichDfeListColumns(item) {
+  if (!item.docXml) return false
+  const schema = (item.schemaInfo?.schema || '').toLowerCase()
+  if (schema.includes('procnfe')) return true
+  if (/<nfeProc\b/i.test(item.docXml)) return true
+  if (schema.includes('resnfe')) return true
+  if (item.idSchema === 2) return true
+  return false
+}
+
+/** Chave 44 posições a partir de chNFe ou Id do infNFe. */
+function extractChNFeFromDocXml(docXml) {
+  if (!docXml || typeof docXml !== 'string') return ''
+  const chTag = docXml.match(/<chNFe>([^<]+)<\/chNFe>/i)
+  if (chTag?.[1]) return chTag[1].trim()
+  const idAttr = docXml.match(/<infNFe[^>]*\bId\s*=\s*["']NFe(\d{44})["']/i)
+  return idAttr?.[1] || ''
+}
+
+/**
 * @param {import('sequelize').Transaction} transaction
 * @param {{ attributes?, include?, where?, limit?, offset?, order? }} params
 * @returns {Promise<{ rows: object[], count: number }>}
@@ -16,7 +41,10 @@ export async function findAll(transaction, { attributes, include, where, limit, 
     return {
       rows: rows.map(r => {
         const item = r.toJSON()
-        if (item.idSchema === 2 && item.docXml) {
+        if (item.docXml) {
+          item.chNFe = extractChNFeFromDocXml(item.docXml)
+        }
+        if (shouldEnrichDfeListColumns(item)) {
           const cnpjMatch = item.docXml.match(/<CNPJ>([^<]+)<\/CNPJ>/)
           const xNomeMatch = item.docXml.match(/<xNome>([^<]+)<\/xNome>/)
           const vNFMatch = item.docXml.match(/<vNF>([^<]+)<\/vNF>/)
@@ -72,6 +100,22 @@ export async function bulkCreate(transaction, data) {
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {
     return await db.DFeLoteDist.bulkCreate(data, { transaction: t })
+  })
+}
+
+/**
+* @param {import('sequelize').Transaction} transaction
+* @param {{ id: number|string, data: object }} params
+* @returns {Promise<number>}
+*/
+export async function updateById(transaction, { id, data }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const [affected] = await db.DFeLoteDist.update(data, {
+      where: { id },
+      transaction: t
+    })
+    return affected
   })
 }
 

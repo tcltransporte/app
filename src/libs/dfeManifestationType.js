@@ -1,12 +1,29 @@
 /**
  * Tipos de manifestação DF-e (evento).
- * Use na UI: ManifestationType.Aceite | ManifestationType.Recusa
+ * Use na UI: ManifestationType.Confirmation | ManifestationType.UnknownOperation
  * (objeto serializável com `code` e `label` para server actions).
  */
 export const ManifestationType = Object.freeze({
-  Aceite: Object.freeze({ code: "210210", label: "Aceite" }),
-  Recusa: Object.freeze({ code: "210220", label: "Recusa" }),
-})
+  Confirmation: Object.freeze({
+    code: "210200",
+    label: "Confirmação da Operação",
+  }),
+
+  Awareness: Object.freeze({
+    code: "210210",
+    label: "Ciência da Operação",
+  }),
+
+  UnknownOperation: Object.freeze({
+    code: "210220",
+    label: "Desconhecimento da Operação",
+  }),
+
+  OperationNotPerformed: Object.freeze({
+    code: "210240",
+    label: "Operação não Realizada",
+  }),
+});
 
 /** @returns {readonly ("210210"|"210220")[]} */
 export function getManifestationCodes() {
