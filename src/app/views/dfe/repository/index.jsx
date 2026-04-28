@@ -23,7 +23,7 @@ import DFeDistributionXmlViewer from './xml-viewer';
 import DistributionManifestEventsDrawer from './manifest-events-drawer';
 import { useTable, useNavigation, useRangeFilter, useFilter, useLoading } from '@/hooks';
 import { Container, Table, Toolbar, RangeModal } from '@/components/common';
-import * as dfeLoteDistAction from '@/app/actions/dfeLoteDist.action';
+import * as dfeLoteDistAction from '@/app/actions/dfe-repository.action';
 import { ManifestationType } from '@/libs/dfeManifestationType';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
@@ -48,10 +48,6 @@ function distributionCanManifest(row) {
   return false
 }
 
-/**
- * Enquanto `DfeRepositorioNFe.LastManifestEventId` for null: só Ciência da Operação.
- * Com último evento em Ciência (após registrar ciência): Confirmação, Desconhecimento e Operação não realizada.
- */
 function orderedManifestationTypes(row) {
   const hasLast =
     row.lastManifestEventId != null &&
@@ -400,17 +396,6 @@ export default function DistributionView({
       field: 'vNF', headerName: 'Valor', width: 120, align: 'right',
       renderCell: (value) => value ? Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''
     },
-    /*{
-      field: 'isUnPack', headerName: 'Descompactado', width: 140,
-      renderCell: (value) => (
-        <Chip 
-          label={value ? 'Sim' : 'Não'} 
-          color={value ? 'success' : 'warning'} 
-          size="small" 
-          variant="outlined" 
-        />
-      )
-    },*/
     {
       field: 'actions', headerName: '', width: 60, align: 'center',
       renderCell: (value, row) => {
@@ -475,7 +460,7 @@ export default function DistributionView({
 
   return (
     <Container>
-      <Container.Title items={[{ label: 'Sefaz' }, { label: 'Distribuição' }]} />
+      <Container.Title items={[{ label: 'DFe' }, { label: 'Repositório' }]} />
 
       <Container.Content>
         <Toolbar

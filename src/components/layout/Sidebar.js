@@ -52,7 +52,8 @@ import {
   Edit,
   Check,
   LocalShipping,
-  CloudDownload
+  CloudDownload,
+  Inventory2
 } from '@mui/icons-material';
 import {
   DndContext,
@@ -109,8 +110,8 @@ const menuItems = [
     ]
   },
   {
-    text: 'Sefaz', icon: <CloudDownload />, subMenu: [
-      { text: 'Distribuição', path: '/sefaz/distribution' }
+    text: 'DFe', icon: <Inventory2 />, subMenu: [
+      { text: 'Repositório', path: '/dfe/repository' }
     ]
   },
   {

@@ -1,6 +1,6 @@
 import React from 'react';
-import DistributionView from '@/app/views/sefaz/distribution';
-import * as dfeLoteDistAction from '@/app/actions/dfeLoteDist.action';
+import DistributionView from '@/app/views/dfe/repository';
+import * as dfeLoteDistAction from '@/app/actions/dfe-repository.action';
 import { ServiceStatus } from '@/libs/service';
 
 export const metadata = {

@@ -66,6 +66,15 @@ export const PRESETS = [
   { label: 'Ano passado', getValue: () => ({ start: startOfYear(subYears(new Date(), 1)), end: endOfYear(subYears(new Date(), 1)) }) },
 ];
 
+const WEEKDAYS_SHORT_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+const ptBRWeekdaysShort = {
+  ...ptBR,
+  localize: {
+    ...ptBR.localize,
+    day: (day) => WEEKDAYS_SHORT_PT[Number(day)] || '',
+  },
+};
+
 export function RangeModal({ 
   open, 
   onClose, 
@@ -78,6 +87,7 @@ export function RangeModal({
 }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const startDateRef = React.useRef(null);
 
   const safeParse = (dateStr) => {
     if (!dateStr) return null;
@@ -95,6 +105,31 @@ export function RangeModal({
 
   const [field, setField] = useState(initialField || (fieldOptions.length > 0 ? fieldOptions[0].value : ''));
   const [activePreset, setActivePreset] = useState(null);
+
+  const handleDateInputTab = React.useCallback((event) => {
+    if (event.key !== 'Tab') return;
+
+    const dialogRoot = event.currentTarget.closest('[role="dialog"]');
+    if (!dialogRoot) return;
+
+    const focusables = Array.from(
+      dialogRoot.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((el) => el.offsetParent !== null);
+
+    const currentIndex = focusables.indexOf(event.currentTarget);
+    if (currentIndex < 0) return;
+
+    event.preventDefault();
+    const nextIndex = event.shiftKey
+      ? Math.max(0, currentIndex - 1)
+      : Math.min(focusables.length - 1, currentIndex + 1);
+    const nextElement = focusables[nextIndex];
+    if (nextElement && typeof nextElement.focus === 'function') {
+      nextElement.focus();
+    }
+  }, []);
 
   // Detect active preset on open or initial dates change
   React.useEffect(() => {
@@ -122,6 +157,12 @@ export function RangeModal({
         }
       ]);
       setField(f);
+
+      // `autoFocus` can fail with dialog transitions; force focus after mount.
+      setTimeout(() => {
+        const input = startDateRef.current?.querySelector?.('input');
+        if (input && typeof input.focus === 'function') input.focus();
+      }, 0);
     }
   }, [open, initialStart, initialEnd, initialField, fieldOptions]);
 
@@ -157,7 +198,7 @@ export function RangeModal({
         <Box sx={{ 
           display: 'flex', 
           flexDirection: isMobile ? 'column' : 'row',
-          minHeight: isMobile ? 'auto' : 450 
+          height: isMobile ? 'auto' : 400 
         }}>
           {/* Sidebar Presets */}
           <Box sx={{ 
@@ -200,8 +241,8 @@ export function RangeModal({
 
           {/* Calendar Area */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ p: isMobile ? 2 : 3, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-              <Grid container spacing={isMobile ? 1.5 : 2}>
+            <Box sx={{ p: isMobile ? 1 : 1.25, pb: 0.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Grid container spacing={isMobile ? 1 : 1.5}>
                 {fieldOptions.length > 0 && (
                   <Grid size={{ xs: 12, sm: 4 }}>
                     <SelectField
@@ -222,6 +263,8 @@ export function RangeModal({
                     label="Data Início"
                     fullWidth
                     size="small"
+                    ref={startDateRef}
+                    onKeyDown={handleDateInputTab}
                     value={format(dateRange[0].startDate, 'yyyy-MM-dd')}
                     onChange={(val) => {
                       const d = safeParse(val);
@@ -235,6 +278,7 @@ export function RangeModal({
                     label="Data Fim"
                     fullWidth
                     size="small"
+                    onKeyDown={handleDateInputTab}
                     value={format(dateRange[0].endDate, 'yyyy-MM-dd')}
                     onChange={(val) => {
                       const d = safeParse(val);
@@ -251,13 +295,17 @@ export function RangeModal({
               display: 'flex', 
               justifyContent: 'center', 
               alignItems: 'center',
-              p: isMobile ? 1 : 2,
+              p: isMobile ? 0.5 : 1,
               backgroundColor: 'background.paper',
               '& .rdrCalendarWrapper': {
                 color: 'text.primary',
-                fontSize: '0.8rem',
+                fontSize: '0.75rem',
                 width: '100%',
                 backgroundColor: 'transparent',
+              },
+              '& .rdrMonthAndYearWrapper': {
+                minHeight: 36,
+                paddingTop: 0
               },
               '& .rdrDateDisplayWrapper': {
                 display: 'none',
@@ -265,8 +313,20 @@ export function RangeModal({
               '& .rdrMonth': {
                 width: '100%',
               },
-              '& .rdrMonthAndYearWrapper': {
-                 paddingTop: 0
+              '& .rdrWeekDay': {
+                color: 'text.secondary',
+                fontWeight: 600,
+                textTransform: 'none',
+                lineHeight: 1.2,
+              },
+              '& .rdrDay': {
+                height: 34,
+              },
+              '& .rdrDayNumber': {
+                lineHeight: '34px',
+              },
+              '& .rdrDays': {
+                rowGap: 0,
               },
               '& .rdrMonthAndYearPickers select': {
                 color: 'text.primary',
@@ -312,10 +372,6 @@ export function RangeModal({
               '& .rdrDayDisabled': {
                 backgroundColor: 'action.disabledBackground',
               },
-              '& .rdrWeekDay': {
-                color: 'text.secondary',
-                fontWeight: 600
-              }
             }}>
               <DateRange
                 editableDateInputs={false}
@@ -324,7 +380,9 @@ export function RangeModal({
                 ranges={dateRange}
                 months={isMobile ? 1 : 2}
                 direction={isMobile ? 'vertical' : 'horizontal'}
-                locale={ptBR}
+                locale={ptBRWeekdaysShort}
+                weekdayDisplayFormat="EEE"
+                fixedHeight
                 rangeColors={['#6366f1']} // This should ideally come from theme or props
                 showDateDisplay={false}
               />

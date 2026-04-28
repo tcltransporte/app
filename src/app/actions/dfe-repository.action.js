@@ -2,7 +2,7 @@
 
 import { AppContext } from "@/database"
 import * as dfeRepositorioNFeRepository from "@/app/repositories/dfeRepositorioNFe.repository"
-import * as dfeLoteDistService from "@/app/services/dfeLoteDist.service"
+import * as dfeLoteDistService from "@/app/services/dfe-repository.service"
 import { getSession } from "@/libs/session"
 import { normalizeManifestation, ManifestationType } from "@/libs/dfeManifestationType"
 import { ServiceResponse } from "@/libs/service"
