@@ -136,6 +136,38 @@ export async function findLastNSU(transaction, { where }) {
 }
 
 /**
+ * Lotes da empresa com `Nsu` na lista (ex.: upsert da distribuição).
+ * @param {import('sequelize').Transaction} transaction
+ * @param {{ companyId: number|string, nsus: string[] }} params `nsus` normalizados (só dígitos, como string)
+ * @returns {Promise<object[]>}
+ */
+export async function findAllByCompanyAndNsus(transaction, { companyId, nsus }) {
+  const list = Array.isArray(nsus) ? nsus.filter(Boolean) : []
+  if (!list.length) return []
+
+  /** Mesmo valor numérico que `DFeLoteDist.Nsu` (BIGINT), evitando mismatch string vs número no `IN`. */
+  const numericNsus = []
+  for (const s of list) {
+    try {
+      numericNsus.push(BigInt(String(s).replace(/\s/g, '')))
+    } catch {
+      /* ignora token inválido */
+    }
+  }
+  if (!numericNsus.length) return []
+
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const rows = await db.DFeLoteDist.findAll({
+      where: { companyId, nsu: { [Op.in]: numericNsus } },
+      attributes: ['id', 'nsu'],
+      transaction: t,
+    })
+    return rows.map((r) => r.toJSON())
+  })
+}
+
+/**
 * @param {import('sequelize').Transaction} transaction
 * @param {any[]} data
 * @returns {Promise<object[]>}

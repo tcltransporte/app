@@ -11,12 +11,26 @@ function digitsOnly(value) {
   return String(value ?? "").replace(/\D/g, "")
 }
 
-/** NSU vindo do docZip / coluna: só dígitos para bater com `DFeLoteDist.Nsu`. */
+/**
+ * NSU vindo do docZip / coluna / BIGINT no banco: só dígitos, forma canônica (sem zeros à esquerda)
+ * para bater com `DFeLoteDist.Nsu` e evitar duplicata "00123" vs 123.
+ */
 function normalizeNsuForDist(raw) {
   if (raw == null || raw === "") return null
   const s = String(raw).replace(/\s/g, "")
   if (!/^\d+$/.test(s)) return null
-  return s
+  try {
+    return String(BigInt(s))
+  } catch {
+    return null
+  }
+}
+
+/** `ultNSU` no `distDFeInt` (15 dígitos, zeros à esquerda). */
+function formatUltNSU15(nsuRaw) {
+  const canon = normalizeNsuForDist(nsuRaw) ?? "0"
+  if (canon.length > 15) return canon.slice(-15)
+  return canon.padStart(15, "0")
 }
 
 /** nNF na chave de 44 dígitos: posições 26–34 (1-based), 9 dígitos. */
@@ -301,23 +315,66 @@ async function upsertSyncedDistributionDocs(transaction, { db, session, extracte
     createdSchemas.forEach(s => schemaMap.set(s.schema, s.id))
   }
 
-  const syncedData = extractedDocs.map(doc => {
-    const buffer = Buffer.from(doc.base64Content, "base64")
-    const decompressed = zlib.gunzipSync(buffer).toString("utf8")
+  const companyId = session.company.id
+  const prepared = extractedDocs
+    .map((doc) => {
+      const buffer = Buffer.from(doc.base64Content, "base64")
+      const decompressed = zlib.gunzipSync(buffer).toString("utf8")
+      const nsuNorm = normalizeNsuForDist(doc.nsu)
+      const idSchema = schemaMap.get(doc.schemaName)
+      return { doc, decompressed, nsuNorm, idSchema }
+    })
+    .filter((r) => r.nsuNorm && r.idSchema != null)
 
-    return {
-      nsu: doc.nsu,
-      idSchema: schemaMap.get(doc.schemaName),
-      docXml: decompressed,
-      companyId: session.company.id,
+  if (prepared.length === 0) return { count: 0 }
+
+  const nsuKeys = [...new Set(prepared.map((r) => r.nsuNorm))]
+  const existingRows = await dfeLoteDistRepository.findAllByCompanyAndNsus(transaction, {
+    companyId,
+    nsus: nsuKeys,
+  })
+
+  /** Um `Id` por NSU canônico (menor id se houver duplicata legada). */
+  const byNsu = new Map()
+  for (const row of existingRows) {
+    const key = normalizeNsuForDist(row.nsu)
+    if (!key) continue
+    const prev = byNsu.get(key)
+    if (!prev || Number(row.id) < Number(prev.id)) byNsu.set(key, row)
+  }
+
+  const userId = session?.user?.id
+  let count = 0
+
+  for (const r of prepared) {
+    const payload = {
+      nsu: r.nsuNorm,
+      idSchema: r.idSchema,
+      docXml: r.decompressed,
+      companyId,
       data: new Date(),
       isUnPack: true,
     }
-  })
 
-  await db.bulkCreate(transaction, syncedData)
+    const hit = byNsu.get(r.nsuNorm)
+    if (hit) {
+      await db.updateById(transaction, { id: hit.id, data: payload })
+      count += 1
+    } else {
+      if (!userId) {
+        throw new Error("Usuário da sessão obrigatório para gravar novo DFeLoteDist na sincronização.")
+      }
+      const created = await db.create(transaction, {
+        ...payload,
+        userId,
+        idDfeRepositorioNFe: null,
+      })
+      byNsu.set(r.nsuNorm, { id: created.id, nsu: r.nsuNorm })
+      count += 1
+    }
+  }
 
-  return { count: syncedData.length }
+  return { count }
 }
 
 async function resolveSchemaMap(transaction, uniqueSchemaNames) {
@@ -354,15 +411,20 @@ export async function syncDistributions(transaction) {
     }
   }
 
-  const body = `
-    <Distribuition>
-      <ufAutor>GO</ufAutor>
-      <documento>${session.company.cnpj}</documento>
-      <ultNSU>${lastNsu}</ultNSU>
-    </Distribuition>
-  `
+  const tpAmb = escapeXmlText(process.env.NFE_TP_AMB ?? "1")
+  const cUFAutor = escapeXmlText(process.env.NFE_CUF_AUTOR ?? "52")
+  const cnpjEmit = escapeXmlText(digitsOnly(session.company.cnpj))
+  const ultNSU = escapeXmlText(formatUltNSU15(lastNsu))
 
-  const response = await fetch(`${process.env.SERVICE_API}/dfe/nfe/distribuition`, {
+  const body =
+    `<distDFeInt versao="1.00" xmlns="http://www.portalfiscal.inf.br/nfe">` +
+    `<tpAmb>${tpAmb}</tpAmb>` +
+    `<cUFAutor>${cUFAutor}</cUFAutor>` +
+    `<CNPJ>${cnpjEmit}</CNPJ>` +
+    `<distNSU><ultNSU>${ultNSU}</ultNSU></distNSU>` +
+    `</distDFeInt>`
+
+  const response = await fetch(`${process.env.SERVICE_API}/dfe/nfe/distribuicao-dfe`, {
     method: "POST",
     headers: {
       "content-type": "application/xml",
@@ -510,8 +572,16 @@ export async function syncDistributionsById(transaction, manifestedLoteId) {
     isUnPack: true,
   }
 
+  const nsuForWhere = (() => {
+    try {
+      return BigInt(returnedNsu)
+    } catch {
+      return returnedNsu
+    }
+  })()
+
   const byNsu = await dfeLoteDistRepository.findOne(transaction, {
-    where: { companyId: session.company.id, nsu: returnedNsu },
+    where: { companyId: session.company.id, nsu: nsuForWhere },
   })
 
   let targetRow = null
