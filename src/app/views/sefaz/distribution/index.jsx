@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Chip, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Box, Typography, Chip, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import {
   FilterList as FilterIcon,
   Search as SearchIcon,
@@ -102,6 +102,7 @@ export default function DistributionView({
     loading: false,
   })
   const [actionMenu, setActionMenu] = React.useState({ anchorEl: null, row: null })
+  const [batchManifestMenuEl, setBatchManifestMenuEl] = React.useState(null)
 
   const sanitizeFilePart = React.useCallback((value, fallback) => {
     const cleaned = String(value ?? '')
@@ -181,7 +182,6 @@ export default function DistributionView({
       items: null,
       loading: true,
     })
-    loading.show()
     try {
       const result = await dfeLoteDistAction.findManifestEvents(row.id)
       if (result.header.status !== ServiceStatus.SUCCESS)
@@ -195,8 +195,6 @@ export default function DistributionView({
     } catch (error) {
       setManifestEventsDrawer((prev) => ({ ...prev, items: [], loading: false }))
       alert.error('Ops!', error?.body?.message || error.message)
-    } finally {
-      loading.hide()
     }
   }
 
@@ -243,6 +241,73 @@ export default function DistributionView({
       alert.success('Sucesso!', `${table.selecteds.length} XML(s) baixado(s) em arquivo ZIP.`)
     } catch (error) {
       alert.error('Ops!', error?.body?.message || error.message)
+    } finally {
+      loading.hide()
+    }
+  }
+
+  const selectedBatchManifestationTypes = React.useMemo(() => {
+    const allowed = new Map()
+    for (const row of table.selecteds) {
+      if (!distributionCanManifest(row)) continue
+      for (const mt of orderedManifestationTypes(row)) {
+        if (!allowed.has(mt.code)) allowed.set(mt.code, mt)
+      }
+    }
+    return Array.from(allowed.values())
+  }, [table.selecteds])
+
+  const handleManifestSelected = async (manifestation) => {
+    if (!table.selecteds.length) {
+      alert.error('Ops!', 'Selecione ao menos um registro para manifestar.')
+      return
+    }
+
+    const blocked = []
+    for (const row of table.selecteds) {
+      const key = String(row.chNFe ?? '').trim() || `ID ${row.id}`
+      const canManifest = distributionCanManifest(row)
+      const supportsType = orderedManifestationTypes(row).some((mt) => mt.code === manifestation.code)
+      if (!canManifest || !supportsType) {
+        blocked.push(key)
+      }
+    }
+
+    if (blocked.length > 0) {
+      alert.error(
+        'Ops!',
+        `Registro(s) não permitido(s) para ${manifestation.label}: ${blocked.join(', ')}`
+      )
+      return
+    }
+
+    loading.show()
+    let successCount = 0
+    const errors = []
+
+    try {
+      for (const row of table.selecteds) {
+        const key = String(row.chNFe ?? '').trim() || `ID ${row.id}`
+
+        try {
+          const result = await dfeLoteDistAction.manifest(row.id, manifestation)
+          if (result.header.status !== ServiceStatus.SUCCESS) {
+            throw result
+          }
+          successCount += 1
+        } catch (error) {
+          errors.push(`${key}: ${error?.body?.message || error.message}`)
+        }
+      }
+
+      if (successCount > 0) {
+        alert.success('Sucesso!', `${successCount} registro(s) manifestado(s) com ${manifestation.label}.`)
+        await fetchTable()
+      }
+
+      if (errors.length > 0) {
+        alert.error('Ops!', `Falha em ${errors.length} registro(s): ${errors.join(' | ')}`)
+      }
     } finally {
       loading.hide()
     }
@@ -321,7 +386,7 @@ export default function DistributionView({
     },
     {
       field: 'numeroDoc',
-      headerName: 'Nº NF',
+      headerName: 'Número',
       width: 100,
       renderCell: (value) => (value != null && value !== '' && Number(value) !== 0 ? String(value) : ''),
     },
@@ -332,8 +397,8 @@ export default function DistributionView({
     { field: 'cnpj', headerName: 'CNPJ', width: 150 },
     { field: 'xNome', headerName: 'Razão Social', width: 250 },
     {
-      field: 'vNF', headerName: 'Valor', width: 120,
-      renderCell: (value) => value ? Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
+      field: 'vNF', headerName: 'Valor', width: 120, align: 'right',
+      renderCell: (value) => value ? Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''
     },
     /*{
       field: 'isUnPack', headerName: 'Descompactado', width: 140,
@@ -347,41 +412,44 @@ export default function DistributionView({
       )
     },*/
     {
-      field: 'actions', headerName: 'Ações', width: 110,
-      renderCell: (value, row) => (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            width: '100%',
-            opacity: 0,
-            pointerEvents: 'none',
-            transition: 'opacity 0.2s',
-            '.MuiTableRow-root:hover &': {
-              opacity: 1,
-              pointerEvents: 'auto',
-            },
-          }}
-        >
-          <IconButton
-            size="small"
-            color="primary"
-            onClick={(event) => openActionMenu(event, row)}
-            title="Ações"
+      field: 'actions', headerName: '', width: 60, align: 'center',
+      renderCell: (value, row) => {
+        const isActiveRowMenu = Boolean(actionMenu.anchorEl) && actionMenu.row?.id === row.id
+        return (
+          <Box
             sx={{
-              borderRadius: '50%',
-              border: '1px solid',
-              borderColor: 'divider',
-              bgcolor: 'background.paper',
-              '&:hover': {
-                bgcolor: 'action.hover',
+              display: 'flex',
+              justifyContent: 'center',
+              width: '100%',
+              opacity: isActiveRowMenu ? 1 : 0,
+              pointerEvents: isActiveRowMenu ? 'auto' : 'none',
+              transition: 'opacity 0.2s',
+              '.MuiTableRow-root:hover &': {
+                opacity: 1,
+                pointerEvents: 'auto',
               },
             }}
           >
-            <MoreVertIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      )
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={(event) => openActionMenu(event, row)}
+              title="Ações"
+              sx={{
+                borderRadius: '50%',
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'background.paper',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                },
+              }}
+            >
+              <MoreVertIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        )
+      }
     }
   ]
 
@@ -420,7 +488,14 @@ export default function DistributionView({
             },
             ...(table.selecteds.length > 0
               ? [{
-                  label: 'Baixar XML (ZIP)',
+                  label: 'Manifestar',
+                  icon: <AwarenessIcon fontSize="small" />,
+                  onClick: (event) => setBatchManifestMenuEl(event.currentTarget),
+                  color: 'primary',
+                  variant: 'outlined',
+                },
+                {
+                  label: 'Baixar XML',
                   icon: <DownloadIcon fontSize="small" />,
                   onClick: handleDownloadSelectedXml,
                   color: 'primary',
@@ -506,11 +581,81 @@ export default function DistributionView({
         />
 
         <Menu
+          anchorEl={batchManifestMenuEl}
+          open={Boolean(batchManifestMenuEl)}
+          onClose={() => setBatchManifestMenuEl(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          slotProps={{
+            paper: {
+              sx: {
+                '& .MuiMenuItem-root .MuiListItemIcon-root': {
+                  color: 'text.secondary',
+                  transition: 'color 0.2s ease',
+                },
+                '& .MuiMenuItem-root:hover .MuiListItemIcon-root': {
+                  color: 'primary.main',
+                },
+              },
+            },
+          }}
+        >
+          {selectedBatchManifestationTypes.length === 0 && (
+            <MenuItem disabled>
+              <ListItemText>Nenhum tipo disponível</ListItemText>
+            </MenuItem>
+          )}
+          {selectedBatchManifestationTypes.map((mt) => {
+            const ui = MANIFESTATION_UI[mt.code]
+            if (!ui) return null
+            const { Icon, title, color } = ui
+            return (
+              <MenuItem
+                key={`batch-${mt.code}`}
+                onClick={() => {
+                  setBatchManifestMenuEl(null)
+                  handleManifestSelected(mt)
+                }}
+                sx={{
+                  '&:hover .manifest-icon': {
+                    color: `${color}.main`,
+                  },
+                }}
+              >
+                <ListItemIcon
+                  className="manifest-icon"
+                  sx={{
+                    color: 'text.secondary',
+                    transition: 'color 0.2s ease',
+                  }}
+                >
+                  <Icon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>{title}</ListItemText>
+              </MenuItem>
+            )
+          })}
+        </Menu>
+
+        <Menu
           anchorEl={actionMenu.anchorEl}
           open={Boolean(actionMenu.anchorEl)}
           onClose={closeActionMenu}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          slotProps={{
+            paper: {
+              sx: {
+                '& .MuiMenuItem-root .MuiListItemIcon-root': {
+                  color: 'text.secondary',
+                  transition: 'color 0.2s ease',
+                },
+                '& .MuiMenuItem-root:hover .MuiListItemIcon-root': {
+                  color: 'primary.main',
+                },
+              },
+            },
+          }}
         >
           <MenuItem
             disabled={!actionMenu.row?.xmlLoteDistId}
@@ -533,8 +678,46 @@ export default function DistributionView({
             }}
           >
             <ListItemIcon><DownloadIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Baixar XML (ZIP)</ListItemText>
+            <ListItemText>Baixar XML</ListItemText>
           </MenuItem>
+
+          {distributionCanManifest(actionMenu.row || {}) && (
+            <Divider />
+          )}
+
+          {distributionCanManifest(actionMenu.row || {}) && orderedManifestationTypes(actionMenu.row || {}).map((mt) => {
+            const ui = MANIFESTATION_UI[mt.code]
+            if (!ui) return null
+            const { Icon, title, color } = ui
+            return (
+              <MenuItem
+                key={mt.code}
+                onClick={() => {
+                  const row = actionMenu.row
+                  closeActionMenu()
+                  if (row) handleManifest(row.id, mt)
+                }}
+                sx={{
+                  '&:hover .manifest-icon': {
+                    color: `${color}.main`,
+                  },
+                }}
+              >
+                <ListItemIcon
+                  className="manifest-icon"
+                  sx={{
+                    color: 'text.secondary',
+                    transition: 'color 0.2s ease',
+                  }}
+                >
+                  <Icon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>{title}</ListItemText>
+              </MenuItem>
+            )
+          })}
+
+          <Divider />
 
           <MenuItem
             onClick={() => {
@@ -544,27 +727,8 @@ export default function DistributionView({
             }}
           >
             <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Eventos de manifestação</ListItemText>
+            <ListItemText>Manifestações</ListItemText>
           </MenuItem>
-
-          {distributionCanManifest(actionMenu.row || {}) && orderedManifestationTypes(actionMenu.row || {}).map((mt) => {
-            const ui = MANIFESTATION_UI[mt.code]
-            if (!ui) return null
-            const { Icon, title } = ui
-            return (
-              <MenuItem
-                key={mt.code}
-                onClick={() => {
-                  const row = actionMenu.row
-                  closeActionMenu()
-                  if (row) handleManifest(row.id, mt)
-                }}
-              >
-                <ListItemIcon><Icon fontSize="small" /></ListItemIcon>
-                <ListItemText>{title}</ListItemText>
-              </MenuItem>
-            )
-          })}
         </Menu>
       </Container.Content>
 

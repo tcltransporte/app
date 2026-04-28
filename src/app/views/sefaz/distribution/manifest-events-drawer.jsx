@@ -21,6 +21,36 @@ function labelForManifestationCode(code) {
   return entry?.label || code || '—';
 }
 
+function formatOccurredAt(value) {
+  if (!value) return '—';
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const fromUtcDate = (d) => {
+    const day = pad2(d.getUTCDate());
+    const month = pad2(d.getUTCMonth() + 1);
+    const year = d.getUTCFullYear();
+    const hour = pad2(d.getUTCHours());
+    const minute = pad2(d.getUTCMinutes());
+    const second = pad2(d.getUTCSeconds());
+    return `${day}/${month}/${year}, ${hour}:${minute}:${second}`;
+  };
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return fromUtcDate(value);
+  }
+
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+  if (match) {
+    const [, year, month, day, hour, minute, second] = match;
+    return `${day}/${month}/${year}, ${hour}:${minute}:${second}`;
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) return fromUtcDate(parsed);
+  return raw;
+}
+
 export default function DistributionManifestEventsDrawer({
   open,
   onClose,
@@ -34,7 +64,7 @@ export default function DistributionManifestEventsDrawer({
       open={open}
       onClose={onClose}
       PaperProps={{
-        sx: { width: { xs: '100%', sm: 560, md: 720 }, p: 0 },
+        sx: { width: { xs: '100%', sm: 560, md: 900 }, p: 0 },
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -51,7 +81,7 @@ export default function DistributionManifestEventsDrawer({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <HistoryIcon />
             <Typography variant="h6" fontWeight={700}>
-              Eventos de manifestação{nsu != null && nsu !== '' ? ` (NSU: ${nsu})` : ''}
+              Manifestações
             </Typography>
           </Box>
           <IconButton onClick={onClose} size="small" sx={{ color: 'inherit' }}>
@@ -72,7 +102,8 @@ export default function DistributionManifestEventsDrawer({
             <Table size="small" sx={{ bgcolor: 'background.paper' }}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Quando</TableCell>
+                  <TableCell>Quando?</TableCell>
+                  <TableCell>Usuário</TableCell>
                   <TableCell>Tipo</TableCell>
                   <TableCell align="center">Sucesso</TableCell>
                   <TableCell>Motivo</TableCell>
@@ -82,9 +113,13 @@ export default function DistributionManifestEventsDrawer({
                 {items.map((ev) => (
                   <TableRow key={ev.id}>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      {ev.occurredAt ? new Date(ev.occurredAt).toLocaleString() : '—'}
+                      {formatOccurredAt(ev.occurredAt)}
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      {ev.userName || '—'}
                     </TableCell>
                     <TableCell>{labelForManifestationCode(ev.manifestationCode)}</TableCell>
+
                     <TableCell align="center">
                       <Chip
                         label={ev.success ? 'Sim' : 'Não'}

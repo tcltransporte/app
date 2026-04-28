@@ -76,7 +76,7 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize, isFir
     zIndex: isDragging ? 10 : 2,
     position: 'sticky',
     top: 0,
-    backgroundColor: 'background.paper',
+    backgroundColor: 'background.default',
     fontWeight: 700,
     whiteSpace: 'nowrap',
     cursor: 'grab',
@@ -119,6 +119,8 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize, isFir
                 onSort && onSort(col.field);
               }}
               sx={{
+                width: '100%',
+                justifyContent: col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start',
                 '& .MuiTableSortLabel-icon': {
                   opacity: sortBy === col.field ? 1 : 0,
                   transition: 'opacity 0.2s ease-in-out',
@@ -131,7 +133,12 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize, isFir
               {col.headerName}
             </TableSortLabel>
           ) : (
-            <Typography variant="subtitle2" fontWeight={700} noWrap>
+            <Typography
+              variant="subtitle2"
+              fontWeight={700}
+              noWrap
+              sx={{ width: '100%', textAlign: col.align || 'left' }}
+            >
               {col.headerName}
             </Typography>
           )}
@@ -401,7 +408,18 @@ export const Table = ({
           <MuiTable stickyHeader size="small" sx={{ tableLayout: fixed ? 'fixed' : 'auto', width: '100%' }}>
             <TableHead>
               <TableRow>
-                <TableCell padding="checkbox" sx={{ backgroundColor: 'background.paper', zIndex: 3, width: 80, minWidth: 80, pl: 2, pr: 5 }}>
+                <TableCell
+                  padding="checkbox"
+                  sx={{
+                    backgroundColor: 'background.default',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 3,
+                    width: 44,
+                    minWidth: 44,
+                    px: 0.5
+                  }}
+                >
                   <Checkbox
                     indeterminate={selecteds.length > 0 && selecteds.length < items.length}
                     checked={items.length > 0 && selecteds.length === items.length}
@@ -431,7 +449,7 @@ export const Table = ({
               {loading ? (
                 Array.from(new Array(15)).map((_, rowIndex) => (
                   <TableRow key={`skeleton-row-${rowIndex}`}>
-                    <TableCell padding="checkbox" sx={{ width: 80, minWidth: 80, pl: 2, pr: 5 }}>
+                    <TableCell padding="checkbox" sx={{ width: 44, minWidth: 44, px: 0.5 }}>
                       <Skeleton variant="rectangular" width={20} height={20} />
                     </TableCell>
                     {columns.map((col, colIndex) => (
@@ -489,7 +507,7 @@ export const Table = ({
                       '&.Mui-selected': { backgroundColor: 'primary.lighter' }
                     }}
                   >
-                    <TableCell padding="checkbox" sx={{ width: 80, minWidth: 80, pl: 2, pr: 5 }}>
+                    <TableCell padding="checkbox" sx={{ width: 44, minWidth: 44, px: 0.5 }}>
                       <Checkbox checked={isItemSelected} />
                     </TableCell>
                     {columns.map((col, index) => (
@@ -522,7 +540,18 @@ export const Table = ({
         <MuiTable stickyHeader size="small" sx={{ tableLayout: fixed ? 'fixed' : 'auto', width: '100%' }}>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox" sx={{ backgroundColor: 'background.paper', zIndex: 3, width: 80, minWidth: 80, pl: 2, pr: 5 }}>
+              <TableCell
+                padding="checkbox"
+                sx={{
+                  backgroundColor: 'background.default',
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 3,
+                  width: 44,
+                  minWidth: 44,
+                  px: 0.5
+                }}
+              >
                 <Checkbox
                   indeterminate={selecteds.length > 0 && selecteds.length < items.length}
                   checked={items.length > 0 && selecteds.length === items.length}
@@ -555,7 +584,7 @@ export const Table = ({
             {loading ? (
               Array.from(new Array(15)).map((_, rowIndex) => (
                 <TableRow key={`skeleton-row-${rowIndex}`}>
-                  <TableCell padding="checkbox" sx={{ width: 80, minWidth: 80, pl: 2, pr: 5 }}>
+                  <TableCell padding="checkbox" sx={{ width: 44, minWidth: 44, px: 0.5 }}>
                     <Skeleton variant="rectangular" width={20} height={20} />
                   </TableCell>
                   {columns.map((col, colIndex) => (
@@ -599,7 +628,7 @@ export const Table = ({
                     '&.Mui-selected': { backgroundColor: 'primary.lighter' }
                   }}
                 >
-                  <TableCell padding="checkbox" sx={{ width: 80, minWidth: 80, pl: 2, pr: 5 }}>
+                  <TableCell padding="checkbox" sx={{ width: 44, minWidth: 44, px: 0.5 }}>
                     <Checkbox checked={isItemSelected} />
                   </TableCell>
                   {columns.map((col, index) => (

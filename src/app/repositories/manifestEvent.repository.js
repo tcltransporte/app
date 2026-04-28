@@ -26,6 +26,27 @@ export async function findAllByDfeRepositorioNFeId(transaction, dfeRepositorioNF
       order: [['occurredAt', 'DESC']],
       transaction: t,
     })
-    return rows.map((r) => r.toJSON())
+    const events = rows.map((r) => r.toJSON())
+    const userIds = [...new Set(events.map((ev) => ev.userId).filter(Boolean))]
+
+    let userNameById = new Map()
+    if (userIds.length > 0) {
+      const users = await db.User.findAll({
+        where: { id: userIds },
+        attributes: ['id', 'userName'],
+        transaction: t,
+      })
+      userNameById = new Map(
+        users.map((u) => {
+          const json = u.toJSON ? u.toJSON() : u
+          return [json.id, (json.userName || '').trim()]
+        })
+      )
+    }
+
+    return events.map((ev) => ({
+      ...ev,
+      userName: userNameById.get(ev.userId) || null,
+    }))
   })
 }
