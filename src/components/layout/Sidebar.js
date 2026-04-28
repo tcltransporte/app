@@ -117,8 +117,8 @@ const menuItems = [
   {
     text: 'Finanças', icon: <AccountBalance />, subMenu: [
       { text: 'Bancos', path: '/finances/banks' },
-      { text: 'Contas a pagar', path: '/finances/payable' },
-      { text: 'Contas a receber', path: '/finances/receivable' }
+      { text: 'Contas a pagar', path: '/finances/payments' },
+      { text: 'Contas a receber', path: '/finances/receivements' }
     ]
 
   },

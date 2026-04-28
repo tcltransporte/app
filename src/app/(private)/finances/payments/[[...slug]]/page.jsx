@@ -1,4 +1,4 @@
-import PayableView from '@/app/views/finances/payable';
+import PayableView from '@/app/views/finances/payments';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
 import { ServiceStatus } from '@/libs/service';
 import { format } from 'date-fns';

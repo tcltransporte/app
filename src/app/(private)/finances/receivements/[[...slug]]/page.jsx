@@ -1,4 +1,4 @@
-import ReceivableView from '@/app/views/finances/receivable';
+import ReceivableView from '@/app/views/finances/receivements';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
 import { ServiceStatus } from '@/libs/service';
 import { format } from 'date-fns';
