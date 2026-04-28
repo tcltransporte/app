@@ -391,9 +391,11 @@ async function resolveSchemaMap(transaction, uniqueSchemaNames) {
   }
 
   return schemaMap
+  
 }
 
 export async function syncDistributions(transaction) {
+
   const session = await getSession()
   const db = dfeLoteDistRepository
 

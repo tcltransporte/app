@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Chip } from '@mui/material';
+import { Box, Typography, Chip, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import {
   FilterList as FilterIcon,
   Search as SearchIcon,
   Event as EventIcon,
   Visibility as ViewIcon,
+  MoreVert as MoreVertIcon,
+  Download as DownloadIcon,
   Sync as SyncIcon,
   History as HistoryIcon,
   TipsAndUpdates as AwarenessIcon,
@@ -25,6 +27,7 @@ import * as dfeLoteDistAction from '@/app/actions/dfeLoteDist.action';
 import { ManifestationType } from '@/libs/dfeManifestationType';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
+import JSZip from 'jszip';
 
 /** Resumo (resNFe) aceita manifestação; NF-e processada (procNFe / nfeProc) não. Após outros eventos, encerra. */
 function distributionCanManifest(row) {
@@ -98,6 +101,61 @@ export default function DistributionView({
     items: null,
     loading: false,
   })
+  const [actionMenu, setActionMenu] = React.useState({ anchorEl: null, row: null })
+
+  const sanitizeFilePart = React.useCallback((value, fallback) => {
+    const cleaned = String(value ?? '')
+      .trim()
+      .replace(/[^\w.-]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '')
+    return cleaned || fallback
+  }, [])
+
+  const triggerZipDownload = React.useCallback(async (zip, zipName) => {
+    const content = await zip.generateAsync({ type: 'blob' })
+    const url = URL.createObjectURL(content)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = zipName
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }, [])
+
+  const buildAndDownloadXmlZip = React.useCallback(async (rows) => {
+    const zip = new JSZip()
+    const missingAccessKeys = []
+
+    for (const row of rows) {
+      const accessKey = String(row.chNFe ?? '').trim() || '(sem chave)'
+      if (!row.xmlLoteDistId) {
+        missingAccessKeys.push(accessKey)
+        continue
+      }
+
+      const result = await dfeLoteDistAction.getDecodedDoc(row.xmlLoteDistId)
+      if (result.header.status !== ServiceStatus.SUCCESS)
+        throw result
+
+      const xml = String(result.body ?? '').trim()
+      if (!xml) {
+        missingAccessKeys.push(accessKey)
+        continue
+      }
+
+      const baseName = sanitizeFilePart(accessKey, `xml_${row.id}`)
+      zip.file(`${baseName}.xml`, xml)
+    }
+
+    if (missingAccessKeys.length > 0) {
+      throw new Error(`XML não disponível para a(s) chave(s): ${missingAccessKeys.join(', ')}`)
+    }
+
+    const zipName = `xml-distribuicao-${new Date().toISOString().slice(0, 10)}.zip`
+    await triggerZipDownload(zip, zipName)
+  }, [sanitizeFilePart, triggerZipDownload])
 
   const handleManifest = async (id, manifestation) => {
     loading.show()
@@ -161,6 +219,44 @@ export default function DistributionView({
     }
   }
 
+  const handleDownloadXml = async (row) => {
+    loading.show()
+    try {
+      await buildAndDownloadXmlZip([row])
+      alert.success('Sucesso!', 'XML baixado em arquivo ZIP.')
+    } catch (error) {
+      alert.error('Ops!', error?.body?.message || error.message)
+    } finally {
+      loading.hide()
+    }
+  }
+
+  const handleDownloadSelectedXml = async () => {
+    if (!table.selecteds.length) {
+      alert.error('Ops!', 'Selecione ao menos um registro para baixar o XML.')
+      return
+    }
+
+    loading.show()
+    try {
+      await buildAndDownloadXmlZip(table.selecteds)
+      alert.success('Sucesso!', `${table.selecteds.length} XML(s) baixado(s) em arquivo ZIP.`)
+    } catch (error) {
+      alert.error('Ops!', error?.body?.message || error.message)
+    } finally {
+      loading.hide()
+    }
+  }
+
+  const openActionMenu = (event, row) => {
+    event.stopPropagation()
+    setActionMenu({ anchorEl: event.currentTarget, row })
+  }
+
+  const closeActionMenu = () => {
+    setActionMenu({ anchorEl: null, row: null })
+  }
+
   const handleSync = async () => {
     loading.show()
     try {
@@ -220,6 +316,10 @@ export default function DistributionView({
 
   const columns = [
     {
+      field: 'dhEmi', headerName: 'Emissão', width: 180,
+      renderCell: (value) => value ? new Date(value).toLocaleString() : ''
+    },
+    {
       field: 'numeroDoc',
       headerName: 'Nº NF',
       width: 100,
@@ -235,10 +335,6 @@ export default function DistributionView({
       field: 'vNF', headerName: 'Valor', width: 120,
       renderCell: (value) => value ? Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
     },
-    {
-      field: 'dhEmi', headerName: 'Emissão', width: 180,
-      renderCell: (value) => value ? new Date(value).toLocaleString() : ''
-    },
     /*{
       field: 'isUnPack', headerName: 'Descompactado', width: 140,
       renderCell: (value) => (
@@ -251,57 +347,39 @@ export default function DistributionView({
       )
     },*/
     {
-      field: 'actions', headerName: 'Ações', width: 260,
+      field: 'actions', headerName: 'Ações', width: 110,
       renderCell: (value, row) => (
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 0.5,
-          flexWrap: 'wrap',
-          opacity: 0,
-          transition: 'opacity 0.2s',
-          '.MuiTableRow-root:hover &': {
-            opacity: 1
-          }
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            opacity: 0,
+            pointerEvents: 'none',
+            transition: 'opacity 0.2s',
+            '.MuiTableRow-root:hover &': {
+              opacity: 1,
+              pointerEvents: 'auto',
+            },
+          }}
+        >
           <IconButton
             size="small"
             color="primary"
-            disabled={!row.xmlLoteDistId}
-            onClick={() => row.xmlLoteDistId && handleViewXml(row.xmlLoteDistId, row.xmlLoteNsu ?? '')}
-            title={
-              row.xmlLoteDistId
-                ? 'Visualizar XML (NF-e processada)'
-                : 'XML disponível apenas quando existir distribuição vinculada com schema de NF-e processada (IdSchema = 3).'
-            }
+            onClick={(event) => openActionMenu(event, row)}
+            title="Ações"
+            sx={{
+              borderRadius: '50%',
+              border: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+              '&:hover': {
+                bgcolor: 'action.hover',
+              },
+            }}
           >
-            <ViewIcon fontSize="small" />
+            <MoreVertIcon fontSize="small" />
           </IconButton>
-
-          <IconButton
-            size="small"
-            color="secondary"
-            onClick={() => handleViewManifestEvents(row)}
-            title="Eventos de manifestação"
-          >
-            <HistoryIcon fontSize="small" />
-          </IconButton>
-
-          {distributionCanManifest(row) && orderedManifestationTypes(row).map((mt) => {
-            const ui = MANIFESTATION_UI[mt.code]
-            if (!ui) return null
-            const { Icon, color, title } = ui
-            return (
-              <IconButton
-                key={mt.code}
-                size="small"
-                color={color}
-                onClick={() => handleManifest(row.id, mt)}
-                title={title}
-              >
-                <Icon fontSize="small" />
-              </IconButton>
-            )
-          })}
         </Box>
       )
     }
@@ -339,7 +417,15 @@ export default function DistributionView({
               icon: <SyncIcon fontSize="small" />,
               onClick: handleSync,
               color: 'primary'
-            }
+            },
+            ...(table.selecteds.length > 0
+              ? [{
+                  label: 'Baixar XML (ZIP)',
+                  icon: <DownloadIcon fontSize="small" />,
+                  onClick: handleDownloadSelectedXml,
+                  color: 'primary',
+                }]
+              : [])
           ]}
           secondary={secondaryActions}
         />
@@ -418,6 +504,68 @@ export default function DistributionView({
             }))
           }
         />
+
+        <Menu
+          anchorEl={actionMenu.anchorEl}
+          open={Boolean(actionMenu.anchorEl)}
+          onClose={closeActionMenu}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <MenuItem
+            disabled={!actionMenu.row?.xmlLoteDistId}
+            onClick={() => {
+              const row = actionMenu.row
+              closeActionMenu()
+              if (row?.xmlLoteDistId) handleViewXml(row.xmlLoteDistId, row.xmlLoteNsu ?? '')
+            }}
+          >
+            <ListItemIcon><ViewIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Visualizar XML</ListItemText>
+          </MenuItem>
+
+          <MenuItem
+            disabled={!actionMenu.row?.xmlLoteDistId}
+            onClick={() => {
+              const row = actionMenu.row
+              closeActionMenu()
+              if (row?.xmlLoteDistId) handleDownloadXml(row)
+            }}
+          >
+            <ListItemIcon><DownloadIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Baixar XML (ZIP)</ListItemText>
+          </MenuItem>
+
+          <MenuItem
+            onClick={() => {
+              const row = actionMenu.row
+              closeActionMenu()
+              if (row) handleViewManifestEvents(row)
+            }}
+          >
+            <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Eventos de manifestação</ListItemText>
+          </MenuItem>
+
+          {distributionCanManifest(actionMenu.row || {}) && orderedManifestationTypes(actionMenu.row || {}).map((mt) => {
+            const ui = MANIFESTATION_UI[mt.code]
+            if (!ui) return null
+            const { Icon, title } = ui
+            return (
+              <MenuItem
+                key={mt.code}
+                onClick={() => {
+                  const row = actionMenu.row
+                  closeActionMenu()
+                  if (row) handleManifest(row.id, mt)
+                }}
+              >
+                <ListItemIcon><Icon fontSize="small" /></ListItemIcon>
+                <ListItemText>{title}</ListItemText>
+              </MenuItem>
+            )
+          })}
+        </Menu>
       </Container.Content>
 
       <Container.Footer
