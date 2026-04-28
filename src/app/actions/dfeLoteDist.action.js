@@ -1,16 +1,27 @@
 "use server"
 
 import { AppContext } from "@/database"
+import * as dfeRepositorioNFeRepository from "@/app/repositories/dfeRepositorioNFe.repository"
 import * as dfeLoteDistService from "@/app/services/dfeLoteDist.service"
+import { getSession } from "@/libs/session"
 import { normalizeManifestation, ManifestationType } from "@/libs/dfeManifestationType"
 import { ServiceResponse } from "@/libs/service"
 
+/** Lista distribuição via `DfeRepositorioNFe`; antes chama `syncDistributionsToRepositorio` (vínculo em `DFeLoteDist`). */
 export async function findAll(options) {
+  const session = await getSession()
   const db = new AppContext()
   try {
     return await db.withTransaction(null, async (t) => {
-      const result = await dfeLoteDistService.findAll(t, options)
-      return ServiceResponse.success(result)
+      const repositorio = await dfeLoteDistService.syncDistributionsToRepositorio(t)
+      const result = await dfeRepositorioNFeRepository.findAllDistributionList(t, {
+        ...options,
+        companyId: session.company.id,
+      })
+      return ServiceResponse.success({
+        ...result,
+        repositorio,
+      })
     })
   } catch (error) {
     return ServiceResponse.error(error)
@@ -52,6 +63,7 @@ export async function findManifestEvents(distributionId) {
     return ServiceResponse.error(error)
   }
 }
+/** Busca na SEFAZ e grava em DFeLoteDist (repositório é processado na action `findAll`). */
 export async function sync() {
   const db = new AppContext()
   try {

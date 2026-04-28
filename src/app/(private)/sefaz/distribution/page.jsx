@@ -33,9 +33,11 @@ export default async function DistributionPage() {
     <DistributionView 
       initialTable={initialTable}
       initialFilters={{
-        nsu: '',
-        idSchema: '',
-        isUnPack: ''
+        numeroDoc: '',
+        chNFe: '',
+        cnpj: '',
+        xNome: '',
+        vNF: '',
       }}
       initialRange={initialRange}
     />

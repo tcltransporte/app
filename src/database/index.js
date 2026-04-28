@@ -40,6 +40,7 @@ import { Bank } from './models/bank.model.js'
 import { DFeLoteDist } from './models/dfeLoteDist.model.js'
 import { DFeLoteDistSchema } from './models/dfeLoteDistSchema.model.js'
 import { ManifestEvent } from './models/manifestEvent.model.js'
+import { DfeRepositorioNFe } from './models/dfeRepositorioNFe.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -118,6 +119,7 @@ export class AppContext extends Sequelize {
     this.DFeLoteDist = this.define('dfeLoteDist', new DFeLoteDist(), { tableName: 'DFeLoteDist' })
     this.DFeLoteDistSchema = this.define('dfeLoteDistSchema', new DFeLoteDistSchema(), { tableName: 'DFeLoteDistSchema' })
     this.ManifestEvent = this.define('manifestEvent', new ManifestEvent(), { tableName: 'ManifestEvent' })
+    this.DfeRepositorioNFe = this.define('dfeRepositorioNFe', new DfeRepositorioNFe(), { tableName: 'DfeRepositorioNFe' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -208,9 +210,14 @@ export class AppContext extends Sequelize {
 
 
     this.DFeLoteDist.belongsTo(this.DFeLoteDistSchema, { as: 'schemaInfo', foreignKey: 'idSchema' })
-    this.DFeLoteDist.belongsTo(this.ManifestEvent, { as: 'lastManifestEvent', foreignKey: 'lastManifestEventId' })
-    this.DFeLoteDist.hasMany(this.ManifestEvent, { as: 'manifestEvents', foreignKey: 'distributionId' })
-    this.ManifestEvent.belongsTo(this.DFeLoteDist, { as: 'distribution', foreignKey: 'distributionId' })
+    this.DFeLoteDist.belongsTo(this.DFeLoteDist, { as: 'loteOrigem', foreignKey: 'idDFeLoteDistOrigem', targetKey: 'id' })
+
+    this.DfeRepositorioNFe.belongsTo(this.DFeLoteDist, { as: 'distribution', foreignKey: 'idLoteDistDFe', targetKey: 'id' })
+    this.DFeLoteDist.hasMany(this.DfeRepositorioNFe, { as: 'repositorioNfe', foreignKey: 'idLoteDistDFe' })
+    this.DFeLoteDist.belongsTo(this.DfeRepositorioNFe, { as: 'repositorioNfeLink', foreignKey: 'idDfeRepositorioNFe', targetKey: 'id' })
+    this.DfeRepositorioNFe.belongsTo(this.ManifestEvent, { as: 'lastManifestEvent', foreignKey: 'lastManifestEventId' })
+    this.DfeRepositorioNFe.hasMany(this.ManifestEvent, { as: 'manifestEvents', foreignKey: 'dfeRepositorioNFeId' })
+    this.ManifestEvent.belongsTo(this.DfeRepositorioNFe, { as: 'repositorioNfe', foreignKey: 'dfeRepositorioNFeId' })
 
     /*
     this.Company.addHook('afterFind', afterFind)

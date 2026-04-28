@@ -26,32 +26,39 @@ import { ManifestationType } from '@/libs/dfeManifestationType';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
-/** Resumo (resNFe) aceita manifestação; NF-e processada (procNFe / nfeProc) não. */
+/** Resumo (resNFe) aceita manifestação; NF-e processada (procNFe / nfeProc) não. Após outros eventos, encerra. */
 function distributionCanManifest(row) {
+  const hasLast =
+    row.lastManifestEventId != null &&
+    row.lastManifestEventId !== ''
+  if (hasLast && !row.lastManifestEvent?.manifestationCode) return false
+
   const lastCode = row.lastManifestEvent?.manifestationCode
+  if (lastCode && lastCode !== ManifestationType.Awareness.code) return false
   if (lastCode === ManifestationType.Awareness.code) return true
 
   const schemaLower = (row.schemaInfo?.schema || '').toLowerCase()
   if (schemaLower.includes('procnfe')) return false
-  return schemaLower.includes('resnfe') || row.idSchema === 2
-}
-
-function hasLastManifestEvent(row) {
-  const v = row.lastManifestEventId
-  return v != null && v !== ''
+  if (schemaLower.includes('resnfe') || row.idSchema === 2) return true
+  /* Lista só com DfeRepositorioNFe: sem schema no payload, permite manifestar (validação no serviço). */
+  if (!schemaLower && (row.idSchema == null || row.idSchema === '')) return true
+  return false
 }
 
 /**
- * Sem evento ainda: apenas Ciência da Operação.
- * Se último evento foi Ciência: Confirmação, Desconhecimento e Operação não realizada.
+ * Enquanto `DfeRepositorioNFe.LastManifestEventId` for null: só Ciência da Operação.
+ * Com último evento em Ciência (após registrar ciência): Confirmação, Desconhecimento e Operação não realizada.
  */
 function orderedManifestationTypes(row) {
-  const lastCode = row.lastManifestEvent?.manifestationCode
+  const hasLast =
+    row.lastManifestEventId != null &&
+    row.lastManifestEventId !== ''
 
-  if (!hasLastManifestEvent(row)) {
+  if (!hasLast) {
     return [ManifestationType.Awareness]
   }
 
+  const lastCode = row.lastManifestEvent?.manifestationCode
   if (lastCode === ManifestationType.Awareness.code) {
     return [
       ManifestationType.Confirmation,
@@ -161,8 +168,14 @@ export default function DistributionView({
       if (result.header.status !== ServiceStatus.SUCCESS)
         throw result
 
-      alert.success('Sucesso!', `${result.body.count} documento(s) sincronizado(s).`)
-      fetchTable()
+      const n = result.body?.count ?? 0
+      alert.success(
+        'Sucesso!',
+        n > 0
+          ? `${n} documento(s) gravado(s) em DFeLoteDist. Use Pesquisar para atualizar a grade.`
+          : 'Nenhum documento novo na distribuição. Use Pesquisar para atualizar a grade.'
+      )
+      await fetchTable({ notifyRepositorio: true })
     } catch (error) {
       alert.error('Ops!', error?.body?.message || error.message)
     } finally {
@@ -188,6 +201,12 @@ export default function DistributionView({
       table.setItems(result.body.items || [])
       table.setTotal(result.body.total || 0)
       table.setSelecteds([])
+
+      const rp = result.body.repositorio?.count ?? 0
+      if (overrides.notifyRepositorio === true && rp > 0) {
+        alert.success('Repositório', `${rp} registro(s) processado(s) em DfeRepositorioNFe.`)
+      }
+
       return true
 
     } catch (error) {
@@ -200,15 +219,15 @@ export default function DistributionView({
   }, [table.page, table.rowsPerPage, filter.filters, rangeFilter.range, table.sortBy, table.sortOrder])
 
   const columns = [
-    //{ field: 'id', headerName: 'ID', width: 80 },
-    { field: 'nsu', headerName: 'NSU', width: 150 },
+    {
+      field: 'numeroDoc',
+      headerName: 'Nº NF',
+      width: 100,
+      renderCell: (value) => (value != null && value !== '' && Number(value) !== 0 ? String(value) : ''),
+    },
     {
       field: 'chNFe', headerName: 'Chave de acesso', width: 340,
       renderCell: (value) => (value ? <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{value}</Typography> : '')
-    },
-    {
-      field: 'idSchema', headerName: 'Schema', width: 140,
-      renderCell: (value, row) => row.schemaInfo?.schema || row.idSchema
     },
     { field: 'cnpj', headerName: 'CNPJ', width: 150 },
     { field: 'xNome', headerName: 'Razão Social', width: 250 },
@@ -231,7 +250,6 @@ export default function DistributionView({
         />
       )
     },*/
-    //{ field: 'idDFeLoteDistOrigem', headerName: 'ID Origem', width: 120 },
     {
       field: 'actions', headerName: 'Ações', width: 260,
       renderCell: (value, row) => (
@@ -245,7 +263,17 @@ export default function DistributionView({
             opacity: 1
           }
         }}>
-          <IconButton size="small" color="primary" onClick={() => handleViewXml(row.id, row.nsu)} title="Visualizar XML">
+          <IconButton
+            size="small"
+            color="primary"
+            disabled={!row.xmlLoteDistId}
+            onClick={() => row.xmlLoteDistId && handleViewXml(row.xmlLoteDistId, row.xmlLoteNsu ?? '')}
+            title={
+              row.xmlLoteDistId
+                ? 'Visualizar XML (NF-e processada)'
+                : 'XML disponível apenas quando existir distribuição vinculada com schema de NF-e processada (IdSchema = 3).'
+            }
+          >
             <ViewIcon fontSize="small" />
           </IconButton>
 
@@ -295,7 +323,7 @@ export default function DistributionView({
       icon: <SearchIcon fontSize="small" />,
       variant: 'outlined',
       color: 'primary',
-      onClick: () => fetchTable(),
+      onClick: () => fetchTable({ notifyRepositorio: true }),
     }
   ];
 

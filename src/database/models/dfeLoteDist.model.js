@@ -45,23 +45,27 @@ export class DFeLoteDist {
     type: DataTypes.BOOLEAN
   }
 
-  idDFeLoteDistOrigem = {
-    field: 'IdDFeLoteDistOrigem',
+  /**
+   * FK para DfeRepositorioNFe após `syncDistributionsToRepositorio` (schemas/XML habituais ou chNFe já no repositório).
+   * NOT NULL = já vinculado. NULL = pendente ou XML sem chNFe de 44 dígitos.
+   */
+  idDfeRepositorioNFe = {
+    field: 'IdDfeRepositorioNFe',
     allowNull: true,
     type: DataTypes.BIGINT
-  }
-
-  /** Latest row in ManifestEvent for this distribution. */
-  lastManifestEventId = {
-    field: 'LastManifestEventId',
-    allowNull: true,
-    type: DataTypes.UUID
   }
 
   companyId = {
     field: 'IDEmpresaFilial',
     allowNull: true,
     type: DataTypes.TINYINT
+  }
+
+  /** Lote manifestado que originou este registro (consChNFe pós-manifestação). NULL = recebido só pela distribuição normal (conta em ultNSU). */
+  idDFeLoteDistOrigem = {
+    field: 'IdDFeLoteDistOrigem',
+    allowNull: true,
+    type: DataTypes.BIGINT,
   }
 
 }

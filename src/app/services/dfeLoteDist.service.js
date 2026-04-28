@@ -1,148 +1,32 @@
 "use server"
 
-import Sequelize, { Op } from 'sequelize'
 import * as dfeLoteDistRepository from "@/app/repositories/dfeLoteDist.repository"
+import * as dfeRepositorioNFeRepository from "@/app/repositories/dfeRepositorioNFe.repository"
 import * as manifestEventRepository from "@/app/repositories/manifestEvent.repository"
 import { getSession } from "@/libs/session"
-import { normalizeManifestation, ManifestationType } from "@/libs/dfeManifestationType"
+import { normalizeManifestation } from "@/libs/dfeManifestationType"
 import zlib from 'zlib'
 
-/** Expressão SQL Server: data de emissão extraída do DocXml (resNFe, NFe, nfeProc). */
-function docXmlDhEmiCoalesceSql() {
-  const nsPrefix = 'declare namespace ns="http://www.portalfiscal.inf.br/nfe";'
-  const resXPath = `DocXml.value('${nsPrefix} (/ns:resNFe/ns:dhEmi/text())[1]', 'datetimeoffset')`
-  const nfeXPath = `DocXml.value('${nsPrefix} (/ns:NFe/ns:infNFe/ns:ide/ns:dhEmi/text())[1]', 'datetimeoffset')`
-  const nfeProcXPath = `DocXml.value('${nsPrefix} (/ns:nfeProc/ns:NFe/ns:infNFe/ns:ide/ns:dhEmi/text())[1]', 'datetimeoffset')`
-  return `COALESCE(${resXPath}, ${nfeXPath}, ${nfeProcXPath})`
+function digitsOnly(value) {
+  return String(value ?? "").replace(/\D/g, "")
 }
 
-const DFE_LOTE_DIST_SORTABLE_DB = new Set(['id', 'data', 'nsu', 'idSchema', 'userId', 'isUnPack', 'companyId'])
-
-/** IdSchema da NF-e processada (procNFe): quando existir para uma chNFe, oculta o resumo (outro IdSchema) na listagem. */
-const DFE_LOTE_DIST_FULL_NFE_SCHEMA_ID = 3
-
-/**
- * SQL Server: chNFe extraída do XML (resNFe, protNFe, tag chNFe, Id NFe…).
- * @param {string} docXmlRef coluna qualificada, ex. `[dfeLoteDist].[DocXml]`
- */
-function docXmlChNFeCoalesceSql(docXmlRef) {
-  const ns = 'declare namespace ns="http://www.portalfiscal.inf.br/nfe";'
-  const resCh = `${docXmlRef}.value('${ns} (/ns:resNFe/ns:chNFe/text())[1]', 'varchar(44)')`
-  const protCh = `${docXmlRef}.value('${ns} (/ns:nfeProc/ns:protNFe/ns:infProt/ns:chNFe/text())[1]', 'varchar(44)')`
-  const nfeCh = `${docXmlRef}.value('${ns} (/ns:NFe/ns:infNFe/ns:chNFe/text())[1]', 'varchar(44)')`
-  const idAttr = `${docXmlRef}.value('${ns} (/ns:NFe/ns:infNFe/@Id)[1]', 'varchar(50)')`
-  const fromId = `CASE WHEN UPPER(LEFT(${idAttr}, 3)) = N'NFE' AND LEN(${idAttr}) >= 47 THEN SUBSTRING(${idAttr}, 4, 44) ELSE NULL END`
-  return `NULLIF(LTRIM(RTRIM(COALESCE(${resCh}, ${protCh}, ${nfeCh}, ${fromId}))), '')`
+/** NSU vindo do docZip / coluna: só dígitos para bater com `DFeLoteDist.Nsu`. */
+function normalizeNsuForDist(raw) {
+  if (raw == null || raw === "") return null
+  const s = String(raw).replace(/\s/g, "")
+  if (!/^\d+$/.test(s)) return null
+  return s
 }
 
-/** Evita duplicidade na grade: mesma chNFe → só linha com IdSchema = proc (3), se existir. */
-function whereHideResumoWhenProcNfeExistsSql() {
-  const main = '[dfeLoteDist]'
-  const dup = '[dfeLoteDist_proc]'
-  const chMain = docXmlChNFeCoalesceSql(`${main}.[DocXml]`)
-  const chDup = docXmlChNFeCoalesceSql(`${dup}.[DocXml]`)
-  return `(
-    ${main}.[IdSchema] = ${DFE_LOTE_DIST_FULL_NFE_SCHEMA_ID}
-    OR NOT EXISTS (
-      SELECT 1
-      FROM [DFeLoteDist] AS ${dup}
-      WHERE ${dup}.[IDEmpresaFilial] = ${main}.[IDEmpresaFilial]
-        AND ${dup}.[IdSchema] = ${DFE_LOTE_DIST_FULL_NFE_SCHEMA_ID}
-        AND ${dup}.[Id] <> ${main}.[Id]
-        AND ${chDup} IS NOT NULL
-        AND ${chMain} IS NOT NULL
-        AND ${chDup} = ${chMain}
-    )
-  )`
-}
-
-export async function findAll(transaction, { page = 1, limit = 50, filters = {}, range = {}, sortBy = 'dhEmi', sortOrder = 'ASC' }) {
-  const session = await getSession()
-  const offset = (page - 1) * limit
-
-  const where = {
-    companyId: session.company.id
-  }
-
-  if (filters.nsu) {
-    where.nsu = filters.nsu
-  }
-
-  if (filters.idSchema) {
-    where.idSchema = filters.idSchema
-  }
-
-  if (filters.isUnPack !== undefined && filters.isUnPack !== null && filters.isUnPack !== '') {
-    where.isUnPack = filters.isUnPack === 'true' || filters.isUnPack === true
-  }
-
-  // Range filter for date
-  if (range.start && range.end) {
-    const field = range.field || 'data'
-
-    if (field === 'dhEmi') {
-      const start = range.start.split('T')[0] + ' 00:00:00'
-      const end = range.end.split('T')[0] + ' 23:59:59'
-
-      const sqlValue = docXmlDhEmiCoalesceSql()
-
-      where[Op.and] = [
-        ...(where[Op.and] || []),
-        Sequelize.where(
-          Sequelize.literal(`CAST(${sqlValue} AS DATETIME)`),
-          { [Op.between]: [start, end] }
-        )
-      ]
-    } else {
-      where.data = { [Op.between]: [new Date(range.start), new Date(range.end)] }
-    }
-  }
-
-  // XML content filters
-  if (filters.cnpj || filters.xNome || filters.vNF) {
-    const xmlConditions = [];
-    const docXmlCol = Sequelize.cast(Sequelize.col('docXml'), 'NVARCHAR(MAX)');
-
-    if (filters.cnpj) {
-      xmlConditions.push(Sequelize.where(docXmlCol, { [Op.like]: `%<CNPJ>${filters.cnpj}</CNPJ>%` }));
-    }
-    if (filters.xNome) {
-      xmlConditions.push(Sequelize.where(docXmlCol, { [Op.like]: `%<xNome>%${filters.xNome}%</xNome>%` }));
-    }
-    if (filters.vNF) {
-      xmlConditions.push(Sequelize.where(docXmlCol, { [Op.like]: `%<vNF>${filters.vNF}</vNF>%` }));
-    }
-
-    where[Op.and] = [...(where[Op.and] || []), ...xmlConditions];
-  }
-
-  where[Op.and] = [
-    ...(where[Op.and] || []),
-    Sequelize.literal(whereHideResumoWhenProcNfeExistsSql()),
-  ]
-
-  const dir = String(sortOrder || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC'
-  let order
-  if (sortBy === 'dhEmi') {
-    order = [[Sequelize.literal(`CAST(${docXmlDhEmiCoalesceSql()} AS DATETIME)`), dir]]
-  } else if (DFE_LOTE_DIST_SORTABLE_DB.has(sortBy)) {
-    order = [[sortBy, dir]]
-  } else {
-    order = [[Sequelize.literal(`CAST(${docXmlDhEmiCoalesceSql()} AS DATETIME)`), 'ASC']]
-  }
-
-  const result = await dfeLoteDistRepository.findAll(transaction, {
-    where,
-    limit,
-    offset,
-    order,
-    include: [
-      { association: 'schemaInfo' },
-      { association: 'lastManifestEvent', attributes: ['id', 'manifestationCode'] }
-    ]
-  })
-
-  return { items: result.rows, total: result.count, page, limit, filters, range, sortBy, sortOrder }
+/** nNF na chave de 44 dígitos: posições 26–34 (1-based), 9 dígitos. */
+function numeroDocFromChNFe44Digits(chDigits44) {
+  const d = String(chDigits44 ?? "").replace(/\D/g, "").slice(0, 44)
+  if (d.length < 34) return null
+  const slice9 = d.slice(25, 34)
+  if (!/^\d{9}$/.test(slice9)) return null
+  const n = parseInt(slice9, 10)
+  return Number.isFinite(n) ? n : null
 }
 
 export async function findOne(transaction, id) {
@@ -169,8 +53,12 @@ export async function getDecodedDoc(transaction, id) {
  * @param {number|string} distributionId
  */
 export async function findManifestEventsByDistributionId(transaction, distributionId) {
-  await findOne(transaction, distributionId)
-  return manifestEventRepository.findAllByDistributionId(transaction, distributionId)
+  const record = await findOne(transaction, distributionId)
+  const repoId = record.idDfeRepositorioNFe
+  if (!repoId) {
+    throw { code: "REPOSITORIO_NOT_LINKED", message: "Lote sem vínculo ao repositório. Pesquise na grade para processar." }
+  }
+  return manifestEventRepository.findAllByDfeRepositorioNFeId(transaction, repoId)
 }
 
 function parseDistributionXmlResponse(xmlResponse) {
@@ -216,7 +104,194 @@ function parseDistributionXmlResponse(xmlResponse) {
   }
 }
 
-async function upsertSyncedDistributionDocs(transaction, { db, session, extractedDocs, uniqueSchemaNames, idDFeLoteDistOrigem = null }) {
+/** @returns {{ chNFeDigits: string, numeroDoc: number, emitente: string, destinatario: string, dhEmi: Date, cnpj: string|null, ie: string|null, valorNf: number|null }} */
+function extractRepositorioPayloadFromDocXml(docXml) {
+  const chRaw = dfeLoteDistRepository.extractChNFeFromDocXml(docXml)
+  const chNFeDigits = digitsOnly(chRaw).slice(0, 44)
+
+  let numeroDoc = numeroDocFromChNFe44Digits(chNFeDigits) ?? 0
+  if (numeroDoc === 0) {
+    const nNfMatch = docXml.match(/<nNF>(\d+)<\/nNF>/i)
+    if (nNfMatch) numeroDoc = parseInt(nNfMatch[1], 10) || 0
+  }
+
+  let cnpj = null
+  let ie = null
+  let valorNf = null
+
+  const resNFeBlock = docXml.match(/<resNFe\b[^>]*>([\s\S]*?)<\/resNFe>/i)
+  if (resNFeBlock) {
+    const inner = resNFeBlock[1]
+    const cnpjRaw = inner.match(/<CNPJ>([^<]+)<\/CNPJ>/i)?.[1]
+    const cnpjDigits = cnpjRaw ? digitsOnly(cnpjRaw).slice(0, 14) : ''
+    if (cnpjDigits) cnpj = cnpjDigits
+    const ieRaw = inner.match(/<IE>([^<]*)<\/IE>/i)?.[1]
+    if (ieRaw != null && String(ieRaw).trim() !== '') ie = String(ieRaw).trim().slice(0, 20)
+    const vRaw = inner.match(/<vNF>([^<]+)<\/vNF>/i)?.[1]
+    if (vRaw != null && String(vRaw).trim() !== '') {
+      const n = Number(String(vRaw).trim().replace(/\s/g, '').replace(',', '.'))
+      if (Number.isFinite(n)) valorNf = n
+    }
+  } else {
+    const emitBlock = docXml.match(/<emit[^>]*>([\s\S]*?)<\/emit>/i)
+    if (emitBlock) {
+      const cnpjRaw = emitBlock[1].match(/<CNPJ>([^<]+)<\/CNPJ>/i)?.[1]
+      const cnpjDigits = cnpjRaw ? digitsOnly(cnpjRaw).slice(0, 14) : ''
+      if (cnpjDigits) cnpj = cnpjDigits
+      const ieRaw = emitBlock[1].match(/<IE>([^<]*)<\/IE>/i)?.[1]
+      if (ieRaw != null && String(ieRaw).trim() !== '') ie = String(ieRaw).trim().slice(0, 20)
+    }
+    const vTot = docXml.match(/<ICMSTot>[\s\S]*?<vNF>([^<]+)<\/vNF>/i)?.[1]
+    if (vTot != null && String(vTot).trim() !== '') {
+      const n = Number(String(vTot).trim().replace(/\s/g, '').replace(',', '.'))
+      if (Number.isFinite(n)) valorNf = n
+    }
+  }
+
+  let emitente = ''
+  const emitBlock = docXml.match(/<emit[^>]*>([\s\S]*?)<\/emit>/i)
+  if (emitBlock) {
+    const xNome = emitBlock[1].match(/<xNome>([^<]*)<\/xNome>/i)
+    const cnpj = emitBlock[1].match(/<CNPJ>([^<]*)<\/CNPJ>/i)
+    emitente = (xNome?.[1] || cnpj?.[1] || '').trim().slice(0, 100)
+  }
+  if (!emitente) {
+    const iEmit = docXml.match(/<IEmit[^>]*>([\s\S]*?)<\/IEmit>/i)
+    if (iEmit) {
+      const xNome = iEmit[1].match(/<xNome>([^<]*)<\/xNome>/i)
+      const cnpj = iEmit[1].match(/<CNPJ>([^<]*)<\/CNPJ>/i)
+      emitente = (xNome?.[1] || cnpj?.[1] || '').trim().slice(0, 100)
+    }
+  }
+  if (!emitente) {
+    const firstNome = docXml.match(/<xNome>([^<]{1,100})<\/xNome>/i)
+    emitente = (firstNome?.[1] || '—').trim().slice(0, 100)
+  }
+
+  let destinatario = ''
+  const destBlock = docXml.match(/<dest[^>]*>([\s\S]*?)<\/dest>/i)
+  if (destBlock) {
+    const xNome = destBlock[1].match(/<xNome>([^<]*)<\/xNome>/i)
+    const doc = destBlock[1].match(/<CNPJ>([^<]*)<\/CNPJ>/i) || destBlock[1].match(/<CPF>([^<]*)<\/CPF>/i)
+    destinatario = (xNome?.[1] || doc?.[1] || '').trim().slice(0, 100)
+  }
+  if (!destinatario) {
+    const iDest = docXml.match(/<IDest[^>]*>([\s\S]*?)<\/IDest>/i)
+    if (iDest) {
+      const xNome = iDest[1].match(/<xNome>([^<]*)<\/xNome>/i)
+      const doc = iDest[1].match(/<CNPJ>([^<]*)<\/CNPJ>/i) || iDest[1].match(/<CPF>([^<]*)<\/CPF>/i)
+      destinatario = (xNome?.[1] || doc?.[1] || '').trim().slice(0, 100)
+    }
+  }
+  if (!destinatario) destinatario = '—'
+
+  const dhEmiMatch = docXml.match(/<dhEmi>([^<]+)<\/dhEmi>/i)
+  let dhEmi = new Date()
+  if (dhEmiMatch?.[1]) {
+    const parsed = new Date(dhEmiMatch[1])
+    if (!Number.isNaN(parsed.getTime())) dhEmi = parsed
+  }
+
+  return {
+    chNFeDigits,
+    numeroDoc,
+    emitente: emitente || '—',
+    destinatario,
+    dhEmi,
+    cnpj,
+    ie,
+    valorNf,
+  }
+}
+
+/**
+ * Se já existir `DfeRepositorioNFe` com a mesma chNFe (44 dígitos) na empresa, atualiza esse registro e o lote;
+ * caso contrário cria um novo e grava `DFeLoteDist.IdDfeRepositorioNFe`.
+ * Vários lotes podem apontar para o mesmo repositório (ex.: resumo + proc); não zera FK dos demais.
+ * `repoIdByCh44` (opcional): cache do mesmo `syncDistributionsToRepositorio` para mesma chNFe criada/atualizada
+ * nesta transação ainda não visível em um segundo `SELECT` (ex.: isolamento com snapshot).
+ * @param {import('sequelize').Transaction} transaction
+ * @param {number} idStatus de DfeRepositorioStatus (pré-resolvido)
+ * @param {Map<string, number>|null} [repoIdByCh44]
+ * @returns {Promise<{ linked: boolean }>}
+ */
+async function linkOneLoteRowToRepositorio(transaction, session, lote, idStatus, repoIdByCh44 = null) {
+  const docXml = lote?.docXml
+  if (!lote?.id || !docXml) return { linked: false }
+  if (lote.idDfeRepositorioNFe) return { linked: false }
+
+  const payload = extractRepositorioPayloadFromDocXml(docXml)
+  const ch = digitsOnly(dfeLoteDistRepository.extractChNFeFromDocXml(docXml)).slice(0, 44)
+  if (!ch || ch.length < 44) return { linked: false }
+
+  const chKey = ch.slice(0, 44)
+  const chPadded = dfeRepositorioNFeRepository.chNFeAsNchar44(ch)
+
+  let existingRepo = null
+  const cachedId = repoIdByCh44?.get(chKey)
+  if (cachedId != null && !Number.isNaN(Number(cachedId))) {
+    existingRepo = { id: Number(cachedId) }
+  }
+  if (!existingRepo) {
+    existingRepo = await dfeRepositorioNFeRepository.findOneByCompanyAndChNFe(transaction, {
+      companyId: session.company.id,
+      chNFeDigits: ch,
+    })
+  }
+
+  if (existingRepo) {
+    await dfeRepositorioNFeRepository.updateById(transaction, {
+      id: existingRepo.id,
+      data: {
+        idLoteDistDFe: lote.id,
+        chNFe: chPadded,
+        numeroDoc: payload.numeroDoc,
+        emitente: payload.emitente,
+        destinatario: payload.destinatario,
+        dhEmi: payload.dhEmi,
+        cnpj: payload.cnpj,
+        ie: payload.ie,
+        valorNf: payload.valorNf,
+      },
+    })
+    const n = await dfeLoteDistRepository.updateById(transaction, {
+      id: lote.id,
+      data: { idDfeRepositorioNFe: existingRepo.id },
+    })
+    if (n !== 1) {
+      throw new Error(`Esperado gravar IdDfeRepositorioNFe no lote ${lote.id}; linhas afetadas: ${n}.`)
+    }
+    if (repoIdByCh44) repoIdByCh44.set(chKey, Number(existingRepo.id))
+    return { linked: true }
+  }
+
+  const repo = await dfeRepositorioNFeRepository.create(transaction, {
+    idLoteDistDFe: lote.id,
+    numeroDoc: payload.numeroDoc,
+    chNFe: chPadded,
+    emitente: payload.emitente,
+    destinatario: payload.destinatario,
+    dhEmi: payload.dhEmi,
+    cnpj: payload.cnpj,
+    ie: payload.ie,
+    valorNf: payload.valorNf,
+    idStatus,
+    isExportada: false,
+    companyId: session.company.id,
+  })
+
+  const n = await dfeLoteDistRepository.updateById(transaction, {
+    id: lote.id,
+    data: { idDfeRepositorioNFe: repo.id },
+  })
+  if (n !== 1) {
+    throw new Error(`Esperado gravar IdDfeRepositorioNFe no lote ${lote.id}; linhas afetadas: ${n}.`)
+  }
+  if (repoIdByCh44) repoIdByCh44.set(chKey, Number(repo.id))
+  return { linked: true }
+}
+
+async function upsertSyncedDistributionDocs(transaction, { db, session, extractedDocs, uniqueSchemaNames }) {
   const existingSchemas = await db.findAllSchemas(transaction, uniqueSchemaNames)
   const schemaMap = new Map(existingSchemas.map(s => [s.schema, s.id]))
 
@@ -225,11 +300,6 @@ async function upsertSyncedDistributionDocs(transaction, { db, session, extracte
     const createdSchemas = await db.bulkCreateSchemas(transaction, missingSchemaNames.map(name => ({ schema: name, descricao: name })))
     createdSchemas.forEach(s => schemaMap.set(s.schema, s.id))
   }
-
-  const origem =
-    idDFeLoteDistOrigem != null && idDFeLoteDistOrigem !== ""
-      ? Number(idDFeLoteDistOrigem)
-      : null
 
   const syncedData = extractedDocs.map(doc => {
     const buffer = Buffer.from(doc.base64Content, "base64")
@@ -242,11 +312,11 @@ async function upsertSyncedDistributionDocs(transaction, { db, session, extracte
       companyId: session.company.id,
       data: new Date(),
       isUnPack: true,
-      ...(origem != null && !Number.isNaN(origem) ? { idDFeLoteDistOrigem: origem } : {}),
     }
   })
 
   await db.bulkCreate(transaction, syncedData)
+
   return { count: syncedData.length }
 }
 
@@ -271,7 +341,7 @@ export async function syncDistributions(transaction) {
   const db = dfeLoteDistRepository
 
   const lastNsu = await db.findLastNSU(transaction, {
-    where: { companyId: session.company.id }
+    where: { companyId: session.company.id, idDFeLoteDistOrigem: null },
   })
 
   // Parse certificate if string
@@ -320,19 +390,41 @@ export async function syncDistributions(transaction) {
   })
 }
 
-function digitsOnly(value) {
-  return String(value ?? "").replace(/\D/g, "")
+/**
+ * Vincula ao repositório linhas `DFeLoteDist` com `IdDfeRepositorioNFe` NULL (schemas/XML habituais **ou** já existe repositório com a mesma chNFe extraída do `DocXml`).
+ * A chNFe (44 dígitos) define se cria `DfeRepositorioNFe` ou apenas atualiza o registro existente e aponta `IdLoteDistDFe`.
+ * Sem chNFe válida no XML, o lote permanece pendente.
+ * @param {import('sequelize').Transaction} transaction
+ * @returns {Promise<{ count: number, scanned: number }>}
+ */
+export async function syncDistributionsToRepositorio(transaction) {
+  const session = await getSession()
+  const idStatus = await dfeRepositorioNFeRepository.findDefaultRepositorioStatusId(transaction)
+
+  const pending = await dfeLoteDistRepository.findAllPendingForRepositorioLink(transaction, {
+    companyId: session.company.id,
+  })
+
+  /** Chave 44 dígitos → Id do repositório já criado/atualizado nesta execução (evita 2× create na mesma chNFe). */
+  const repoIdByCh44 = new Map()
+  let linked = 0
+  for (const lote of pending) {
+    const { linked: ok } = await linkOneLoteRowToRepositorio(transaction, session, lote, idStatus, repoIdByCh44)
+    if (ok) linked += 1
+  }
+
+  return { count: linked, scanned: pending.length }
 }
 
 /**
  * @param {import('sequelize').Transaction} transaction
  * @param {number|string} id
  */
-export async function syncDistributionsById(transaction, id) {
+export async function syncDistributionsById(transaction, manifestedLoteId) {
   const session = await getSession()
-  const current = await findOne(transaction, id)
+  const current = await findOne(transaction, manifestedLoteId)
 
-  const chNFeDigits = digitsOnly(extractChNFeFromDocXml(current.docXml))
+  const chNFeDigits = digitsOnly(dfeLoteDistRepository.extractChNFeFromDocXml(current.docXml))
   if (!chNFeDigits) {
     throw new Error("Chave da NF-e (chNFe) não encontrada no documento.")
   }
@@ -387,7 +479,7 @@ export async function syncDistributionsById(transaction, id) {
   const parsedDocs = extractedDocs.map(doc => {
     const buffer = Buffer.from(doc.base64Content, "base64")
     const decompressed = zlib.gunzipSync(buffer).toString("utf8")
-    const parsedChNFe = digitsOnly(extractChNFeFromDocXml(decompressed))
+    const parsedChNFe = digitsOnly(dfeLoteDistRepository.extractChNFeFromDocXml(decompressed))
 
     return {
       ...doc,
@@ -400,22 +492,70 @@ export async function syncDistributionsById(transaction, id) {
     parsedDocs.find(d => d.parsedChNFe && d.parsedChNFe === normalizedCurrentChNFe)
     || parsedDocs[0]
 
-  await dfeLoteDistRepository.updateById(transaction, {
-    id: current.id,
-    data: {
-      nsu: current.nsu,
-      idSchema: schemaMap.get(selectedDoc.schemaName) || current.idSchema,
-      docXml: selectedDoc.decompressed,
-      data: new Date(),
-      isUnPack: true
-    }
+  const returnedNsu = normalizeNsuForDist(selectedDoc.nsu ?? current.nsu)
+  if (!returnedNsu) {
+    throw new Error("NSU não encontrado na resposta da distribuição (docZip / lote atual).")
+  }
+
+  const idSchema = schemaMap.get(selectedDoc.schemaName) ?? current.idSchema
+  if (idSchema == null) {
+    throw new Error(`Schema não resolvido para o documento: ${selectedDoc.schemaName ?? ""}`)
+  }
+
+  const payloadCommon = {
+    nsu: returnedNsu,
+    idSchema,
+    docXml: selectedDoc.decompressed,
+    data: new Date(),
+    isUnPack: true,
+  }
+
+  const byNsu = await dfeLoteDistRepository.findOne(transaction, {
+    where: { companyId: session.company.id, nsu: returnedNsu },
   })
+
+  let targetRow = null
+
+  if (byNsu) {
+    if (Number(byNsu.id) === Number(manifestedLoteId)) {
+      await dfeLoteDistRepository.updateById(transaction, {
+        id: byNsu.id,
+        data: { ...payloadCommon, idDFeLoteDistOrigem: null },
+      })
+    } else {
+      await dfeLoteDistRepository.updateById(transaction, {
+        id: byNsu.id,
+        data: { ...payloadCommon, idDFeLoteDistOrigem: manifestedLoteId },
+      })
+    }
+    targetRow = await dfeLoteDistRepository.findOne(transaction, {
+      where: { id: byNsu.id, companyId: session.company.id },
+    })
+  } else {
+    const userId = session?.user?.id
+    if (!userId) {
+      throw new Error("Usuário da sessão obrigatório para gravar novo DFeLoteDist após manifestação.")
+    }
+    targetRow = await dfeLoteDistRepository.create(transaction, {
+      ...payloadCommon,
+      userId,
+      idDFeLoteDistOrigem: manifestedLoteId,
+      companyId: session.company.id,
+      idDfeRepositorioNFe: null,
+    })
+  }
+
+  if (targetRow && !targetRow.idDfeRepositorioNFe) {
+    const idStatus = await dfeRepositorioNFeRepository.findDefaultRepositorioStatusId(transaction)
+    await linkOneLoteRowToRepositorio(transaction, session, targetRow, idStatus)
+  }
 
   return { count: 1 }
 }
 
 export async function createManifestEvent(transaction, {
-  distributionId,
+  dfeRepositorioNFeId,
+  loteId,
   manifestationCode,
   success,
   message = null,
@@ -423,7 +563,9 @@ export async function createManifestEvent(transaction, {
   const session = await getSession()
 
   const row = await manifestEventRepository.create(transaction, {
-    distributionId,
+    dfeRepositorioNFeId,
+    /** Bancos legados: ManifestEvent.DistributionId = DFeLoteDist.Id (até o alter remover a coluna). */
+    distributionId: loteId,
     manifestationCode,
     success,
     message,
@@ -431,21 +573,12 @@ export async function createManifestEvent(transaction, {
     userId: session?.user?.id || null,
   })
 
-  await dfeLoteDistRepository.updateById(transaction, {
-    id: distributionId,
+  await dfeRepositorioNFeRepository.updateById(transaction, {
+    id: dfeRepositorioNFeId,
     data: { lastManifestEventId: row.id },
   })
 
   return row
-}
-
-function extractChNFeFromDocXml(docXml) {
-  if (!docXml || typeof docXml !== "string") return null
-  const chTag = docXml.match(/<chNFe>([^<]+)<\/chNFe>/i)
-  if (chTag?.[1]) return chTag[1].trim()
-  const idAttr = docXml.match(/<infNFe[^>]*\bId\s*=\s*["']NFe(\d{44})["']/i)
-  if (idAttr?.[1]) return idAttr[1]
-  return null
 }
 
 function escapeXmlText(value) {
@@ -468,7 +601,12 @@ export async function manifest(transaction, id, manifestation) {
   const record = await findOne(transaction, id)
   if (!record) throw new Error("Registro não encontrado.")
 
-  const chNFe = extractChNFeFromDocXml(record.docXml)
+  const repoId = record.idDfeRepositorioNFe
+  if (!repoId) {
+    throw new Error("Distribuição sem repositório vinculado. Atualize a lista (Pesquisar) e tente novamente.")
+  }
+
+  const chNFe = dfeLoteDistRepository.extractChNFeFromDocXml(record.docXml)
   if (!chNFe) {
     throw new Error("Chave da NF-e (chNFe) não encontrada no documento.")
   }
@@ -519,23 +657,15 @@ export async function manifest(transaction, id, manifestation) {
   const operations = ['MANIFEST']
 
   await createManifestEvent(transaction, {
-    distributionId: id,
+    dfeRepositorioNFeId: repoId,
+    loteId: id,
     manifestationCode: code,
     success: true,
     message: xMotivo,
   })
 
   await syncDistributionsById(transaction, id)
-
-  switch (code) {
-    case ManifestationType.Awareness.code: {
-      operations.push('SYNC_DISTRIBUTIONS_BY_ID')
-      break
-    }
-    default: {
-      break
-    }
-  }
+  operations.push('SYNC_DISTRIBUTIONS_BY_ID')
 
   return {
     ...result,

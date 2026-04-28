@@ -15,14 +15,14 @@ export async function create(transaction, data) {
 
 /**
  * @param {import('sequelize').Transaction} transaction
- * @param {number|string} distributionId
+ * @param {number|string} dfeRepositorioNFeId
  * @returns {Promise<object[]>}
  */
-export async function findAllByDistributionId(transaction, distributionId) {
+export async function findAllByDfeRepositorioNFeId(transaction, dfeRepositorioNFeId) {
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {
     const rows = await db.ManifestEvent.findAll({
-      where: { distributionId },
+      where: { dfeRepositorioNFeId },
       order: [['occurredAt', 'DESC']],
       transaction: t,
     })

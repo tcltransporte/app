@@ -9,9 +9,16 @@ export class ManifestEvent {
     defaultValue: DataTypes.UUIDV4,
   }
 
+  dfeRepositorioNFeId = {
+    field: 'DfeRepositorioNFeId',
+    allowNull: true,
+    type: DataTypes.BIGINT
+  }
+
+  /** Legado: mesmo que DFeLoteDist.Id; remover do model após `DROP COLUMN DistributionId` no banco. */
   distributionId = {
     field: 'DistributionId',
-    allowNull: false,
+    allowNull: true,
     type: DataTypes.BIGINT
   }
 
