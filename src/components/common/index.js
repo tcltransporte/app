@@ -11,5 +11,6 @@ export * from './FilterDrawer';
 export * from './RangeModal';
 export * from './SplitButton';
 export * from './Loading';
+export * from './PDFViewer';
 
 

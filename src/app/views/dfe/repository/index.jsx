@@ -7,6 +7,7 @@ import {
   Search as SearchIcon,
   Event as EventIcon,
   Visibility as ViewIcon,
+  PictureAsPdf as PdfIcon,
   MoreVert as MoreVertIcon,
   Download as DownloadIcon,
   Sync as SyncIcon,
@@ -22,7 +23,7 @@ import DistributionFilter from './filter';
 import DFeDistributionXmlViewer from './xml-viewer';
 import DistributionManifestEventsDrawer from './manifest-events-drawer';
 import { useTable, useNavigation, useRangeFilter, useFilter, useLoading } from '@/hooks';
-import { Container, Table, Toolbar, RangeModal } from '@/components/common';
+import { Container, Table, Toolbar, RangeModal, PDFViewer } from '@/components/common';
 import * as dfeLoteDistAction from '@/app/actions/dfe-repository.action';
 import { ManifestationType } from '@/libs/dfeManifestationType';
 import { ServiceStatus } from '@/libs/service';
@@ -97,6 +98,7 @@ export default function DistributionView({
     items: null,
     loading: false,
   })
+  const [pdfViewer, setPdfViewer] = React.useState({ open: false, base64: '', chNFe: '', fileName: 'documento.pdf' })
   const [actionMenu, setActionMenu] = React.useState({ anchorEl: null, row: null })
   const [batchManifestMenuEl, setBatchManifestMenuEl] = React.useState(null)
 
@@ -218,6 +220,74 @@ export default function DistributionView({
     try {
       await buildAndDownloadXmlZip([row])
       alert.success('Sucesso!', 'XML baixado em arquivo ZIP.')
+    } catch (error) {
+      alert.error('Ops!', error?.body?.message || error.message)
+    } finally {
+      loading.hide()
+    }
+  }
+
+  const handleViewPdf = async (row) => {
+    loading.show()
+    try {
+      if (!row?.xmlLoteDistId) {
+        throw new Error('XML não disponível para gerar PDF.')
+      }
+      const result = await dfeLoteDistAction.getDanfePdfBase64(row.xmlLoteDistId)
+      if (result.header.status !== ServiceStatus.SUCCESS)
+        throw result
+
+      const pdfBase64 = String(result.body?.pdfBase64 ?? '').trim()
+      if (!pdfBase64) {
+        throw new Error('Nenhum PDF foi retornado para visualização.')
+      }
+
+      setPdfViewer({
+        open: true,
+        base64: pdfBase64,
+        chNFe: String(row.chNFe ?? ''),
+        fileName: `${String(row.chNFe ?? 'danfe').trim() || 'danfe'}.pdf`,
+      })
+    } catch (error) {
+      alert.error('Ops!', error?.body?.message || error.message)
+    } finally {
+      loading.hide()
+    }
+  }
+
+  const handleViewSelectedPdf = async () => {
+    if (!table.selecteds.length) {
+      alert.error('Ops!', 'Selecione ao menos um registro para visualizar o PDF.')
+      return
+    }
+
+    const missingKeys = table.selecteds
+      .filter((row) => !row.xmlLoteDistId)
+      .map((row) => String(row.chNFe ?? '').trim() || `ID ${row.id}`)
+
+    if (missingKeys.length > 0) {
+      alert.error('Ops!', `XML não disponível para a(s) chave(s): ${missingKeys.join(', ')}`)
+      return
+    }
+
+    loading.show()
+    try {
+      const ids = table.selecteds.map((row) => row.xmlLoteDistId)
+      const result = await dfeLoteDistAction.getDanfePdfBase64Batch(ids)
+      if (result.header.status !== ServiceStatus.SUCCESS)
+        throw result
+
+      const pdfBase64 = String(result.body?.pdfBase64 ?? '').trim()
+      if (!pdfBase64) {
+        throw new Error('Nenhum PDF foi retornado para visualização.')
+      }
+
+      setPdfViewer({
+        open: true,
+        base64: pdfBase64,
+        chNFe: `${table.selecteds.length} documento(s)`,
+        fileName: `danfe-lote-${new Date().toISOString().slice(0, 10)}.pdf`,
+      })
     } catch (error) {
       alert.error('Ops!', error?.body?.message || error.message)
     } finally {
@@ -406,6 +476,9 @@ export default function DistributionView({
               display: 'flex',
               justifyContent: 'center',
               width: '100%',
+              position: 'relative',
+              height: 0,
+              overflow: 'visible',
               opacity: isActiveRowMenu ? 1 : 0,
               pointerEvents: isActiveRowMenu ? 'auto' : 'none',
               transition: 'opacity 0.2s',
@@ -421,12 +494,23 @@ export default function DistributionView({
               onClick={(event) => openActionMenu(event, row)}
               title="Ações"
               sx={{
+                position: 'absolute',
+                top: '50%',
+                transform: 'translateY(-50%)',
                 borderRadius: '50%',
                 border: '1px solid',
                 borderColor: 'divider',
                 bgcolor: 'background.paper',
+                p: 0.5,
+                width: 28,
+                height: 28,
+                minWidth: 28,
+                minHeight: 28,
                 '&:hover': {
                   bgcolor: 'action.hover',
+                },
+                '& .MuiSvgIcon-root': {
+                  fontSize: 18,
                 },
               }}
             >
@@ -476,6 +560,13 @@ export default function DistributionView({
                   label: 'Manifestar',
                   icon: <AwarenessIcon fontSize="small" />,
                   onClick: (event) => setBatchManifestMenuEl(event.currentTarget),
+                  color: 'primary',
+                  variant: 'outlined',
+                },
+                {
+                  label: 'Visualizar PDF',
+                  icon: <PdfIcon fontSize="small" />,
+                  onClick: handleViewSelectedPdf,
                   color: 'primary',
                   variant: 'outlined',
                 },
@@ -642,6 +733,7 @@ export default function DistributionView({
             },
           }}
         >
+          {/* Visualizar XML 
           <MenuItem
             disabled={!actionMenu.row?.xmlLoteDistId}
             onClick={() => {
@@ -652,6 +744,19 @@ export default function DistributionView({
           >
             <ListItemIcon><ViewIcon fontSize="small" /></ListItemIcon>
             <ListItemText>Visualizar XML</ListItemText>
+          </MenuItem>
+          */}
+
+          <MenuItem
+            disabled={!actionMenu.row?.xmlLoteDistId}
+            onClick={() => {
+              const row = actionMenu.row
+              closeActionMenu()
+              if (row?.xmlLoteDistId) handleViewPdf(row)
+            }}
+          >
+            <ListItemIcon><PdfIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Visualizar PDF</ListItemText>
           </MenuItem>
 
           <MenuItem
@@ -715,6 +820,14 @@ export default function DistributionView({
             <ListItemText>Manifestações</ListItemText>
           </MenuItem>
         </Menu>
+
+        <PDFViewer
+          open={pdfViewer.open}
+          onClose={() => setPdfViewer((prev) => ({ ...prev, open: false }))}
+          base64={pdfViewer.base64}
+          title={`DANFE (PDF)${pdfViewer.chNFe ? ` - ${pdfViewer.chNFe}` : ''}`}
+          fileName={pdfViewer.fileName}
+        />
       </Container.Content>
 
       <Container.Footer
