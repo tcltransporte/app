@@ -39,7 +39,7 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { Formik, Form, Field, FieldArray } from 'formik';
-import { AutoComplete, DateField, NumericField, SelectField } from '@/components/controls';
+import { AutoComplete, DateField, NumericField, SelectField, CheckField } from '@/components/controls';
 import * as paymentAction from '@/app/actions/payment.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
@@ -107,12 +107,14 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
       <TableRow>
         <TableCell colSpan={3} sx={{ py: 0, px: 0 }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
-            <Table size="small">
+            <Table size="small" sx={{ tableLayout: 'fixed', '& .MuiTableCell-root': { py: 0.5, px: 0.75 } }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ pl: 6 }}>Forma</TableCell>
-                  <TableCell>Conta Bancária</TableCell>
-                  <TableCell align="right" sx={{ pr: 3 }}>Valor</TableCell>
+                  <TableCell sx={{ pl: 1.5, width: 64 }}>Conc.</TableCell>
+                  <TableCell sx={{ width: '18%' }}>Data Pgto</TableCell>
+                  <TableCell sx={{ width: '22%' }}>Forma</TableCell>
+                  <TableCell sx={{ width: '30%' }}>Conta Bancária</TableCell>
+                  <TableCell align="right" sx={{ width: '16%', pr: 0.5 }}>Valor</TableCell>
                   <TableCell width={40}></TableCell>
                 </TableRow>
               </TableHead>
@@ -122,7 +124,22 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                     <React.Fragment>
                       {item.composition.map((comp, cIdx) => (
                         <TableRow key={cIdx}>
-                          <TableCell sx={{ pl: 6 }}>
+                          <TableCell sx={{ pl: 2, pr: 1 }}>
+                            <Field
+                              name={`items.${index}.composition.${cIdx}.isReconciled`}
+                              component={CheckField}
+                              label=""
+                            />
+                          </TableCell>
+                          <TableCell sx={{ px: 0.5 }}>
+                            <Field
+                              name={`items.${index}.composition.${cIdx}.realDate`}
+                              component={DateField}
+                              size="small"
+                              fullWidth
+                            />
+                          </TableCell>
+                          <TableCell sx={{ px: 0.5 }}>
                             <Field
                               name={`items.${index}.composition.${cIdx}.paymentMethodId`}
                               component={SelectField}
@@ -131,7 +148,7 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                               fullWidth
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell sx={{ px: 0.5 }}>
                             <Field
                               name={`items.${index}.composition.${cIdx}.bankAccountId`}
                               component={AutoComplete}
@@ -141,12 +158,12 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                               fullWidth
                             />
                           </TableCell>
-                          <TableCell align="right" sx={{ pr: 3 }}>
+                          <TableCell align="right" sx={{ pl: 0.5, pr: 0 }}>
                             <Field
                               name={`items.${index}.composition.${cIdx}.value`}
                               component={NumericField}
                               size="small"
-                              sx={{ width: 120 }}
+                              fullWidth
                             />
                           </TableCell>
                           <TableCell>
@@ -159,11 +176,11 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                         </TableRow>
                       ))}
                       <TableRow>
-                        <TableCell colSpan={4} sx={{ p: 0.5 }}>
+                        <TableCell colSpan={6} sx={{ p: 0.5 }}>
                           <Button
                             size="small"
                             startIcon={<AddIcon />}
-                            onClick={() => push({ value: 0, paymentMethodId: '', bankAccountId: '', description: '' })}
+                            onClick={() => push({ value: 0, paymentMethodId: '', bankAccountId: '', realDate: null, isReconciled: false, description: '' })}
                             sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.75rem', ml: 1 }}
                           >
                             Adicionar
@@ -280,6 +297,10 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
           newComposition[0] = { ...newComposition[0], paymentMethodId: value };
         } else if (field === 'bankAccount') {
           newComposition[0] = { ...newComposition[0], bankAccountId: value };
+        } else if (field === 'realDate') {
+          newComposition[0] = { ...newComposition[0], realDate: value };
+        } else if (field === 'isReconciled') {
+          newComposition[0] = { ...newComposition[0], isReconciled: !!value };
         }
       }
       return { ...item, composition: newComposition };
@@ -333,6 +354,8 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
       date: new Date(),
       globalPaymentMethodId: '',
       globalBankAccount: null,
+      globalRealDate: new Date(),
+      globalIsReconciled: false,
       items: data.selectedEntries.map(entry => ({
         entryId: entry.id,
         value: Number(entry.installmentValue) || 0,
@@ -344,6 +367,8 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
           value: Number(entry.installmentValue) || 0,
           paymentMethodId: '',
           bankAccountId: null,
+          realDate: new Date(),
+          isReconciled: false,
           description: ''
         }]
       }))
@@ -357,7 +382,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
         open={open}
         onClose={onClose}
         sx={{ zIndex: zIndex || ((theme) => theme.zIndex.modal + 2) }}
-        PaperProps={{ sx: { width: { xs: '100%', sm: 700 }, display: 'flex', flexDirection: 'column' } }}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 900 }, display: 'flex', flexDirection: 'column' } }}
       >
         <Formik
           innerRef={formikRef}
@@ -417,8 +442,16 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                   <Box sx={{ p: 2 }}>
                     {values.items.length > 1 && (
                       <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} sm={3}>
+                        <Grid container spacing={1}>
+                          <Grid item xs={12} sm={1.5}>
+                            <Field
+                              name="globalIsReconciled"
+                              component={CheckField}
+                              label="Conc."
+                              onChange={(checked) => handleGlobalChange('isReconciled', checked, setFieldValue, values)}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={2.5}>
                             <Field
                               name="date"
                               component={DateField}
@@ -426,7 +459,16 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                               fullWidth
                             />
                           </Grid>
-                          <Grid item xs={12} sm={4}>
+                          <Grid item xs={12} sm={2.5}>
+                            <Field
+                              name="globalRealDate"
+                              component={DateField}
+                              label="Data Pgto"
+                              fullWidth
+                              onChange={(val) => handleGlobalChange('realDate', val, setFieldValue, values)}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={2.5}>
                             <Field
                               name="globalPaymentMethodId"
                               component={SelectField}
@@ -436,7 +478,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                               onChange={(val) => handleGlobalChange('paymentMethodId', val, setFieldValue, values)}
                             />
                           </Grid>
-                          <Grid item xs={12} sm={5}>
+                          <Grid item xs={12} sm={3.5}>
                             <Field
                               name="globalBankAccount"
                               component={AutoComplete}
@@ -452,7 +494,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                     )}
 
                     <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper' }}>
-                      <Table size="small">
+                      <Table size="small" sx={{ tableLayout: 'fixed', '& .MuiTableCell-root': { py: 0.5, px: 0.75 } }}>
                         <TableBody>
                           {values.items.map((item, index) => (
                             <InstallmentRow

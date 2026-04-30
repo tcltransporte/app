@@ -20,9 +20,13 @@ export function useRangeFilter({ initialRange = null, dateFieldOptions = [], def
   }, [JSON.stringify(initialRange)]);
 
   const label = useMemo(() => {
-    if (!range.start && !range.end) return defaultLabel;
+    if (!range.start && !range.end) {
+      const allPeriodPreset = PRESETS.find((p) => p.isAllPeriod);
+      return allPeriodPreset?.label || defaultLabel;
+    }
 
     const matchingPreset = PRESETS.find(p => {
+      if (p.isAllPeriod) return false;
       const { start: s, end: e } = p.getValue();
       return format(s, 'yyyy-MM-dd') === range.start && format(e, 'yyyy-MM-dd') === range.end;
     });

@@ -6,6 +6,8 @@ import { Solicitation } from './models/solicitation.model.js'
 import { CompanyUser } from './models/companyUser.model.js'
 import { CompanyBusiness } from './models/companyBusiness.model.js'
 import { User } from './models/user.model.js'
+import { Role } from './models/role.model.js'
+import { UserRole } from './models/userRole.model.js'
 import { UserMember } from './models/userMember.model.js'
 import { Session } from './models/session.model.js'
 import { Partner } from './models/partner.model.js'
@@ -97,6 +99,8 @@ export class AppContext extends Sequelize {
     this.Service = this.define('service', new Service(), { tableName: 'TipoServico' })
     this.Session = this.define('session', new Session(), { tableName: 'Session' })
     this.User = this.define('user', new User(), { tableName: 'aspnet_Users' })
+    this.Role = this.define('role', new Role(), { tableName: 'aspnet_Roles' })
+    this.UserRole = this.define('userRole', new UserRole(), { tableName: 'aspnet_UsersInRoles' })
     this.UserMember = this.define('userMember', new UserMember(), { tableName: 'aspnet_Membership' })
     this.Document = this.define('document', new Document(), { tableName: 'Compras' })
     this.DocumentType = this.define('documentType', new DocumentType(), { tableName: 'TipoModeloDocumento' })
@@ -162,6 +166,10 @@ export class AppContext extends Sequelize {
 
     this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })
     this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId' })
+    this.User.belongsToMany(this.Role, { as: 'roles', through: this.UserRole, foreignKey: 'userId', otherKey: 'roleId', timestamps: false })
+    this.Role.belongsToMany(this.User, { as: 'users', through: this.UserRole, foreignKey: 'roleId', otherKey: 'userId', timestamps: false })
+    this.UserRole.belongsTo(this.User, { as: 'user', foreignKey: 'userId' })
+    this.UserRole.belongsTo(this.Role, { as: 'role', foreignKey: 'roleId' })
 
     this.Document.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId' })
     this.Document.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })

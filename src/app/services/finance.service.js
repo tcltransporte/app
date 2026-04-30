@@ -88,6 +88,81 @@ export async function findAllEntries(transaction, params = {}) {
     delete params.operationType
   }
 
+  if (params.filters) {
+    const { filters } = params
+    const andConditions = []
+
+    if (filters.documentNumber) {
+      andConditions.push({
+        '$title.numero_documento$': { [Op.like]: `%${String(filters.documentNumber).trim()}%` }
+      })
+    }
+
+    if (filters.partner) {
+      const partnerSearch = String(filters.partner).trim().replace(/\s+/g, '%')
+      andConditions.push({
+        [Op.or]: [
+          { '$title.partner.RazaoSocial$': { [Op.like]: `%${partnerSearch}%` } },
+          { '$title.partner.nome$': { [Op.like]: `%${partnerSearch}%` } }
+        ]
+      })
+    }
+
+    if (filters.description) {
+      andConditions.push({
+        Descricao: { [Op.like]: `%${String(filters.description).trim()}%` }
+      })
+    }
+
+    if (filters.accountPlan) {
+      const accountPlanSearch = String(filters.accountPlan).trim().replace(/\s+/g, '%')
+      andConditions.push({
+        [Op.or]: [
+          { '$title.accountPlan.Descricao$': { [Op.like]: `%${accountPlanSearch}%` } },
+          { '$title.accountPlan.Codigo$': { [Op.like]: `%${accountPlanSearch}%` } }
+        ]
+      })
+    }
+
+    if (filters.costCenter) {
+      andConditions.push({
+        '$title.costCenter.Descricao$': { [Op.like]: `%${String(filters.costCenter).trim()}%` }
+      })
+    }
+
+    if (filters.status) {
+      const status = String(filters.status).trim()
+      if (status === 'paid') {
+        andConditions.push({ codigo_pagamento: { [Op.ne]: null } })
+      }
+      if (status === 'open') {
+        andConditions.push({ codigo_pagamento: { [Op.is]: null } })
+      }
+    }
+
+    if (filters.installmentNumber) {
+      andConditions.push({
+        numero_parcela: Number(filters.installmentNumber)
+      })
+    }
+
+    if (filters.installmentValue) {
+      const parsedValue = Number(String(filters.installmentValue).replace(',', '.'))
+      if (!Number.isNaN(parsedValue)) {
+        andConditions.push({ valor_parcela: parsedValue })
+      }
+    }
+
+    if (andConditions.length > 0) {
+      params.where = {
+        ...(params.where || {}),
+        [Op.and]: [...((params.where && params.where[Op.and]) || []), ...andConditions]
+      }
+    }
+
+    delete params.filters
+  }
+
   params.include = [...(params.include || []), titleInclude]
 
   if (params.range) {

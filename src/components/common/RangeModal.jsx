@@ -55,6 +55,7 @@ import { DateField } from '@/components/controls/DateField';
 import { SelectField } from '@/components/controls/SelectField';
 
 export const PRESETS = [
+  { label: 'Todo o período', isAllPeriod: true, getValue: () => null },
   { label: 'Hoje', getValue: () => ({ start: startOfDay(new Date()), end: endOfDay(new Date()) }) },
   { label: 'Ontem', getValue: () => ({ start: startOfDay(subDays(new Date(), 1)), end: endOfDay(subDays(new Date(), 1)) }) },
   { label: 'Semana atual', getValue: () => ({ start: startOfWeek(new Date(), { weekStartsOn: 0 }), end: endOfWeek(new Date(), { weekStartsOn: 0 }) }) },
@@ -138,7 +139,11 @@ export function RangeModal({
       const e = initialEnd || '';
       const f = initialField || (fieldOptions.length > 0 ? fieldOptions[0].value : '');
       
+      if (!s || !e) {
+        setActivePreset('Todo o período');
+      } else {
       const found = PRESETS.find(p => {
+        if (p.isAllPeriod) return false;
         const { start: ps, end: pe } = p.getValue();
         return format(ps, 'yyyy-MM-dd') === s && format(pe, 'yyyy-MM-dd') === e;
       });
@@ -147,6 +152,7 @@ export function RangeModal({
         setActivePreset(found.label);
       } else {
         setActivePreset(null);
+      }
       }
       
       setDateRange([
@@ -172,6 +178,11 @@ export function RangeModal({
   };
 
   const handleApplyPreset = (preset) => {
+    if (preset.isAllPeriod) {
+      setActivePreset(preset.label);
+      return;
+    }
+
     const { start: s, end: e } = preset.getValue();
     setDateRange([
       {
@@ -184,9 +195,11 @@ export function RangeModal({
   };
 
   const handleApply = () => {
+    const isAllPeriodSelected = activePreset === 'Todo o período';
+
     onApply({
-      start: format(dateRange[0].startDate, 'yyyy-MM-dd'),
-      end: format(dateRange[0].endDate, 'yyyy-MM-dd'),
+      start: isAllPeriodSelected ? '' : format(dateRange[0].startDate, 'yyyy-MM-dd'),
+      end: isAllPeriodSelected ? '' : format(dateRange[0].endDate, 'yyyy-MM-dd'),
       field
     });
     onClose();

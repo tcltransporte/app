@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { Container, Table, Toolbar, RangeModal } from '@/components/common';
-import { useTable, useNavigation, useLoading, useRangeFilter, useExport } from '@/hooks';
+import { useTable, useNavigation, useLoading, useRangeFilter, useExport, useFilter } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
-import { Button, IconButton, Tooltip, Box, Typography, Chip } from '@mui/material';
+import { Button, IconButton, Tooltip, Box, Typography, Chip, Badge } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -28,11 +28,13 @@ import FinanceEntryModal from './finance-entry-modal';
 import FinanceTitleDetailsDrawer from './finance-title-details-drawer';
 import FinancePaymentHistoryDrawer from './finance-payment-history-drawer';
 import EntryStatusChip from './finance-entry-status-chip';
+import FinanceEntriesFilter from './finance-entries-filter';
 
-export default function FinanceEntriesList({ operationType, title, initialTable, selectedId: propsSelectedId, initialRange }) {
+export default function FinanceEntriesList({ operationType, title, initialTable, selectedId: propsSelectedId, initialRange, initialFilters = {} }) {
   const table = useTable({ initialTable });
   const loading = useLoading();
   const navigation = useNavigation(`/finances/${operationType === 1 ? 'receivements' : 'payments'}`, propsSelectedId);
+  const filter = useFilter({ initialFilters });
 
   const rangeFilter = useRangeFilter({
     initialRange,
@@ -84,7 +86,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       const result = await financeEntryAction.findAll({
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
-        where: overrides.where || {},
+        filters: overrides.filters || filter.filters,
         range: overrides.range || rangeFilter.range,
         operationType,
         sortBy: overrides.sortBy || table.sortBy || undefined,
@@ -107,17 +109,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       table.setLoading(false);
       loading.hide();
     }
-  }, [table.page, table.rowsPerPage, table.sortBy, table.sortOrder, operationType, rangeFilter.range]);
-
-  const isFirstMount = React.useRef(true);
-  React.useEffect(() => {
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      return;
-    }
-    // Only fetch automatically if filters/page change and it is not the first SSR render
-    fetchTable();
-  }, [fetchTable]);
+  }, [table.page, table.rowsPerPage, table.sortBy, table.sortOrder, operationType, rangeFilter.range, filter.filters]);
 
   const columns = [
     {
@@ -301,6 +293,15 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
               onClick: rangeFilter.handleOpen
             },
             {
+              label: 'Filtros',
+              icon: (
+                <Badge badgeContent={filter.activeCount} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16, top: 2, right: 2 } }}>
+                  <FilterIcon fontSize="small" />
+                </Badge>
+              ),
+              onClick: filter.handleOpen
+            },
+            {
               label: 'Pesquisar',
               icon: <SearchIcon fontSize="small" />,
               variant: 'outlined',
@@ -426,6 +427,20 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
           if (ok) {
             rangeFilter.setRange(vals);
             rangeFilter.setOpen(false);
+            table.setPage(1);
+          }
+        }}
+      />
+
+      <FinanceEntriesFilter
+        open={filter.open}
+        filters={filter.filters}
+        onClose={filter.handleClose}
+        onApply={async (vals) => {
+          const ok = await fetchTable({ filters: vals, page: 1 });
+          if (ok) {
+            filter.setFilters(vals);
+            filter.setOpen(false);
             table.setPage(1);
           }
         }}

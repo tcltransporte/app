@@ -27,7 +27,19 @@ export async function getSession(transaction = null) {
     const session = await sessionRepository.findOne(t, {
       attributes: ['id', 'lastAcess', 'expireIn'],
       include: [
-        { model: db.User, as: 'user', attributes: ['id', 'userName'] },
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['id', 'userName'],
+          include: [
+            {
+              model: db.Role,
+              as: 'roles',
+              attributes: ['id', 'roleName', 'loweredRoleName'],
+              through: { attributes: [] }
+            }
+          ]
+        },
         {
           model: db.Company, as: 'company', attributes: ['id', 'name', 'surname', 'cnpj', 'certificate'],
           include: [

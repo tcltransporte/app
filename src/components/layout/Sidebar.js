@@ -394,15 +394,41 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
       return dynamicMenuItems;
     }
 
+    const normalizeRole = (value) => String(value || '').trim().toLowerCase();
+    const userRoles = (activeSession?.user?.roles || []).map(role => normalizeRole(role?.roleName || role?.loweredRoleName));
+    const hasAdminRole = userRoles.includes('administrador');
+
+    const hasAccessByRole = (itemRoles = []) => {
+      if (!Array.isArray(itemRoles) || itemRoles.length === 0) return true;
+      if (hasAdminRole) return true;
+      const requiredRoles = itemRoles.map(normalizeRole).filter(Boolean);
+      if (requiredRoles.length === 0) return true;
+      return requiredRoles.some(role => userRoles.includes(role));
+    };
+
     const processSitemapItem = (item, isSubItem = false) => ({
       text: item.text,
       icon: isSubItem ? (iconMap[item.icon] || null) : (iconMap[item.icon] || <Description />),
       path: item.path,
-      subMenu: item.subMenu ? item.subMenu.map(sub => processSitemapItem(sub, true)) : null
+      roles: item.roles || [],
+      subMenu: item.subMenu ? item.subMenu.map(sub => processSitemapItem(sub, true)).filter(Boolean) : null
     });
 
-    return sitemapMenuItems.map(item => processSitemapItem(item, false));
-  }, [sitemapMenuItems, dynamicMenuItems]);
+    const filterByRole = (item) => {
+      if (!hasAccessByRole(item.roles)) return null;
+
+      const filteredSubMenu = item.subMenu?.map(filterByRole).filter(Boolean) || null;
+      return {
+        ...item,
+        subMenu: filteredSubMenu
+      };
+    };
+
+    return sitemapMenuItems
+      .map(item => processSitemapItem(item, false))
+      .map(filterByRole)
+      .filter(Boolean);
+  }, [sitemapMenuItems, dynamicMenuItems, activeSession?.user?.roles]);
 
 
 

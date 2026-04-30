@@ -71,7 +71,11 @@ export function LoginView() {
         setStep('selection')
         break
       case "SELECT_COMPANY":
+        setCompanyBusinesses(result.body.companyBusinesses || [])
         setCompanies(result.body.companies || [])
+        if (result.body.selectedCompanyBusinessId && setFieldValue) {
+          setFieldValue('companyBusinessId', result.body.selectedCompanyBusinessId)
+        }
         setStep('selection')
         break
       case "ACTIVE_SESSION_EXISTS":

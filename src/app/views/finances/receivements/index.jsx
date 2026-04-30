@@ -3,7 +3,7 @@
 import React from 'react';
 import FinanceEntriesList from '../finance-entries-list';
 
-export default function ReceivableView({ operationType, initialTable, selectedId, initialRange }) {
+export default function ReceivableView({ operationType, initialTable, selectedId, initialRange, initialFilters }) {
   return (
     <FinanceEntriesList
       operationType={operationType}
@@ -11,6 +11,7 @@ export default function ReceivableView({ operationType, initialTable, selectedId
       initialTable={initialTable}
       selectedId={selectedId}
       initialRange={initialRange}
+      initialFilters={initialFilters}
     />
   );
 }
