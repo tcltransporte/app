@@ -47,9 +47,91 @@ import * as search from '@/libs/search';
 import FinanceHistoryTimeline from './finance-history-timeline';
 import FinanceEntryModal from './finance-entry-modal';
 
+const BAIXA_BULK_PREFS_STORAGE_KEY = 'finance-baixa-em-lote-last';
+
+function sanitizeBankForStorage(acc) {
+  if (!acc || typeof acc !== 'object') return acc ?? null;
+  return {
+    id: acc.id,
+    description: acc.description ?? '',
+    bankName: acc.bankName ?? '',
+    agency: acc.agency ?? '',
+    accountNumber: acc.accountNumber ?? '',
+  };
+}
+
+/** Última baixa em lote (ou individual): Conc., Data Pgto, Forma, Conta — reaplicados na próxima abertura. */
+function loadPersistedBaixaPrefs() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(BAIXA_BULK_PREFS_STORAGE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (!p || typeof p !== 'object') return null;
+    return {
+      globalPaymentMethodId: p.globalPaymentMethodId ?? '',
+      globalBankAccount: p.globalBankAccount,
+      globalRealDate: p.globalRealDate ? new Date(p.globalRealDate) : new Date(),
+      globalIsReconciled: !!p.globalIsReconciled,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistBaixaPrefs(formValues) {
+  if (typeof window === 'undefined') return;
+  try {
+    const items = formValues?.items;
+    if (!items?.length) return;
+
+    let paymentMethodId = '';
+    let bank = null;
+    let iso = null;
+    let concilia = false;
+
+    if (items.length > 1) {
+      paymentMethodId = formValues.globalPaymentMethodId ?? '';
+      bank = sanitizeBankForStorage(formValues.globalBankAccount);
+      const gd = formValues.globalRealDate;
+      iso =
+        gd instanceof Date
+          ? gd.toISOString()
+          : gd
+            ? new Date(gd).toISOString()
+            : null;
+      concilia = !!formValues.globalIsReconciled;
+    } else {
+      const c0 = items[0]?.composition?.[0];
+      if (!c0) return;
+      paymentMethodId = c0.paymentMethodId ?? '';
+      bank = sanitizeBankForStorage(c0.bankAccountId);
+      const rd = c0.realDate;
+      iso =
+        rd instanceof Date
+          ? rd.toISOString()
+          : rd
+            ? new Date(rd).toISOString()
+            : null;
+      concilia = !!c0.isReconciled;
+    }
+
+    sessionStorage.setItem(
+      BAIXA_BULK_PREFS_STORAGE_KEY,
+      JSON.stringify({
+        globalPaymentMethodId: paymentMethodId,
+        globalBankAccount: bank,
+        globalRealDate: iso,
+        globalIsReconciled: concilia,
+      })
+    );
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
 const validatePayment = (values) => {
   const errors = {};
-  if (!values.date) errors.date = 'Obrigatório';
 
   const itemErrors = values.items.map(item => {
     const error = {};
@@ -180,7 +262,16 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                           <Button
                             size="small"
                             startIcon={<AddIcon />}
-                            onClick={() => push({ value: 0, paymentMethodId: '', bankAccountId: '', realDate: null, isReconciled: false, description: '' })}
+                            onClick={() =>
+                              push({
+                                value: 0,
+                                paymentMethodId: '',
+                                bankAccountId: '',
+                                realDate: item.composition[0]?.realDate ?? null,
+                                isReconciled: false,
+                                description: '',
+                              })
+                            }
                             sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.75rem', ml: 1 }}
                           >
                             Adicionar
@@ -206,6 +297,13 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
   const [selectedEntryId, setSelectedEntryId] = React.useState(null);
   const [entryModalOpen, setEntryModalOpen] = React.useState(false);
   const formikRef = React.useRef(null);
+  const persistBaixaTimerRef = React.useRef(null);
+
+  const closeDrawerPersisting = React.useCallback(() => {
+    const v = formikRef.current?.values;
+    if (v?.items?.length) persistBaixaPrefs(v);
+    onClose?.();
+  }, [onClose]);
 
   const handleOpenEntry = (id) => {
     setSelectedEntryId(id);
@@ -264,9 +362,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
             bankAccountId: c.bankAccountId?.id || c.bankAccountId
           }))
         })),
-        commonData: {
-          date: values.date
-        }
+        commonData: {}
       });
 
       if (result.header.status !== ServiceStatus.SUCCESS) {
@@ -298,7 +394,10 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
         } else if (field === 'bankAccount') {
           newComposition[0] = { ...newComposition[0], bankAccountId: value };
         } else if (field === 'realDate') {
-          newComposition[0] = { ...newComposition[0], realDate: value };
+          return {
+            ...item,
+            composition: item.composition.map((c) => ({ ...c, realDate: value })),
+          };
         } else if (field === 'isReconciled') {
           newComposition[0] = { ...newComposition[0], isReconciled: !!value };
         }
@@ -339,6 +438,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                   realDate={move.realDate}
                   description={move.description}
                   isReconciled={move.isReconciled}
+                  bankMovementCode={move.codigo_movimento_bancario || move.id}
                 />
               ))}
             </FinanceHistoryTimeline.Composition>
@@ -349,9 +449,8 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
   };
 
   const initialValues = React.useMemo(() => {
-    if (!data || data.payment) return { date: new Date(), items: [] };
+    if (!data || data.payment) return { items: [] };
     return {
-      date: new Date(),
       globalPaymentMethodId: '',
       globalBankAccount: null,
       globalRealDate: new Date(),
@@ -443,7 +542,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                     {values.items.length > 1 && (
                       <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
                         <Grid container spacing={1}>
-                          <Grid item xs={12} sm={1.5}>
+                          <Grid item xs={12} sm={2}>
                             <Field
                               name="globalIsReconciled"
                               component={CheckField}
@@ -451,15 +550,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                               onChange={(checked) => handleGlobalChange('isReconciled', checked, setFieldValue, values)}
                             />
                           </Grid>
-                          <Grid item xs={12} sm={2.5}>
-                            <Field
-                              name="date"
-                              component={DateField}
-                              label="Data"
-                              fullWidth
-                            />
-                          </Grid>
-                          <Grid item xs={12} sm={2.5}>
+                          <Grid item xs={12} sm={3}>
                             <Field
                               name="globalRealDate"
                               component={DateField}
@@ -468,7 +559,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                               onChange={(val) => handleGlobalChange('realDate', val, setFieldValue, values)}
                             />
                           </Grid>
-                          <Grid item xs={12} sm={2.5}>
+                          <Grid item xs={12} sm={3.5}>
                             <Field
                               name="globalPaymentMethodId"
                               component={SelectField}

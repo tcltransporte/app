@@ -124,7 +124,12 @@ export async function findAllEntries(transaction, { attributes, include, where, 
   return await db.withTransaction(transaction, async (t) => {
     const { rows, count } = await db.FinanceEntry.findAndCountAll({
       attributes: {
+        exclude: ['dueDate'],
         include: [
+          [
+            db.literal("CONVERT(varchar(10), [financeEntry].[data_vencimento], 23)"),
+            'dueDate'
+          ],
           [
             db.literal(`(SELECT COUNT(*) FROM movimentos_detalhe WHERE movimentos_detalhe.codigo_movimento = financeEntry.codigo_movimento)`),
             'installmentsCount'

@@ -103,6 +103,10 @@ export function RangeModal({
       key: 'selection'
     }
   ]);
+  const [dateInputs, setDateInputs] = useState({
+    start: initialStart || '',
+    end: initialEnd || ''
+  });
 
   const [field, setField] = useState(initialField || (fieldOptions.length > 0 ? fieldOptions[0].value : ''));
   const [activePreset, setActivePreset] = useState(null);
@@ -162,6 +166,10 @@ export function RangeModal({
           key: 'selection'
         }
       ]);
+      setDateInputs({
+        start: s,
+        end: e
+      });
       setField(f);
 
       // `autoFocus` can fail with dialog transitions; force focus after mount.
@@ -174,11 +182,16 @@ export function RangeModal({
 
   const handleSelect = (ranges) => {
     setDateRange([ranges.selection]);
+    setDateInputs({
+      start: format(ranges.selection.startDate, 'yyyy-MM-dd'),
+      end: format(ranges.selection.endDate, 'yyyy-MM-dd')
+    });
     setActivePreset(null);
   };
 
   const handleApplyPreset = (preset) => {
     if (preset.isAllPeriod) {
+      setDateInputs({ start: '', end: '' });
       setActivePreset(preset.label);
       return;
     }
@@ -191,15 +204,20 @@ export function RangeModal({
         key: 'selection'
       }
     ]);
+    setDateInputs({
+      start: format(s, 'yyyy-MM-dd'),
+      end: format(e, 'yyyy-MM-dd')
+    });
     setActivePreset(preset.label);
   };
 
   const handleApply = () => {
-    const isAllPeriodSelected = activePreset === 'Todo o período';
+    const isEmptyRange = !dateInputs.start && !dateInputs.end;
+    const isAllPeriodSelected = activePreset === 'Todo o período' || isEmptyRange;
 
     onApply({
-      start: isAllPeriodSelected ? '' : format(dateRange[0].startDate, 'yyyy-MM-dd'),
-      end: isAllPeriodSelected ? '' : format(dateRange[0].endDate, 'yyyy-MM-dd'),
+      start: isAllPeriodSelected ? '' : dateInputs.start,
+      end: isAllPeriodSelected ? '' : dateInputs.end,
       field
     });
     onClose();
@@ -278,11 +296,14 @@ export function RangeModal({
                     size="small"
                     ref={startDateRef}
                     onKeyDown={handleDateInputTab}
-                    value={format(dateRange[0].startDate, 'yyyy-MM-dd')}
+                    value={dateInputs.start}
                     onChange={(val) => {
+                      setDateInputs(prev => ({ ...prev, start: val || '' }));
                       const d = safeParse(val);
                       if (d) setDateRange([{ ...dateRange[0], startDate: d }]);
-                      setActivePreset(null);
+                      const nextStart = val || '';
+                      const nextEnd = dateInputs.end || '';
+                      setActivePreset(!nextStart && !nextEnd ? 'Todo o período' : null);
                     }}
                   />
                 </Grid>
@@ -292,11 +313,14 @@ export function RangeModal({
                     fullWidth
                     size="small"
                     onKeyDown={handleDateInputTab}
-                    value={format(dateRange[0].endDate, 'yyyy-MM-dd')}
+                    value={dateInputs.end}
                     onChange={(val) => {
+                      setDateInputs(prev => ({ ...prev, end: val || '' }));
                       const d = safeParse(val);
                       if (d) setDateRange([{ ...dateRange[0], endDate: d }]);
-                      setActivePreset(null);
+                      const nextStart = dateInputs.start || '';
+                      const nextEnd = val || '';
+                      setActivePreset(!nextStart && !nextEnd ? 'Todo o período' : null);
                     }}
                   />
                 </Grid>

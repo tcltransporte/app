@@ -1,5 +1,18 @@
 import { AppContext } from "@/database"
 
+function coerceDate(value) {
+  if (value == null || value === '') return new Date()
+  const d = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(d.getTime()) ? new Date() : d
+}
+
+/** data_pagamento = Data Pgto do primeiro detalhe com valor. */
+function paymentDateFromComposition(composition) {
+  if (!Array.isArray(composition) || composition.length === 0) return new Date()
+  const candidate = composition.find((c) => Number(c.value) > 0) ?? composition[0]
+  return coerceDate(candidate?.realDate)
+}
+
 /**
  * @param {import('sequelize').Transaction} transaction
  * @param {object} data
@@ -21,7 +34,7 @@ export async function createPayment(transaction, { settlements, commonData }) {
 
       // Create a unique Payment (Capa) for this installment
       const payment = await db.Payment.create({
-        date: commonData.date || new Date(),
+        date: paymentDateFromComposition(item.composition),
         totalValue: entryValue
       }, { transaction: t })
 
@@ -51,7 +64,7 @@ export async function createPayment(transaction, { settlements, commonData }) {
             bankAccountId: comp.bankAccountId,
             typeId: comp.typeId || (commonData.isReceivable ? 1 : 2),
             entryDate: new Date(),
-            realDate: comp.realDate || commonData.date || new Date(),
+            realDate: coerceDate(comp.realDate),
             value: value,
             documentNumber: comp.paymentMethodNumber || 0,
             description: comp.description || `Baixa Parcela #${entry.installmentNumber} - Pgto ${payment.id}`,

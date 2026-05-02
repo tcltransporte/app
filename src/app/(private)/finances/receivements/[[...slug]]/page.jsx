@@ -12,6 +12,7 @@ export default async function FinanceReceivablePage({ params }) {
 
   const operationType = 1
   const initialFilters = { status: 'open' }
+  const initialSort = { sortBy: 'dueDate', sortOrder: 'ASC' }
 
   const initialRange = { start: '', end: '', field: 'dueDate' };
 
@@ -20,11 +21,12 @@ export default async function FinanceReceivablePage({ params }) {
     limit: 50,
     operationType,
     range: initialRange,
-    filters: initialFilters
+    filters: initialFilters,
+    ...initialSort
   });
 
   const initialTable = result?.header?.status === ServiceStatus.SUCCESS
-    ? { items: result.body.rows || [], total: result.body.count || 0 }
+    ? { items: result.body.rows || [], total: result.body.count || 0, ...initialSort }
     : { items: [], total: 0 };
 
   return <ReceivableView operationType={operationType} initialTable={initialTable} selectedId={selectedId} initialRange={initialRange} initialFilters={initialFilters} />;

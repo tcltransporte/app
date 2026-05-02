@@ -14,6 +14,33 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
+function formatSqlDate(value) {
+  if (!value) return '-';
+
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const [, year, month, day] = match;
+      return `${day}/${month}/${year}`;
+    }
+  }
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '-';
+    const day = String(value.getUTCDate()).padStart(2, '0');
+    const month = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const year = value.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '-';
+  const day = String(parsed.getUTCDate()).padStart(2, '0');
+  const month = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+  const year = parsed.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 export function TimelineContainer({ children }) {
   return (
     <Box sx={{ p: 0 }}>
@@ -127,7 +154,7 @@ export function CompositionNode({ description, value, methodNumber, id, hasChild
   );
 }
 
-export function MovementNode({ bank, accountInfo, value, realDate, description, isReconciled }) {
+export function MovementNode({ bank, accountInfo, value, realDate, description, isReconciled, bankMovementCode }) {
   const [bankName, ...rest] = (accountInfo || '').split(' - ');
   const credentials = rest.join(' - ');
 
@@ -172,13 +199,18 @@ export function MovementNode({ bank, accountInfo, value, realDate, description, 
               <Tooltip title="Data Real do Lançamento">
                 <Stack direction="row" spacing={0.5} alignItems="center">
                   <TimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                  <Typography variant="caption" color="text.secondary">{realDate ? format(new Date(realDate), 'dd/MM/yyyy') : 'Aguardando'}</Typography>
+                  <Typography variant="caption" color="text.secondary">{realDate ? formatSqlDate(realDate) : 'Aguardando'}</Typography>
                 </Stack>
               </Tooltip>
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontStyle: 'italic' }}>
               "{description || 'Sem descrição no extrato'}"
             </Typography>
+            {bankMovementCode && (
+              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.5 }}>
+                (ID: {bankMovementCode})
+              </Typography>
+            )}
           </Paper>
         </Box>
       </Stack>

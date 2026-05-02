@@ -7,6 +7,7 @@ import { ExportFormat } from '@/hooks/useExport';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
+import { formatSqlDate } from '@/libs/date';
 import { Button, IconButton, Tooltip, Box, Typography, Chip, Badge } from '@mui/material';
 import {
   Add as AddIcon,
@@ -22,7 +23,6 @@ import {
   Payment as PaymentIcon,
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import FinanceTitleModal from './finance-title-modal';
 import FinanceEntryModal from './finance-entry-modal';
 import FinanceTitleDetailsDrawer from './finance-title-details-drawer';
@@ -206,7 +206,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     },
     {
       field: 'dueDate', headerName: 'Vencimento', width: 120, align: 'center',
-      renderCell: (value) => value ? new Date(value).toLocaleDateString('pt-BR') : ''
+      renderCell: (value) => formatSqlDate(value)
     },
     {
       field: 'installmentValue', headerName: 'Valor', width: 90, align: 'right',
