@@ -2,7 +2,6 @@
 
 import * as paymentRepository from "@/app/repositories/payment.repository"
 import * as financeRepository from "@/app/repositories/finance.repository"
-import { getSession } from "@/libs/session"
 
 /** 1 = receber (entrada bancária), 2 = pagar (saída). Título primeiro; se nulo, plano de contas (`codigo_tipo_operacao`). */
 function resolveFinanceOperationType(title) {
@@ -28,16 +27,14 @@ function resolveFinanceOperationType(title) {
  * Executes a payment for one or more installments.
  */
 export async function executePayment(transaction, { settlements, commonData }) {
-  const session = await getSession()
-  
-  // 1. Validate entries and company permissions
+  // 1. Validate entries
   const entryIds = settlements.map(s => s.entryId)
   const entries = await Promise.all(
     entryIds.map(id => financeRepository.findEntry(transaction, id))
   )
 
-  if (entries.some(e => !e || e.title?.companyId !== session.company.id)) {
-    throw { code: "NOT_FOUND", message: "Uma ou mais parcelas não foram encontradas ou não pertencem à sua empresa." }
+  if (entries.some(e => !e)) {
+    throw { code: "NOT_FOUND", message: "Uma ou mais parcelas não foram encontradas." }
   }
 
   if (entries.some(e => !!e.paymentId)) {

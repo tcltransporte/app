@@ -14,7 +14,7 @@ export async function POST(request) {
     const db = new AppContext()
     const where = {
       isActive: true,
-      companyId: session.company.id
+      //companyId: session.company.id
     }
 
     if (search && typeof search === 'string') {

@@ -17,7 +17,7 @@ export function useFilter({ initialFilters = {} }) {
   const activeCount = useMemo(() => {
     return Object.entries(filters).filter(([key, value]) => {
       // Ignore internal system filters
-      if (key === 'search' || key === 'typeHash' || key === 'companyId') return false;
+      if (key === 'search' || key === 'typeHash') return false;
 
       // Avoid double counting (e.g., partnerId and partner)
       if (key.endsWith('Id') && filters[key.replace('Id', '')]) return false;

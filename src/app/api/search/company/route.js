@@ -11,8 +11,15 @@ export async function POST(request) {
       return new Response(JSON.stringify({ message: "Sessão inválida" }), { status: 401 })
     }
 
+    const companyBusinessId = session?.company?.companyBusiness?.id
+    if (!companyBusinessId) {
+      return new Response(JSON.stringify({ message: "Empresa da sessão inválida" }), { status: 401 })
+    }
+
     const db = new AppContext()
-    const where = {}
+    const where = {
+      companyBusinessId
+    }
 
     if (search && typeof search === 'string') {
       const searchUpper = search.replace(/ /g, "%").toUpperCase()
@@ -29,7 +36,7 @@ export async function POST(request) {
       attributes: ['id', 'surname', 'cnpj'],
       where,
       limit: 50,
-      order: [['surname', 'ASC']]
+      order: [['id', 'ASC']]
     })
 
     const data = rows.map((r) => r.toJSON())

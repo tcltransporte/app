@@ -61,11 +61,12 @@ export async function update(transaction, id, data) {
 }
 
 export async function findAllEntries(transaction, params = {}) {
-  const session = await getSession()
+  const selectedCompanyId = params?.filters?.company?.id ? Number(params.filters.company.id) : null
+  const titleWhere = selectedCompanyId ? { companyId: selectedCompanyId } : {}
 
   const titleInclude = {
     association: 'title',
-    where: { companyId: session.company.id },
+    ...(Object.keys(titleWhere).length > 0 ? { where: titleWhere } : {}),
     include: [
       { association: 'partner', attributes: ['id', 'name', 'surname'] },
       { association: 'accountPlan', required: false, attributes: ['id', 'description', 'code'] },
@@ -99,13 +100,18 @@ export async function findAllEntries(transaction, params = {}) {
     }
 
     if (filters.partner) {
-      const partnerSearch = String(filters.partner).trim().replace(/\s+/g, '%')
-      andConditions.push({
-        [Op.or]: [
-          { '$title.partner.RazaoSocial$': { [Op.like]: `%${partnerSearch}%` } },
-          { '$title.partner.nome$': { [Op.like]: `%${partnerSearch}%` } }
-        ]
-      })
+      const partnerId = Number(filters.partner?.id)
+      if (!Number.isNaN(partnerId)) {
+        titleWhere.partnerId = partnerId
+      } else {
+        const partnerSearch = String(filters.partner).trim().replace(/\s+/g, '%')
+        andConditions.push({
+          [Op.or]: [
+            { '$title.partner.RazaoSocial$': { [Op.like]: `%${partnerSearch}%` } },
+            { '$title.partner.nome$': { [Op.like]: `%${partnerSearch}%` } }
+          ]
+        })
+      }
     }
 
     if (filters.description) {
@@ -115,19 +121,29 @@ export async function findAllEntries(transaction, params = {}) {
     }
 
     if (filters.accountPlan) {
-      const accountPlanSearch = String(filters.accountPlan).trim().replace(/\s+/g, '%')
-      andConditions.push({
-        [Op.or]: [
-          { '$title.accountPlan.Descricao$': { [Op.like]: `%${accountPlanSearch}%` } },
-          { '$title.accountPlan.Codigo$': { [Op.like]: `%${accountPlanSearch}%` } }
-        ]
-      })
+      const accountPlanId = Number(filters.accountPlan?.id)
+      if (!Number.isNaN(accountPlanId)) {
+        titleWhere.accountPlanId = accountPlanId
+      } else {
+        const accountPlanSearch = String(filters.accountPlan).trim().replace(/\s+/g, '%')
+        andConditions.push({
+          [Op.or]: [
+            { '$title.accountPlan.Descricao$': { [Op.like]: `%${accountPlanSearch}%` } },
+            { '$title.accountPlan.Codigo$': { [Op.like]: `%${accountPlanSearch}%` } }
+          ]
+        })
+      }
     }
 
     if (filters.costCenter) {
-      andConditions.push({
-        '$title.costCenter.Descricao$': { [Op.like]: `%${String(filters.costCenter).trim()}%` }
-      })
+      const costCenterId = Number(filters.costCenter?.id)
+      if (!Number.isNaN(costCenterId)) {
+        titleWhere.costCenterId = costCenterId
+      } else {
+        andConditions.push({
+          '$title.costCenter.Descricao$': { [Op.like]: `%${String(filters.costCenter).trim()}%` }
+        })
+      }
     }
 
     if (filters.status) {
@@ -180,9 +196,8 @@ export async function findAllEntries(transaction, params = {}) {
 }
 
 export async function findEntry(transaction, id) {
-  const session = await getSession()
   const entry = await financeRepository.findEntry(transaction, id)
-  if (!entry || entry.title?.companyId !== session.company.id) {
+  if (!entry) {
     throw { code: "NOT_FOUND", message: "Parcela financeira não encontrada" }
   }
   return entry
@@ -198,7 +213,6 @@ export async function updateEntry(transaction, id, data) {
 }
 
 export async function findEntryPaymentHistory(transaction, id) {
-  const session = await getSession()
   const entry = await financeRepository.findEntryPaymentHistory(transaction, id)
 
   // Security check: ensure the entry belongs to a title that belongs to the user's company
@@ -206,7 +220,7 @@ export async function findEntryPaymentHistory(transaction, id) {
   // In our case, I'll rely on the existing findEntry for validation if needed, or just fetch title here.
 
   const validationEntry = await financeRepository.findEntry(transaction, id)
-  if (!validationEntry || validationEntry.title?.companyId !== session.company.id) {
+  if (!validationEntry) {
     throw { code: "NOT_FOUND", message: "Parcela financeira não encontrada" }
   }
 

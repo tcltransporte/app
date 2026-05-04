@@ -86,7 +86,10 @@ export const AutoComplete = (props) => {
 
   const hideMessage =
     error === `${name} is a required field` ||
-    (typeof error === 'string' && error.includes('is a required field'))
+    (typeof error === 'string' && (
+      error.includes('is a required field') ||
+      error.trim().toLowerCase() === 'obrigatório'
+    ))
 
   const helperText = showError && !hideMessage ? error : ''
 
@@ -132,18 +135,19 @@ export const AutoComplete = (props) => {
         // permite digitar após um clear/blur
       }
       const newQuery = e.target.value
+      const shouldShowLoading = newQuery.trim().length > 0
       if (value) {
         // Ao digitar com item já selecionado, limpa a seleção e inicia nova pesquisa
         form?.setFieldValue?.(name, null)
         onChange?.(null, form)
         setQuery(newQuery)
         setInteracted(true)
-        // setLoading(true)
+        setLoading(shouldShowLoading)
         return
       }
       setQuery(newQuery)
       setInteracted(true)
-      // setLoading(true) // Removido para evitar spinner imediato antes do debounce (melhora percepção de real-time)
+      setLoading(shouldShowLoading)
     },
     [value, form, name, onChange]
   )
@@ -261,7 +265,10 @@ export const AutoComplete = (props) => {
       return
     }
 
-    if (!interacted && !debouncedQuery) {
+    const normalizedQuery = typeof debouncedQuery === 'string' ? debouncedQuery.trim() : ''
+    const shouldAutoSearch = interacted && normalizedQuery.length > 0
+
+    if (!shouldAutoSearch) {
       return
     }
 
@@ -277,14 +284,13 @@ export const AutoComplete = (props) => {
       return
     }
 
-    // if (!debouncedQuery) return; // Removido para permitir pesquisa de campo vazio (ex: mostrar todos)
-
     abortControllerRef.current?.abort()
     const controller = new AbortController()
     abortControllerRef.current = controller
 
     updateBoxPosition()
     setSelectedIndex(0)
+    setLoading(true)
 
     onSearchRef.current(debouncedQuery, controller.signal)
       .then((result) => {
@@ -395,6 +401,10 @@ export const AutoComplete = (props) => {
           setData([])
           setLoading(false)
           setNothing(false)
+          if (!value) {
+            setQuery('')
+            setInteracted(false)
+          }
         }}
         onKeyDown={handleKeyDown}
         fullWidth

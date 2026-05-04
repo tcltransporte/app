@@ -1,6 +1,7 @@
 import ReceivableView from '@/app/views/finances/receivements';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
 import { ServiceStatus } from '@/libs/service';
+import { getSession } from '@/libs/session';
 
 export const metadata = {
   title: 'Contas a Receber',
@@ -9,9 +10,16 @@ export const metadata = {
 export default async function FinanceReceivablePage({ params }) {
   const { slug } = await params;
   const selectedId = Array.isArray(slug) && slug.length > 0 ? slug[0] : undefined;
+  const session = await getSession();
+  const currentCompany = session?.company
+    ? { id: session.company.id, surname: session.company.surname, name: session.company.name }
+    : null;
 
   const operationType = 1
-  const initialFilters = { status: 'open' }
+  const initialFilters = {
+    status: 'open',
+    company: currentCompany
+  }
   const initialSort = { sortBy: 'dueDate', sortOrder: 'ASC' }
 
   const initialRange = { start: '', end: '', field: 'dueDate' };

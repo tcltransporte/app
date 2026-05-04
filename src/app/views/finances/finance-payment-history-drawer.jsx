@@ -364,7 +364,10 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
     (v && typeof v === 'object') ? (v.description || v.bankName || '') : '',
     []);
 
-  const handleSearchGlobal = search.bankAccount;
+  const handleSearchGlobal = React.useCallback(
+    (value, signal) => search.bankAccount({ search: value }, signal),
+    []
+  );
 
   const handleGlobalChange = (field, value, setFieldValue, currentValues) => {
     const newItems = currentValues.items.map((item) => {

@@ -245,6 +245,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         service: financeEntryAction.findAll,
         params: {
           operationType,
+          filters: filter.filters,
           range: rangeFilter.range,
           sortBy: table.sortBy,
           sortOrder: table.sortOrder
