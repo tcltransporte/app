@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  Drawer, Box, Typography, IconButton, Divider, CircularProgress,
+  Drawer, Box, Typography, IconButton, Divider, CircularProgress, Button,
   Stack, Paper, Tooltip, Table, TableBody, TableCell, TableHead, TableRow, Collapse
 } from '@mui/material';
 import {
@@ -17,11 +17,13 @@ import {
   Warning as WarningIcon,
   EditNote as EditIcon,
   History as HistoryIcon,
-  OpenInNew as OpenIcon
+  OpenInNew as OpenIcon,
+  Undo as UndoIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
+import { alert } from '@/libs/alert';
 import FinanceEntryModal from '../finance-entry-modal';
 import FinanceTitleDetailsDrawer from '../finance-title-details-drawer';
 import FinanceHistoryTimeline from '../finance-history-timeline';
@@ -35,6 +37,7 @@ export default function BankMovementTraceDrawer({ open, onClose, movementId, onS
   const [entriesOpen, setEntriesOpen] = useState(false);
   const [entriesTitleId, setEntriesTitleId] = useState(null);
   const [entriesDocNumber, setEntriesDocNumber] = useState('');
+  const [reverseRunning, setReverseRunning] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!movementId) return;
@@ -74,6 +77,31 @@ export default function BankMovementTraceDrawer({ open, onClose, movementId, onS
     setSelectedEntryId(entryId);
     setEntriesOpen(false);
     setEntryModalOpen(true);
+  };
+
+  const handleReverseSettlement = async () => {
+    if (!movementId || !data?.paymentEntry?.payment) return;
+    const verb = Number(data.typeId) === 1 ? 'Recebimento' : 'Pagamento';
+    const ok = await alert.confirm(
+      `Desfazer ${verb}?`,
+      'Remove os lançamentos de extrato desta baixa, exclui o pagamento e reabre a(s) parcela(s).',
+      'warning'
+    );
+    if (!ok) return;
+    setReverseRunning(true);
+    try {
+      const result = await financeAction.reverseSettlementFromBankMovement(movementId);
+      if (result.header.status !== ServiceStatus.SUCCESS) {
+        throw result;
+      }
+      alert.success('Baixa desfeita');
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      alert.error('Não foi possível desfazer', error?.body?.message || error.message);
+    } finally {
+      setReverseRunning(false);
+    }
   };
 
   const renderHistory = () => {
@@ -139,14 +167,33 @@ export default function BankMovementTraceDrawer({ open, onClose, movementId, onS
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.dark', color: 'white' }}>
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, bgcolor: 'primary.dark', color: 'white', flexWrap: 'wrap' }}>
             <Stack direction="row" spacing={1} alignItems="center">
               <HistoryIcon />
               <Typography variant="h6" fontWeight={700}>Rastreio de Origem</Typography>
             </Stack>
-            <IconButton onClick={onClose} size="small" sx={{ color: 'inherit' }}>
-              <CloseIcon />
-            </IconButton>
+            <Stack direction="row" spacing={1} alignItems="center">
+              {!loading && data?.paymentEntry?.payment && (
+                <Button
+                  variant="contained"
+                  color="warning"
+                  size="small"
+                  disabled={reverseRunning}
+                  startIcon={<UndoIcon />}
+                  onClick={handleReverseSettlement}
+                  sx={{
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    color: (theme) => theme.palette.grey[900],
+                  }}
+                >
+                  Desfazer {Number(data.typeId) === 1 ? 'recebimento' : 'pagamento'}
+                </Button>
+              )}
+              <IconButton onClick={onClose} size="small" sx={{ color: 'inherit' }}>
+                <CloseIcon />
+              </IconButton>
+            </Stack>
           </Box>
 
           <Box sx={{ flexGrow: 1, overflowY: 'auto', position: 'relative', bgcolor: 'background.default' }}>

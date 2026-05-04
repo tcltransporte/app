@@ -340,6 +340,48 @@ export async function traceBankMovement(transaction, id) {
   return result
 }
 
+/**
+ * Desfaz recebimento/pagamento ligado ao movimento: remove apenas lançamentos originados pela baixa
+ * na mesma transação financeira (`codigo_pagamento`).
+ */
+export async function reverseSettlementFromBankMovement(transaction, movementId) {
+  const session = await getSession()
+
+  const include = [
+    {
+      association: 'bankAccount',
+      where: { companyId: session.company.id },
+      required: true,
+    },
+    {
+      association: 'paymentEntry',
+      required: false,
+      attributes: ['id', 'paymentId'],
+    },
+  ]
+
+  const movement = await financeRepository.findBankMovement(transaction, movementId, { include })
+
+  if (!movement) {
+    throw { code: 'NOT_FOUND', message: 'Movimento bancário não encontrado ou sem permissão' }
+  }
+
+  const paymentEntryId =
+    movement.paymentEntryId ??
+    movement.paymentEntry?.id
+  const paymentId = movement.paymentEntry?.paymentId
+
+  if (!paymentEntryId || !paymentId) {
+    throw {
+      code: 'NOT_LINKED',
+      message:
+        'Este lançamento não está vinculado a uma baixa de conta a receber/pagar. Tranferências e lançamentos manuais não podem ser desfeitos aqui.',
+    }
+  }
+
+  return await financeRepository.reversePaymentSettlement(transaction, paymentId)
+}
+
 export async function createBankTransfer(transaction, { originAccountId, destinationAccountId, value, realDate, description }) {
   const session = await getSession()
 

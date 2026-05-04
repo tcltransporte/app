@@ -22,6 +22,7 @@ import {
   AllInclusive as AllIcon,
   Add as AddIcon,
   AccountTree as HistoryIcon,
+  Undo as UndoIcon,
 } from '@mui/icons-material';
 
 import FinanceTitleDetailsDrawer from '../finance-title-details-drawer';
@@ -42,6 +43,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   const [traceMovementId, setTraceMovementId] = React.useState(null);
   const [traceOpen, setTraceOpen] = React.useState(false);
   const [transferModalOpen, setTransferModalOpen] = React.useState(false);
+  const [reverseBankMovementId, setReverseBankMovementId] = React.useState(null);
 
   const fetchBankAccounts = React.useCallback(async () => {
     const result = await bankAccountAction.findAll();
@@ -99,6 +101,30 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
     rangeFilter.range,
     selectedBankAccountId
   ]);
+
+  const handleReverseSettlement = React.useCallback(async (row) => {
+    const verb = Number(row.typeId) === 1 ? 'Recebimento' : 'Pagamento';
+    const ok = await alert.confirm(
+      `Desfazer ${verb}?`,
+      'Isso remove este e os demais lançamentos de extrato ligados à mesma baixa, exclui o registro do pagamento e devolve a(s) parcela(s) ao status em aberto.',
+      'warning'
+    );
+    if (!ok) return;
+    setReverseBankMovementId(row.id);
+    try {
+      const result = await financeAction.reverseSettlementFromBankMovement(row.id);
+      if (result.header.status !== ServiceStatus.SUCCESS) {
+        throw result;
+      }
+      alert.success('Baixa desfeita');
+      await fetchTable();
+      await fetchBankAccounts();
+    } catch (error) {
+      alert.error('Não foi possível desfazer', error?.body?.message || error.message);
+    } finally {
+      setReverseBankMovementId(null);
+    }
+  }, [fetchTable, fetchBankAccounts]);
 
   const isFirstMount = React.useRef(true);
   React.useEffect(() => {
@@ -178,8 +204,30 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
           <HistoryIcon fontSize="small" color={row.paymentEntryId ? "primary" : "disabled"} />
         </IconButton>
       )
-    }
-  ], []);
+    },
+    {
+      field: 'reverse', headerName: 'Desfazer', width: 90, align: 'center',
+      renderCell: (val, row) => {
+        const canReverse = !!row.paymentEntryId;
+        const verb = Number(row.typeId) === 1 ? 'Recebimento' : 'Pagamento';
+        return (
+          <IconButton
+            size="small"
+            color={canReverse ? 'warning' : 'default'}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!canReverse) return;
+              handleReverseSettlement(row);
+            }}
+            disabled={!canReverse || reverseBankMovementId === row.id}
+            title={canReverse ? `Desfazer ${verb}` : 'Sem baixa financeira ligada'}
+          >
+            <UndoIcon fontSize="small" />
+          </IconButton>
+        );
+      },
+    },
+  ], [handleReverseSettlement, reverseBankMovementId]);
 
   React.useEffect(() => {
     if (table.orderedColumns.length === 0 && columns.length > 0) {

@@ -268,4 +268,38 @@ export async function findPayment(transaction, id, { include } = {}) {
   })
 }
 
+/**
+ * Desfaz a baixa ligada ao pagamento: remove movimento(s) de extrato gerados pela baixa,
+ * detalhes e capa do pagamento, e libera a(s) parcela(s).
+ */
+export async function reversePaymentSettlement(transaction, paymentId) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const details = await db.PaymentEntry.findAll({
+      where: { paymentId },
+      attributes: ['id'],
+      transaction: t
+    })
+    const detailIds = details.map((d) => d.id)
+    if (detailIds.length) {
+      await db.BankMovement.destroy({
+        where: { paymentEntryId: { [Op.in]: detailIds } },
+        transaction: t,
+      })
+    }
+    await db.PaymentEntry.destroy({ where: { paymentId }, transaction: t })
+    await db.FinanceEntry.update({ paymentId: null }, { where: { paymentId }, transaction: t })
+
+    const payDeleted = await db.Payment.destroy({ where: { id: paymentId }, transaction: t })
+    if (!payDeleted) {
+      throw {
+        code: 'NOT_FOUND',
+        message: 'Pagamento já removido ou não encontrado',
+      }
+    }
+
+    return { paymentId }
+  })
+}
+
 

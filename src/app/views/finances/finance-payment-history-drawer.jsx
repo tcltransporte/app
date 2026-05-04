@@ -47,87 +47,60 @@ import * as search from '@/libs/search';
 import FinanceHistoryTimeline from './finance-history-timeline';
 import FinanceEntryModal from './finance-entry-modal';
 
-const BAIXA_BULK_PREFS_STORAGE_KEY = 'finance-baixa-em-lote-last';
-
-function sanitizeBankForStorage(acc) {
+function cloneBankAccount(acc) {
   if (!acc || typeof acc !== 'object') return acc ?? null;
+  return { ...acc };
+}
+
+/**
+ * Extrai forma / conta / Data Pgto / conciliação dos valores atuais do formulário
+ * para reutilizar na próxima vez que montar nova baixa (sem sessionStorage — ref no componente).
+ */
+function prefsFromFormValues(formValues) {
+  const items = formValues?.items;
+  if (!items?.length) return null;
+
+  const coalesceDate = (d) => {
+    const dt = d instanceof Date ? d : d ? new Date(d) : new Date();
+    return Number.isNaN(dt.getTime()) ? new Date() : dt;
+  };
+
+  if (items.length > 1) {
+    return {
+      globalPaymentMethodId: formValues.globalPaymentMethodId ?? '',
+      globalBankAccount: cloneBankAccount(formValues.globalBankAccount),
+      globalRealDate: coalesceDate(formValues.globalRealDate),
+      globalIsReconciled: !!formValues.globalIsReconciled,
+    };
+  }
+
+  const c0 = items[0]?.composition?.[0];
+  if (!c0) return null;
   return {
-    id: acc.id,
-    description: acc.description ?? '',
-    bankName: acc.bankName ?? '',
-    agency: acc.agency ?? '',
-    accountNumber: acc.accountNumber ?? '',
+    globalPaymentMethodId: c0.paymentMethodId ?? '',
+    globalBankAccount: cloneBankAccount(c0.bankAccountId),
+    globalRealDate: coalesceDate(c0.realDate),
+    globalIsReconciled: !!c0.isReconciled,
   };
 }
 
-/** Última baixa em lote (ou individual): Conc., Data Pgto, Forma, Conta — reaplicados na próxima abertura. */
-function loadPersistedBaixaPrefs() {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = sessionStorage.getItem(BAIXA_BULK_PREFS_STORAGE_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw);
-    if (!p || typeof p !== 'object') return null;
-    return {
-      globalPaymentMethodId: p.globalPaymentMethodId ?? '',
-      globalBankAccount: p.globalBankAccount,
-      globalRealDate: p.globalRealDate ? new Date(p.globalRealDate) : new Date(),
-      globalIsReconciled: !!p.globalIsReconciled,
+/** Atualiza o rascunho no ref sempre que os valores mudam (debounced), só em tela de baixa. */
+function StashBaixaDraftOnEdit({ open, loading, isPaidView, values, stashDraft }) {
+  const timerRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!open || loading || isPaidView || !values.items?.length) return;
+
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      stashDraft(values);
+      timerRef.current = null;
+    }, 300);
+
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
     };
-  } catch {
-    return null;
-  }
-}
-
-function persistBaixaPrefs(formValues) {
-  if (typeof window === 'undefined') return;
-  try {
-    const items = formValues?.items;
-    if (!items?.length) return;
-
-    let paymentMethodId = '';
-    let bank = null;
-    let iso = null;
-    let concilia = false;
-
-    if (items.length > 1) {
-      paymentMethodId = formValues.globalPaymentMethodId ?? '';
-      bank = sanitizeBankForStorage(formValues.globalBankAccount);
-      const gd = formValues.globalRealDate;
-      iso =
-        gd instanceof Date
-          ? gd.toISOString()
-          : gd
-            ? new Date(gd).toISOString()
-            : null;
-      concilia = !!formValues.globalIsReconciled;
-    } else {
-      const c0 = items[0]?.composition?.[0];
-      if (!c0) return;
-      paymentMethodId = c0.paymentMethodId ?? '';
-      bank = sanitizeBankForStorage(c0.bankAccountId);
-      const rd = c0.realDate;
-      iso =
-        rd instanceof Date
-          ? rd.toISOString()
-          : rd
-            ? new Date(rd).toISOString()
-            : null;
-      concilia = !!c0.isReconciled;
-    }
-
-    sessionStorage.setItem(
-      BAIXA_BULK_PREFS_STORAGE_KEY,
-      JSON.stringify({
-        globalPaymentMethodId: paymentMethodId,
-        globalBankAccount: bank,
-        globalRealDate: iso,
-        globalIsReconciled: concilia,
-      })
-    );
-  } catch {
-    /* ignore quota / private mode */
-  }
+  }, [open, loading, isPaidView, values, stashDraft]);
+  return null;
 }
 
 const validatePayment = (values) => {
@@ -265,10 +238,10 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                             onClick={() =>
                               push({
                                 value: 0,
-                                paymentMethodId: '',
-                                bankAccountId: '',
+                                paymentMethodId: item.composition[0]?.paymentMethodId ?? '',
+                                bankAccountId: item.composition[0]?.bankAccountId ?? null,
                                 realDate: item.composition[0]?.realDate ?? null,
-                                isReconciled: false,
+                                isReconciled: !!item.composition[0]?.isReconciled,
                                 description: '',
                               })
                             }
@@ -297,13 +270,19 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
   const [selectedEntryId, setSelectedEntryId] = React.useState(null);
   const [entryModalOpen, setEntryModalOpen] = React.useState(false);
   const formikRef = React.useRef(null);
-  const persistBaixaTimerRef = React.useRef(null);
+  /** Estado em memória da sessão para a próxima baixa — useRef para não reaplicar initialValues ao editar (evita reset do Formik). */
+  const lastBaixaDraftRef = React.useRef(null);
 
-  const closeDrawerPersisting = React.useCallback(() => {
+  const stashDraft = React.useCallback((formValues) => {
+    const p = prefsFromFormValues(formValues);
+    if (p) lastBaixaDraftRef.current = p;
+  }, []);
+
+  const rememberAndClose = React.useCallback(() => {
     const v = formikRef.current?.values;
-    if (v?.items?.length) persistBaixaPrefs(v);
+    if (v?.items?.length) stashDraft(v);
     onClose?.();
-  }, [onClose]);
+  }, [onClose, stashDraft]);
 
   const handleOpenEntry = (id) => {
     setSelectedEntryId(id);
@@ -369,6 +348,8 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
         throw result;
       }
 
+      stashDraft(values);
+
       alert.success('Sucesso', 'Pagamento realizado com sucesso!');
       onSuccess?.();
       onClose();
@@ -386,23 +367,31 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
   const handleSearchGlobal = search.bankAccount;
 
   const handleGlobalChange = (field, value, setFieldValue, currentValues) => {
-    const newItems = currentValues.items.map(item => {
-      const newComposition = [...item.composition];
-      if (newComposition.length > 0) {
-        if (field === 'paymentMethodId') {
-          newComposition[0] = { ...newComposition[0], paymentMethodId: value };
-        } else if (field === 'bankAccount') {
-          newComposition[0] = { ...newComposition[0], bankAccountId: value };
-        } else if (field === 'realDate') {
+    const newItems = currentValues.items.map((item) => {
+      switch (field) {
+        case 'paymentMethodId':
+          return {
+            ...item,
+            composition: item.composition.map((c) => ({ ...c, paymentMethodId: value })),
+          };
+        case 'bankAccount':
+          return {
+            ...item,
+            composition: item.composition.map((c) => ({ ...c, bankAccountId: value })),
+          };
+        case 'realDate':
           return {
             ...item,
             composition: item.composition.map((c) => ({ ...c, realDate: value })),
           };
-        } else if (field === 'isReconciled') {
-          newComposition[0] = { ...newComposition[0], isReconciled: !!value };
-        }
+        case 'isReconciled':
+          return {
+            ...item,
+            composition: item.composition.map((c) => ({ ...c, isReconciled: !!value })),
+          };
+        default:
+          return item;
       }
-      return { ...item, composition: newComposition };
     });
     setFieldValue('items', newItems);
   };
@@ -450,11 +439,30 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
 
   const initialValues = React.useMemo(() => {
     if (!data || data.payment) return { items: [] };
+
+    const saved = lastBaixaDraftRef.current;
+    const fromPrefs = saved
+      ? {
+          paymentMethodId: saved.globalPaymentMethodId,
+          bankAccountId: saved.globalBankAccount ?? null,
+          realDate:
+            saved.globalRealDate instanceof Date && !Number.isNaN(saved.globalRealDate.getTime())
+              ? saved.globalRealDate
+              : new Date(),
+          isReconciled: saved.globalIsReconciled ?? false,
+        }
+      : {
+          paymentMethodId: '',
+          bankAccountId: null,
+          realDate: new Date(),
+          isReconciled: false,
+        };
+
     return {
-      globalPaymentMethodId: '',
-      globalBankAccount: null,
-      globalRealDate: new Date(),
-      globalIsReconciled: false,
+      globalPaymentMethodId: fromPrefs.paymentMethodId,
+      globalBankAccount: fromPrefs.bankAccountId,
+      globalRealDate: fromPrefs.realDate,
+      globalIsReconciled: fromPrefs.isReconciled,
       items: data.selectedEntries.map(entry => ({
         entryId: entry.id,
         value: Number(entry.installmentValue) || 0,
@@ -464,10 +472,10 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
         dueDate: entry.dueDate,
         composition: [{
           value: Number(entry.installmentValue) || 0,
-          paymentMethodId: '',
-          bankAccountId: null,
-          realDate: new Date(),
-          isReconciled: false,
+          paymentMethodId: fromPrefs.paymentMethodId,
+          bankAccountId: fromPrefs.bankAccountId,
+          realDate: fromPrefs.realDate,
+          isReconciled: fromPrefs.isReconciled,
           description: ''
         }]
       }))
@@ -479,7 +487,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
       <Drawer
         anchor="right"
         open={open}
-        onClose={onClose}
+        onClose={rememberAndClose}
         sx={{ zIndex: zIndex || ((theme) => theme.zIndex.modal + 2) }}
         PaperProps={{ sx: { width: { xs: '100%', sm: 900 }, display: 'flex', flexDirection: 'column' } }}
       >
@@ -491,6 +499,14 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
           enableReinitialize
         >
           {({ values, isSubmitting, setFieldValue, submitForm }) => (
+            <>
+            <StashBaixaDraftOnEdit
+              open={open}
+              loading={loading}
+              isPaidView={!!data?.payment}
+              values={values}
+              stashDraft={stashDraft}
+            />
             <Form style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.dark', color: 'white' }}>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -503,7 +519,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                         : `Baixar Títulos: ${data?.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
                   </Typography>
                 </Stack>
-                <IconButton onClick={onClose} size="small" sx={{ color: 'inherit' }}>
+                <IconButton onClick={rememberAndClose} size="small" sx={{ color: 'inherit' }}>
                   <CloseIcon />
                 </IconButton>
               </Box>
@@ -613,7 +629,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                       <Button
                         fullWidth
                         variant="outlined"
-                        onClick={onClose}
+                        onClick={rememberAndClose}
                         sx={{ textTransform: 'none', fontWeight: 700 }}
                       >
                         Cancelar
@@ -632,6 +648,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                 </>
               )}
             </Form>
+            </>
           )}
         </Formik>
       </Drawer>
