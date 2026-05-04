@@ -62,9 +62,19 @@ export default function FinanceEntriesFilter({ open, onClose, filters, onApply }
             component={AutoComplete}
             name="partner"
             label="Fornecedor/Cliente"
-            text={(v) => v?.surname || v?.name || ''}
+            text={(v) => {
+              const id = v?.id ?? ''
+              const name = v?.surname || v?.name || ''
+              const cnpj = v?.cpfCnpj || v?.CpfCnpj || ''
+              return `${id} - ${name}${cnpj ? ` - ${cnpj}` : ''}`
+            }}
             onSearch={(value, signal) => search.partner({ search: value }, signal)}
-            renderSuggestion={(v) => v?.surname || v?.name || ''}
+            renderSuggestion={(v) => {
+              const id = v?.id ?? ''
+              const name = v?.surname || v?.name || ''
+              const cnpj = v?.cpfCnpj || v?.CpfCnpj || ''
+              return `${id} - ${name}${cnpj ? ` - ${cnpj}` : ''}`
+            }}
             fullWidth
             size="small"
           />
