@@ -8,7 +8,9 @@ export const NumericField = React.forwardRef((props, ref) => {
   const factor = Math.pow(10, precision);
 
   const toDisplay = (value) => {
-    const val = Number(value) || 0;
+    if (value === '' || value === null || value === undefined) return '';
+    const val = Number(value);
+    if (Number.isNaN(val)) return '';
     return val.toLocaleString('pt-BR', { 
       minimumFractionDigits: precision, 
       maximumFractionDigits: precision 
@@ -17,7 +19,7 @@ export const NumericField = React.forwardRef((props, ref) => {
 
   const handleChange = (e) => {
     const raw = e.target.value.replace(/\D/g, '');
-    const num = Number(raw) / factor;
+    const num = raw === '' ? null : Number(raw) / factor;
 
     // Formik integration
     if (field) {

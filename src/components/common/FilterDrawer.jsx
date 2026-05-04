@@ -52,7 +52,7 @@ export function FilterDrawer({
             onClose();
           }}
         >
-          {({ submitForm, setValues }) => (
+          {({ setValues }) => (
             <Form style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
               <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
                 {/* We pass the whole formik context to children if it's a function, otherwise just children */}
@@ -64,6 +64,7 @@ export function FilterDrawer({
                 <Button
                   fullWidth
                   variant="outlined"
+                  type="button"
                   color="inherit"
                   startIcon={<ClearIcon />}
                   onClick={() => {
@@ -77,7 +78,7 @@ export function FilterDrawer({
                 <Button
                   fullWidth
                   variant="contained"
-                  onClick={submitForm}
+                  type="submit"
                   sx={{ textTransform: 'none', fontWeight: 600 }}
                 >
                   Aplicar

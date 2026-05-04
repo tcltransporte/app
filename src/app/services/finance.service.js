@@ -94,9 +94,40 @@ export async function findAllEntries(transaction, params = {}) {
     const andConditions = []
 
     if (filters.documentNumber) {
-      andConditions.push({
-        '$title.numero_documento$': { [Op.like]: `%${String(filters.documentNumber).trim()}%` }
-      })
+      const rawDocumentNumber = String(filters.documentNumber).trim()
+      const documentTokens = rawDocumentNumber
+        .split(',')
+        .map((token) => token.trim())
+        .filter(Boolean)
+
+      if (documentTokens.length > 1) {
+        const numericTokens = documentTokens
+          .map((token) => Number(token))
+          .filter((value) => !Number.isNaN(value))
+
+        if (numericTokens.length === documentTokens.length) {
+          andConditions.push({
+            '$title.numero_documento$': { [Op.in]: numericTokens }
+          })
+        } else {
+          andConditions.push({
+            [Op.or]: documentTokens.map((token) => ({
+              '$title.numero_documento$': { [Op.like]: `%${token}%` }
+            }))
+          })
+        }
+      } else {
+        andConditions.push({
+          '$title.numero_documento$': { [Op.like]: `%${rawDocumentNumber}%` }
+        })
+      }
+    }
+
+    if (filters.invoiceNumber) {
+      const invoiceNumber = Number(String(filters.invoiceNumber).trim())
+      if (!Number.isNaN(invoiceNumber)) {
+        titleWhere.invoiceId = invoiceNumber
+      }
     }
 
     if (filters.partner) {

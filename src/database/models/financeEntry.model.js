@@ -100,7 +100,25 @@ export class FinanceEntry {
       const isPaid = !!this.getDataValue('paymentId')
       if (isPaid) return 'paid'
       const dueDate = this.getDataValue('dueDate')
-      if (dueDate && new Date(dueDate) < new Date(new Date().toDateString())) return 'late'
+      if (dueDate) {
+        const timeZone = 'America/Sao_Paulo'
+        const toDateKey = (date) =>
+          date.toLocaleDateString('en-CA', { timeZone }) // YYYY-MM-DD
+        const todayKey = toDateKey(new Date())
+
+        let dueDateKey = null
+        if (typeof dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+          // Evita deslocamento de fuso ao parsear YYYY-MM-DD com new Date(...)
+          dueDateKey = dueDate
+        } else {
+          const due = new Date(dueDate)
+          if (!Number.isNaN(due.getTime())) {
+            dueDateKey = toDateKey(due)
+          }
+        }
+
+        if (dueDateKey && dueDateKey < todayKey) return 'late'
+      }
       return 'open'
     }
   }

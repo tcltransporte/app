@@ -1,19 +1,19 @@
 import { Grid } from '@mui/material';
 import { Field } from 'formik';
 import { FilterDrawer } from '@/components/common';
-import { TextField, SelectField, AutoComplete } from '@/components/controls';
+import { TextField, SelectField, AutoComplete, NumericField } from '@/components/controls';
 import * as search from '@/libs/search';
 
 export default function FinanceEntriesFilter({ open, onClose, filters, onApply }) {
   const initialValues = {
     company: filters.company || null,
     documentNumber: filters.documentNumber || '',
+    invoiceNumber: filters.invoiceNumber || '',
     partner: (filters.partner && typeof filters.partner === 'object') ? filters.partner : null,
     description: filters.description || '',
     accountPlan: (filters.accountPlan && typeof filters.accountPlan === 'object') ? filters.accountPlan : null,
     costCenter: (filters.costCenter && typeof filters.costCenter === 'object') ? filters.costCenter : null,
     status: filters.status || '',
-    installmentNumber: filters.installmentNumber || '',
     installmentValue: filters.installmentValue || ''
   };
 
@@ -21,12 +21,12 @@ export default function FinanceEntriesFilter({ open, onClose, filters, onApply }
     const clearedValues = {
       company: null,
       documentNumber: '',
+      invoiceNumber: '',
       partner: null,
       description: '',
       accountPlan: null,
       costCenter: null,
       status: '',
-      installmentNumber: '',
       installmentValue: ''
     };
     setValues(clearedValues);
@@ -54,8 +54,17 @@ export default function FinanceEntriesFilter({ open, onClose, filters, onApply }
             size="small"
           />
         </Grid>
-        <Grid size={12}>
-          <Field component={TextField} name="documentNumber" label="Nº Doc." fullWidth size="small" />
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Field
+            component={TextField}
+            name="documentNumber"
+            label="Nº Doc."
+            fullWidth
+            size="small"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Field component={TextField} name="invoiceNumber" label="Número Fatura" fullWidth size="small" />
         </Grid>
         <Grid size={12}>
           <Field
@@ -120,10 +129,7 @@ export default function FinanceEntriesFilter({ open, onClose, filters, onApply }
           />
         </Grid>
         <Grid size={12}>
-          <Field component={TextField} name="installmentNumber" label="Parcela" fullWidth size="small" />
-        </Grid>
-        <Grid size={12}>
-          <Field component={TextField} name="installmentValue" label="Valor" fullWidth size="small" />
+          <Field component={NumericField} name="installmentValue" label="Valor" fullWidth size="small" />
         </Grid>
       </Grid>
     </FilterDrawer>
