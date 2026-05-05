@@ -11,6 +11,8 @@ export default function BanksView({ initialTable, selectedId, initialRange, init
       selectedId={selectedId}
       initialRange={initialRange}
       initialBankAccounts={initialBankAccounts}
+      navigationPath="/finances/banks"
+      initialFilters={{ status: 'conciled' }}
     />
   );
 }

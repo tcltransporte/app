@@ -112,6 +112,34 @@ export async function reverseSettlementsFromEntries(entryIds) {
     return ServiceResponse.error(error)
   }
 }
+
+export async function approveConciliationBatch(payload) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const movementIds = Array.isArray(payload) ? payload : payload?.movementIds
+      const result = await financeService.approveConciliationBatch(t, movementIds, {
+        realDate: payload?.realDate,
+        bankAccountId: payload?.bankAccountId
+      })
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function approveConciliationMovement(data) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.approveConciliationMovement(t, data)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
 export async function createBankTransfer(data) {
   const db = new AppContext()
   try {

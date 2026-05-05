@@ -2,22 +2,21 @@
 
 import React from 'react';
 import { Container, Table, Toolbar, RangeModal } from '@/components/common';
-import { useTable, useLoading, useRangeFilter, useExport, useNavigation } from '@/hooks';
+import { useTable, useLoading, useRangeFilter, useExport, useNavigation, useFilter } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import * as financeAction from '@/app/actions/finance.action';
 import * as bankAccountAction from '@/app/actions/bankAccount.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
-import { Box, Typography, Chip, Card, CardContent, Skeleton, Avatar, Divider, IconButton } from '@mui/material';
+import { Box, Typography, Card, CardContent, Skeleton, Avatar, IconButton, Badge } from '@mui/material';
 import {
   Search as SearchIcon,
   Event as EventIcon,
   Download as DownloadIcon,
   Google as GoogleIcon,
+  FilterList as FilterIcon,
   AccountBalance as BankIcon,
   SwapHoriz as SwapHorizIcon,
-  ArrowCircleUp as UpIcon,
-  ArrowCircleDown as DownIcon,
   AllInclusive as AllIcon,
   Add as AddIcon,
   AccountTree as HistoryIcon,
@@ -29,12 +28,14 @@ import BankMovementModal from './bank-movement-modal';
 import BankAccountDrawer from './bank-account-drawer';
 import BankMovementTraceDrawer from './bank-movement-trace-drawer';
 import BankTransferModal from './bank-transfer-modal';
+import BankMovementsFilter from './bank-movements-filter';
 
-export default function BankMovementsList({ title, initialTable, initialRange, initialBankAccounts, selectedId }) {
+export default function BankMovementsList({ title, initialTable, initialRange, initialBankAccounts, selectedId, navigationPath = '/finances/banks', initialFilters = { status: 'conciled' } }) {
   const table = useTable({ initialTable });
   const loading = useLoading();
   const exporter = useExport();
-  const { selectedId: selectedBankAccountId, setSelectedId: setSelectedBankAccountId } = useNavigation('/finances/banks', selectedId);
+  const { selectedId: selectedBankAccountId, setSelectedId: setSelectedBankAccountId } = useNavigation(navigationPath, selectedId);
+  const filter = useFilter({ initialFilters });
   const [bankAccounts, setBankAccounts] = React.useState(Array.isArray(initialBankAccounts) ? initialBankAccounts : []);
   const [showBankAccounts, setShowBankAccounts] = React.useState(false);
   const [movementModalOpen, setMovementModalOpen] = React.useState(false);
@@ -71,6 +72,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
         where,
+        filters: overrides.filters || filter.filters,
         range: overrides.range || rangeFilter.range,
         sortBy: overrides.sortBy || table.sortBy || undefined,
         sortOrder: overrides.sortOrder || table.sortOrder || undefined
@@ -98,7 +100,8 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
     table.sortBy,
     table.sortOrder,
     rangeFilter.range,
-    selectedBankAccountId
+    selectedBankAccountId,
+    filter.filters
   ]);
 
   const handleReverseSettlement = React.useCallback(async (row) => {
@@ -235,6 +238,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         format,
         service: financeAction.findAllBankMovements,
         params: {
+          filters: filter.filters,
           range: rangeFilter.range,
           sortBy: table.sortBy,
           sortOrder: table.sortOrder
@@ -306,6 +310,15 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
               label: rangeFilter.label,
               icon: <EventIcon fontSize="small" />,
               onClick: rangeFilter.handleOpen
+            },
+            {
+              label: 'Filtros',
+              icon: (
+                <Badge badgeContent={filter.activeCount} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16, top: 2, right: 2 } }}>
+                  <FilterIcon fontSize="small" />
+                </Badge>
+              ),
+              onClick: filter.handleOpen
             },
             {
               label: 'Pesquisar',
@@ -600,6 +613,20 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
           rangeFilter.setRange(vals);
           rangeFilter.setOpen(false);
           table.setPage(1);
+        }}
+      />
+
+      <BankMovementsFilter
+        open={filter.open}
+        filters={filter.filters}
+        onClose={filter.handleClose}
+        onApply={async (vals) => {
+          const ok = await fetchTable({ filters: vals, page: 1 });
+          if (ok) {
+            filter.setFilters(vals);
+            filter.setOpen(false);
+            table.setPage(1);
+          }
         }}
       />
 

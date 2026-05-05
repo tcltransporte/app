@@ -268,6 +268,17 @@ export async function createBankMovement(transaction, data) {
   })
 }
 
+export async function updateBankMovements(transaction, ids, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const [affectedCount] = await db.BankMovement.update(data, {
+      where: { id: { [Op.in]: ids } },
+      transaction: t
+    })
+    return affectedCount
+  })
+}
+
 
 export async function findBankMovement(transaction, id, { include } = {}) {
   const db = new AppContext()

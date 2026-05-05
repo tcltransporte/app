@@ -276,10 +276,18 @@ export async function findAllBankMovements(transaction, params = {}) {
   const session = await getSession()
   const { page = 1, limit = 50, sortBy = 'realDate', sortOrder = 'DESC' } = params
   const offset = (page - 1) * limit
+  const statusFilter = params?.filters?.status || params?.status || 'conciled'
+
+  let isConciledFilter
+  if (statusFilter === 'conciled') isConciledFilter = true
+  if (statusFilter === 'not_conciled') isConciledFilter = false
 
   const where = {
-    ...params.where,
-    isConciled: true
+    ...params.where
+  }
+
+  if (typeof isConciledFilter === 'boolean') {
+    where.isConciled = isConciledFilter
   }
 
   const include = [
@@ -302,6 +310,9 @@ export async function findAllBankMovements(transaction, params = {}) {
       where[field] = { [Op.between]: [s, e] }
     }
   }
+
+  delete params.filters
+  delete params.status
 
   return await financeRepository.findAllBankMovements(transaction, {
     ...params,
@@ -511,6 +522,112 @@ export async function reverseSettlementsFromEntries(transaction, entryIds = []) 
   }
 
   return { reversedPayments: paymentIds.length, reversedEntries: normalizedEntryIds.length }
+}
+
+export async function approveConciliationBatch(transaction, movementIds = [], options = {}) {
+  const session = await getSession()
+  const ids = [...new Set((movementIds || []).map(Number).filter((id) => !Number.isNaN(id) && id > 0))]
+
+  if (ids.length === 0) {
+    throw { code: 'INVALID_MOVEMENTS', message: 'Nenhum movimento válido foi informado' }
+  }
+
+  const result = await financeRepository.findAllBankMovements(transaction, {
+    attributes: ['id', 'isConciled'],
+    where: { id: { [Op.in]: ids } },
+    include: [{
+      association: 'bankAccount',
+      where: { companyId: session.company.id },
+      required: true
+    }],
+    limit: ids.length
+  })
+
+  const found = result.rows || []
+  if (found.length !== ids.length) {
+    throw { code: 'FORBIDDEN', message: 'Um ou mais movimentos não pertencem à empresa da sessão' }
+  }
+
+  const pendingIds = found.filter((movement) => !movement.isConciled).map((movement) => movement.id)
+  if (pendingIds.length === 0) {
+    return { approvedCount: 0 }
+  }
+
+  const updateData = { isConciled: true }
+
+  if (options?.bankAccountId != null) {
+    const parsedBankAccountId = Number(options.bankAccountId)
+    if (!Number.isNaN(parsedBankAccountId) && parsedBankAccountId > 0) {
+      const account = await financeRepository.findBankAccount(transaction, {
+        where: { id: parsedBankAccountId, companyId: session.company.id },
+        attributes: ['id']
+      })
+
+      if (!account) {
+        throw { code: 'INVALID_ACCOUNT', message: 'Conta bancária não pertence à empresa da sessão' }
+      }
+
+      updateData.bankAccountId = parsedBankAccountId
+    }
+  }
+
+  if (options?.realDate != null) {
+    const parsedDate = new Date(options.realDate)
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw { code: 'INVALID_DATE', message: 'Data de pagamento inválida' }
+    }
+    updateData.realDate = parsedDate
+  }
+
+  const affectedCount = await financeRepository.updateBankMovements(transaction, pendingIds, updateData)
+  return { approvedCount: affectedCount }
+}
+
+export async function approveConciliationMovement(transaction, { movementId, realDate, bankAccountId }) {
+  const session = await getSession()
+  const parsedMovementId = Number(movementId)
+  const parsedBankAccountId = Number(bankAccountId)
+
+  if (!parsedMovementId || Number.isNaN(parsedMovementId)) {
+    throw { code: 'INVALID_MOVEMENT', message: 'Movimento inválido' }
+  }
+  if (!parsedBankAccountId || Number.isNaN(parsedBankAccountId)) {
+    throw { code: 'INVALID_ACCOUNT', message: 'Conta bancária inválida' }
+  }
+
+  const movement = await financeRepository.findBankMovement(transaction, parsedMovementId, {
+    include: [{
+      association: 'bankAccount',
+      where: { companyId: session.company.id },
+      required: true
+    }]
+  })
+
+  if (!movement) {
+    throw { code: 'NOT_FOUND', message: 'Movimento não encontrado ou sem permissão' }
+  }
+
+  const account = await financeRepository.findBankAccount(transaction, {
+    where: { id: parsedBankAccountId, companyId: session.company.id },
+    attributes: ['id']
+  })
+
+  if (!account) {
+    throw { code: 'INVALID_ACCOUNT', message: 'Conta bancária não pertence à empresa da sessão' }
+  }
+
+  const parsedDate = realDate ? new Date(realDate) : new Date()
+  if (Number.isNaN(parsedDate.getTime())) {
+    throw { code: 'INVALID_DATE', message: 'Data de pagamento inválida' }
+  }
+
+  await financeRepository.updateBankMovements(transaction, [parsedMovementId], {
+    isConciled: true,
+    realDate: parsedDate,
+    bankAccountId: parsedBankAccountId
+  })
+
+  return { movementId: parsedMovementId }
 }
 
 export async function createBankTransfer(transaction, { originAccountId, destinationAccountId, value, realDate, description }) {
