@@ -9,7 +9,7 @@ import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import { formatSqlDate } from '@/libs/date';
-import { Button, IconButton, Tooltip, Box, Typography, Chip, Badge } from '@mui/material';
+import { Button, IconButton, Box, Typography, Badge } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -31,6 +31,7 @@ import FinanceTitleDetailsDrawer from './finance-title-details-drawer';
 import FinancePaymentHistoryDrawer from './finance-payment-history-drawer';
 import EntryStatusChip from './finance-entry-status-chip';
 import FinanceEntriesFilter from './finance-entries-filter';
+import UnifiedChip from '@/components/common/UnifiedChip';
 
 export default function FinanceEntriesList({ operationType, title, initialTable, selectedId: propsSelectedId, initialRange, initialFilters = {} }) {
   const table = useTable({ initialTable });
@@ -176,19 +177,16 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
           >
             {row.title?.documentNumber || ''}
           </Typography>
-          <Tooltip title="Ver todas as parcelas">
-            <Chip
+          <span title="Ver todas as parcelas">
+            <UnifiedChip
               label={`${row.installmentNumber}/${row.installmentsCount || '?'}`}
-              size="small"
               color="primary"
+              variant="filled"
               onClick={(e) => {
                 e.stopPropagation();
                 handleOpenDetails(row.titleId, row.title?.documentNumber);
               }}
-              sx={{
-                height: 24,
-                fontSize: '0.75rem',
-                fontWeight: 800,
+              chipSx={{
                 cursor: 'pointer',
                 mr: 1, // Pequeno recuo
                 boxShadow: (theme) => `0 2px 4px ${theme.palette.primary.main}44`,
@@ -200,7 +198,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
                 transition: 'all 0.2s'
               }}
             />
-          </Tooltip>
+          </span>
         </Box>
       )
     },
@@ -229,8 +227,8 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
             operationType={operationType}
             sx={{
               fontWeight: 600,
-              fontSize: '0.7rem',
-              height: 20,
+                fontSize: '0.75rem',
+                height: 24,
               cursor: 'pointer',
               '&:hover': {
                 bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',

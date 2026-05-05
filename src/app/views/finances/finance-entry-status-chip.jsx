@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Chip } from '@mui/material'
+import UnifiedChip from '@/components/common/UnifiedChip'
 
 /**
  * EntryStatusChip
@@ -36,15 +36,16 @@ export default function EntryStatusChip({ entry, operationType, sx, onClick }) {
   }
 
   const { label, color } = statusMap[statusKey] ?? statusMap.open
+  const title = statusKey === 'pending_recon' ? 'Aguardando conciliação' : label
 
   return (
-    <Chip
+    <UnifiedChip
       label={label}
-      size="small"
-      variant="outlined"
       color={color}
+      title={title}
       onClick={onClick}
-      sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, ...sx }}
+      variant="outlined"
+      chipSx={{ ...sx }}
     />
   )
 }

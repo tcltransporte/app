@@ -7,7 +7,7 @@ import { ExportFormat } from '@/hooks/useExport';
 import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
-import { Typography, Badge, Button, Chip } from '@mui/material';
+import { Typography, Badge } from '@mui/material';
 import {
   Search as SearchIcon,
   Event as EventIcon,
@@ -18,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import ConciliationFilter from './conciliation-filter';
 import ConciliationApproveDrawer from './conciliation-approve-drawer';
+import UnifiedChip from '@/components/common/UnifiedChip';
 
 export default function ConciliationList({ initialTable, selectedId, initialRange, initialFilters = { status: 'not_conciled' } }) {
   const table = useTable({ initialTable });
@@ -180,59 +181,26 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
         const isConciled = !!row?.isConciled;
         if (isConciled) {
           return (
-            <div style={{ height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Chip
-                label="Conciliado"
-                size="small"
-                variant="outlined"
-                color="success"
-                sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, userSelect: 'none' }}
-              />
-            </div>
+            <UnifiedChip
+              label="Conciliado"
+              color="success"
+              variant="outlined"
+              title="Conciliado"
+            />
           );
         }
 
         return (
-          <div style={{ height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Chip
-              label="Pendente"
-              size="small"
-              variant="outlined"
-              color="warning"
-              sx={{
-                height: 20,
-                fontSize: '0.65rem',
-                fontWeight: 700,
-                userSelect: 'none',
-                '.MuiTableRow-root:hover &': { display: 'none' }
-              }}
-            />
-            <Button
-              size="small"
-              variant="contained"
-              color="success"
-              startIcon={<CheckIcon fontSize="small" />}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleApproveConciliationRow(row);
-              }}
-              sx={{
-                display: 'none',
-                minWidth: 84,
-                height: 20,
-                minHeight: 20,
-                py: 0,
-                px: 1,
-                lineHeight: 1.2,
-                textTransform: 'none',
-                fontSize: '0.65rem',
-                fontWeight: 700,
-                '.MuiTableRow-root:hover &': { display: 'inline-flex' }
-              }}
-            >
-              Aprovar
-            </Button>
-          </div>
+          <UnifiedChip
+            label="Pendente"
+            color="warning"
+            variant="outlined"
+            title="Pendente de conciliação"
+            actionLabel="Aprovar"
+            actionIcon={<CheckIcon fontSize="small" />}
+            onActionClick={() => handleApproveConciliationRow(row)}
+            showActionOnHover
+          />
         );
       }
     },
