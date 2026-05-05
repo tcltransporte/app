@@ -15,6 +15,7 @@ export const ThemeContext = createContext({
   menu: 'recolhido',
   primaryColor: '#6366f1',
   semiDark: true,
+  zoom: 0.9,
   initialMobile: false,
   setMode: () => { },
   setSkin: () => { },
@@ -22,6 +23,7 @@ export const ThemeContext = createContext({
   setMenu: () => { },
   setPrimaryColor: () => { },
   setSemiDark: () => { },
+  setZoom: () => { },
 });
 
 export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobile = false }) => {
@@ -31,6 +33,7 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
   const [menu, setMenu] = useState(initialConfig.menu || 'recolhido');
   const [primaryColor, setPrimaryColor] = useState(initialConfig.primaryColor || '#6366f1');
   const [semiDark, setSemiDark] = useState(initialConfig.semiDark || false);
+  const [zoom, setZoom] = useState(initialConfig.zoom || 0.9);
 
 
   const saveToStorage = (key, value) => {
@@ -63,7 +66,22 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
       setSemiDark(savedSemiDark === 'true');
       saveToStorage('semiDark', savedSemiDark);
     }
+
+    const savedZoom = localStorage.getItem('theme-zoom');
+    if (savedZoom && document.cookie.indexOf('theme-zoom=') === -1) {
+      const parsedZoom = Number(savedZoom);
+      if (!Number.isNaN(parsedZoom) && parsedZoom > 0) {
+        setZoom(parsedZoom);
+        saveToStorage('zoom', parsedZoom);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.style.setProperty('--app-zoom', String(zoom));
+    document.body.style.zoom = String(zoom);
+  }, [zoom]);
 
   const handleSetMode = (newMode) => {
     setMode(newMode);
@@ -83,6 +101,13 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
   const handleSetSemiDark = (val) => {
     setSemiDark(val);
     saveToStorage('semiDark', val);
+  };
+
+  const handleSetZoom = (val) => {
+    const parsedZoom = Number(val);
+    if (Number.isNaN(parsedZoom) || parsedZoom <= 0) return;
+    setZoom(parsedZoom);
+    saveToStorage('zoom', parsedZoom);
   };
 
   // Create the MUI theme based on the current context state
@@ -153,6 +178,7 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
     menu, setMenu: handleSetMenu,
     primaryColor, setPrimaryColor: handleSetPrimaryColor,
     semiDark, setSemiDark: handleSetSemiDark,
+    zoom, setZoom: handleSetZoom,
     initialMobile,
   };
 

@@ -223,27 +223,25 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     {
       field: 'status', headerName: 'Status', width: 120, align: 'center',
       renderCell: (val, row) => (
-        <Tooltip title="Ver rastro de pagamento">
-          <span>
-            <EntryStatusChip
-              entry={row}
-              operationType={operationType}
-              sx={{
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                height: 20,
-                cursor: 'pointer',
-                '&:hover': {
-                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-                }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenHistory([row.id]);
-              }}
-            />
-          </span>
-        </Tooltip>
+        <span title={(row?.displayStatus ?? row?.status) === 'pending_recon' ? 'Pendente de conciliação' : 'Ver rastro de pagamento'}>
+          <EntryStatusChip
+            entry={row}
+            operationType={operationType}
+            sx={{
+              fontWeight: 600,
+              fontSize: '0.7rem',
+              height: 20,
+              cursor: 'pointer',
+              '&:hover': {
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+              }
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenHistory([row.id]);
+            }}
+          />
+        </span>
       )
     },
     {
@@ -328,7 +326,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
               color: 'success'
             }] : []),
             ...(table.selecteds.length > 0 ? [{
-              label: `Desfazer Baixa${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
+              label: `Desfazer${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
               icon: <UndoIcon />,
               onClick: handleDesfazerLote,
               variant: 'outlined',

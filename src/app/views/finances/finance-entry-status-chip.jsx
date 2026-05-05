@@ -22,7 +22,7 @@ export default function EntryStatusChip({ entry, operationType, sx, onClick }) {
       color: 'success',
     },
     pending_recon: {
-      label: 'Aguard. conc.',
+      label: 'Pendente',
       color: 'warning',
     },
     late: {

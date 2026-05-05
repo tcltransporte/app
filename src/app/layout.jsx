@@ -28,6 +28,7 @@ export default async function RootLayout({ children }) {
     primaryColor: cookieStore.get('theme-primaryColor')?.value || '#6366f1',
     menu: cookieStore.get('theme-menu')?.value || 'recolhido',
     semiDark: cookieStore.get('theme-semiDark')?.value === 'true',
+    zoom: Number(cookieStore.get('theme-zoom')?.value || 0.9),
   };
 
   return (
@@ -37,7 +38,9 @@ export default async function RootLayout({ children }) {
         style={{
           margin: 0,
           backgroundColor: '#fafafa',
-          '--route-progress-color': themeConfig.primaryColor
+          '--app-zoom': themeConfig.zoom,
+          '--route-progress-color': themeConfig.primaryColor,
+          zoom: themeConfig.zoom
         }}
         suppressHydrationWarning
       >

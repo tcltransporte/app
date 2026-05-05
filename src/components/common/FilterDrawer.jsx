@@ -35,7 +35,7 @@ export function FilterDrawer({
         sx: { width: { xs: '100%', sm: 450 }, p: 0 }
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh / var(--app-zoom, 1))' }}>
         <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h6" fontWeight={700}>{title}</Typography>
           <IconButton onClick={onClose} size="small">

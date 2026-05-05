@@ -34,7 +34,7 @@ const ContainerFooter = (props) => (
 
 export const Container = ({ children }) => {
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Box sx={{ height: 'calc(100vh / var(--app-zoom, 1))', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {children}
     </Box>
   );
