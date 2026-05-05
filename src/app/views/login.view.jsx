@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useContext, Suspense } from "react"
+import { useState, useContext, Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Box,
@@ -58,6 +58,27 @@ export function LoginView() {
   // Variables for session conflict Drawer
   const [sessionConflict, setSessionConflict] = useState(false)
   const [currentValues, setCurrentValues] = useState(null)
+
+  const handleContinueSessionConflict = () => {
+    if (!currentValues || loading) return
+
+    setSessionConflict(false)
+    // Call handleLogin forcing the session replacement
+    handleLogin({ ...currentValues, forceCloseSession: true }, null, null)
+  }
+
+  useEffect(() => {
+    if (!sessionConflict) return
+
+    const handleKeyDown = (event) => {
+      if (event.key !== "Enter" || event.repeat) return
+      event.preventDefault()
+      handleContinueSessionConflict()
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [sessionConflict, currentValues, loading])
 
   const handleLogin = async (values, setFieldValue, setFieldError) => {
     setLoading(true)
@@ -474,11 +495,7 @@ export function LoginView() {
               </Button>
               <Button
                 variant="contained"
-                onClick={() => {
-                  setSessionConflict(false)
-                  // Call handleLogin forcing the session replacement
-                  handleLogin({ ...currentValues, forceCloseSession: true }, null, null)
-                }}
+                onClick={handleContinueSessionConflict}
                 disabled={loading}
                 sx={{
                   py: 1.2,

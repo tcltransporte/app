@@ -179,7 +179,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       renderCell: (val, row) => row.title?.costCenter ? row.title.costCenter.description : ''
     },
     {
-      field: 'status', headerName: 'Status', width: 90, align: 'center',
+      field: 'status', headerName: 'Status', width: 120, align: 'center',
       renderCell: (val, row) => (
         <Tooltip title="Ver rastro de pagamento">
           <span>

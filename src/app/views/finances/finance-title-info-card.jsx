@@ -1,13 +1,11 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Card, CardContent, Box, Typography, IconButton, Grid, Button, Tooltip, Chip, Badge } from '@mui/material'
+import { Card, CardContent, Box, Typography, IconButton, Grid, Button, Tooltip, Chip } from '@mui/material'
 import {
   Edit as EditIcon,
   Close as CancelIcon,
-  Save as SaveIcon,
-  CheckCircle as SuccessIcon,
-  Description as DocIcon
+  Save as SaveIcon
 } from '@mui/icons-material'
 import { Formik, Form, Field } from 'formik'
 import { TextField, AutoComplete, DateField } from '@/components/controls'
@@ -207,31 +205,25 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
             {onViewEntries && (
               <Box sx={{ position: 'absolute', bottom: 16, right: 16 }}>
                 <Tooltip title="Ver todas as parcelas">
-                  <IconButton
+                  <Chip
+                    label={`${title.currentInstallmentNumber || 1}/${title.installmentsCount || '?'}`}
                     size="small"
                     color="primary"
                     onClick={onViewEntries}
                     sx={{
-                      bgcolor: 'background.paper',
-                      boxShadow: 2,
-                      '&:hover': { bgcolor: 'primary.lighter' }
+                      height: 24,
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: (theme) => `0 2px 4px ${theme.palette.primary.main}44`,
+                      '&:hover': {
+                        opacity: 0.9,
+                        transform: 'scale(1.05)',
+                        boxShadow: (theme) => `0 4px 8px ${theme.palette.primary.main}66`,
+                      },
+                      transition: 'all 0.2s'
                     }}
-                  >
-                    <Badge
-                      badgeContent={title.installmentsCount || '0'}
-                      color="primary"
-                      max={99}
-                      sx={{
-                        '& .MuiBadge-badge': {
-                          fontSize: '0.65rem',
-                          height: 16,
-                          minWidth: 16
-                        }
-                      }}
-                    >
-                      <DocIcon sx={{ fontSize: 20 }} />
-                    </Badge>
-                  </IconButton>
+                  />
                 </Tooltip>
               </Box>
             )}

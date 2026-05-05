@@ -6,18 +6,24 @@ import { Chip } from '@mui/material'
 /**
  * EntryStatusChip
  *
- * Renders a status chip based on the `entry.status` virtual field from FinanceEntry model.
- * Possible values: 'paid' | 'late' | 'open'
+ * Lista (contas a receber/pagar): usa `entry.displayStatus` quando existir
+ * ('paid' | 'pending_recon' | 'late' | 'open'). Caso contrário, cai no `entry.status` do model.
  *
- * @param {object}  entry          - A FinanceEntry object (must have .status)
- * @param {number}  operationType  - 1 = receivable (Recebido), 2 = payable (Pago)
+ * @param {object}  entry          - Parcela financeira
+ * @param {number}  operationType  - 1 = recebível (Recebido), 2 = pagável (Pago)
  * @param {object}  sx             - Optional extra MUI sx styles
  */
 export default function EntryStatusChip({ entry, operationType, sx, onClick }) {
+  const statusKey = entry?.displayStatus ?? entry?.status
+
   const statusMap = {
     paid: {
       label: operationType === 2 ? 'Pago' : 'Recebido',
       color: 'success',
+    },
+    pending_recon: {
+      label: 'Aguard. conc.',
+      color: 'warning',
     },
     late: {
       label: 'Atrasado',
@@ -29,7 +35,7 @@ export default function EntryStatusChip({ entry, operationType, sx, onClick }) {
     },
   }
 
-  const { label, color } = statusMap[entry?.status] ?? statusMap.open
+  const { label, color } = statusMap[statusKey] ?? statusMap.open
 
   return (
     <Chip

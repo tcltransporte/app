@@ -4,7 +4,7 @@ import { getSession } from "@/libs/session"
 
 export async function POST(request) {
   try {
-    const { search } = await request.json()
+    const { search, companyId, operationType } = await request.json()
     const session = await getSession()
     
     if (!session?.company?.id) {
@@ -14,7 +14,11 @@ export async function POST(request) {
     const db = new AppContext()
     const where = {
       isActive: true,
-      // idEmpresa: session.company.id // Algumas tabelas usam idEmpresa, outras companyId. Verificando...
+      companyId: Number(companyId) || session.company.id
+    }
+
+    if (Number(operationType)) {
+      where.operationTypeId = Number(operationType)
     }
 
     if (search && typeof search === 'string') {

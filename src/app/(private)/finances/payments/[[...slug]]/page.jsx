@@ -19,18 +19,20 @@ export default async function FinancePayablePage({ params }) {
 
     const operationType = 2
     const initialFilters = {
+      status: 'open',
       company: currentCompany
     }
-
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const initialRange = { start: today, end: today, field: 'dueDate' };
+    const initialSort = { sortBy: 'dueDate', sortOrder: 'ASC' }
+  
+    const initialRange = { start: '', end: '', field: 'dueDate' };
 
     const result = await financeEntryAction.findAll({
       page: 1,
       limit: 50,
       operationType,
       range: initialRange,
-      filters: initialFilters
+      filters: initialFilters,
+      ...initialSort
     });
 
     if (result?.header?.status !== ServiceStatus.SUCCESS) {

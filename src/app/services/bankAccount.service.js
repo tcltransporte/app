@@ -43,7 +43,10 @@ export async function findAll(transaction, { query, limit = 50 } = {}) {
         [db.col('tipo_movimento_bancario'), 'typeId'],
         [db.fn('SUM', db.col('valor')), 'total']
       ],
-      where: { bankAccountId: { [Op.in]: accountIds } },
+      where: {
+        bankAccountId: { [Op.in]: accountIds },
+        isConciled: true
+      },
       group: [db.col('codigo_conta_bancaria'), db.col('tipo_movimento_bancario')],
       transaction: t,
       raw: true

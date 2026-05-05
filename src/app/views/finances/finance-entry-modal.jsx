@@ -97,7 +97,8 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
               <FinanceTitleInfoCard
                 title={{ 
                   ...entry?.title, 
-                  installmentsCount: entry?.installmentsCount 
+                  installmentsCount: entry?.installmentsCount,
+                  currentInstallmentNumber: entry?.installmentNumber
                 }}
                 onUpdate={fetchEntry}
                 onEditingChange={setIsTitleEditing}

@@ -133,6 +133,31 @@ export async function findAllEntries(transaction, { attributes, include, where, 
           [
             db.literal(`(SELECT COUNT(*) FROM movimentos_detalhe WHERE movimentos_detalhe.codigo_movimento = financeEntry.codigo_movimento)`),
             'installmentsCount'
+          ],
+          [
+            db.literal(`(CASE
+              WHEN [financeEntry].[codigo_pagamento] IS NULL THEN
+                CASE
+                  WHEN [financeEntry].[data_vencimento] IS NOT NULL
+                    AND CONVERT(date, [financeEntry].[data_vencimento]) < CONVERT(date, SYSDATETIME()) THEN 'late'
+                  ELSE 'open'
+                END
+              WHEN EXISTS (
+                SELECT 1
+                FROM [movimento_bancario] AS [mb]
+                INNER JOIN [pagamentos_detalhe] AS [pd] ON [pd].[codigo_pagamento_detalhe] = [mb].[IDPagamentoDetalhe]
+                WHERE [pd].[codigo_pagamento] = [financeEntry].[codigo_pagamento]
+              )
+              AND NOT EXISTS (
+                SELECT 1
+                FROM [movimento_bancario] AS [mb2]
+                INNER JOIN [pagamentos_detalhe] AS [pd2] ON [pd2].[codigo_pagamento_detalhe] = [mb2].[IDPagamentoDetalhe]
+                WHERE [pd2].[codigo_pagamento] = [financeEntry].[codigo_pagamento]
+                  AND ISNULL([mb2].[boolConciliado], 0) = 0
+              ) THEN 'paid'
+              ELSE 'pending_recon'
+            END)`),
+            'displayStatus'
           ]
         ]
       },

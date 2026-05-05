@@ -61,19 +61,22 @@ export async function update(transaction, id, data) {
 }
 
 export async function findAllEntries(transaction, params = {}) {
+  const page = Number(params.page) > 0 ? Number(params.page) : 1
+  const limit = Number(params.limit) > 0 ? Number(params.limit) : 50
+  const offset = (page - 1) * limit
+
+  params.limit = limit
+  params.offset = offset
+  delete params.page
+
+  if (params.sortBy) {
+    params.order = [[params.sortBy, params.sortOrder || 'ASC']]
+  }
+  delete params.sortBy
+  delete params.sortOrder
+
   const selectedCompanyId = params?.filters?.company?.id ? Number(params.filters.company.id) : null
   const titleWhere = selectedCompanyId ? { companyId: selectedCompanyId } : {}
-
-  const titleInclude = {
-    association: 'title',
-    ...(Object.keys(titleWhere).length > 0 ? { where: titleWhere } : {}),
-    include: [
-      { association: 'partner', attributes: ['id', 'name', 'surname'] },
-      { association: 'accountPlan', required: false, attributes: ['id', 'description', 'code'] },
-      { association: 'costCenter', required: false, attributes: ['id', 'description'] },
-      { association: 'company', required: false, attributes: ['id', 'name', 'surname'] }
-    ]
-  }
 
   if (params.operationType) {
     params.where = {
@@ -210,6 +213,17 @@ export async function findAllEntries(transaction, params = {}) {
     delete params.filters
   }
 
+  const titleInclude = {
+    association: 'title',
+    ...(Object.keys(titleWhere).length > 0 ? { where: titleWhere } : {}),
+    include: [
+      { association: 'partner', attributes: ['id', 'name', 'surname'] },
+      { association: 'accountPlan', required: false, attributes: ['id', 'description', 'code'] },
+      { association: 'costCenter', required: false, attributes: ['id', 'description'] },
+      { association: 'company', required: false, attributes: ['id', 'name', 'surname'] }
+    ]
+  }
+
   params.include = [...(params.include || []), titleInclude]
 
   if (params.range) {
@@ -264,7 +278,8 @@ export async function findAllBankMovements(transaction, params = {}) {
   const offset = (page - 1) * limit
 
   const where = {
-    ...params.where
+    ...params.where,
+    isConciled: true
   }
 
   const include = [
@@ -315,7 +330,7 @@ export async function createBankMovement(transaction, data) {
     ...data,
     entryDate: new Date(), // Data de lançamento é sempre agora
     realDate: data.realDate || new Date(), // Fallback para hoje se não fornecido
-    isReconciled: false
+    isConciled: false
   }
 
   return await financeRepository.createBankMovement(transaction, finalData)

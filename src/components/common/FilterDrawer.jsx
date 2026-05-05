@@ -32,7 +32,7 @@ export function FilterDrawer({
       open={open}
       onClose={onClose}
       PaperProps={{
-        sx: { width: { xs: '100%', sm: 400 }, p: 0 }
+        sx: { width: { xs: '100%', sm: 450 }, p: 0 }
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
