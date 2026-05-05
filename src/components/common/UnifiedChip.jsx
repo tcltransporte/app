@@ -23,10 +23,23 @@ export default function UnifiedChip({
 
   return (
     <Box
-      sx={{ height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      sx={{
+        height: 24,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...(hasAction && showActionOnHover
+          ? {
+              '& .unified-chip__action': { display: 'none' },
+              '&:hover .unified-chip__chip, .MuiTableRow-root:hover & .unified-chip__chip': { display: 'none' },
+              '&:hover .unified-chip__action, .MuiTableRow-root:hover & .unified-chip__action': { display: 'inline-flex' }
+            }
+          : {})
+      }}
       onClick={onClick}
     >
       <Chip
+        className="unified-chip__chip"
         label={label}
         size={size}
         variant={variant}
@@ -41,13 +54,13 @@ export default function UnifiedChip({
             px: 1,
             py: 0
           },
-          ...(hasAction && showActionOnHover ? { '.MuiTableRow-root:hover &': { display: 'none' } } : {}),
           ...chipSx
         }}
       />
 
       {hasAction && (
         <Button
+          className="unified-chip__action"
           size="small"
           variant={actionVariant}
           color={actionColor}
@@ -58,7 +71,7 @@ export default function UnifiedChip({
             onActionClick(e);
           }}
           sx={{
-            display: showActionOnHover ? 'none' : 'inline-flex',
+            display: showActionOnHover ? undefined : 'inline-flex',
             minWidth: 84,
             height: 24,
             minHeight: 24,
@@ -68,7 +81,6 @@ export default function UnifiedChip({
             textTransform: 'none',
             fontSize: '0.75rem',
             fontWeight: 800,
-            ...(showActionOnHover ? { '.MuiTableRow-root:hover &': { display: 'inline-flex' } } : {}),
             ...actionSx
           }}
         >

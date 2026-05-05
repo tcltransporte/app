@@ -13,6 +13,8 @@ import * as financeEntryAction from '@/app/actions/financeEntry.action'
 import { alert } from '@/libs/alert'
 import { ServiceStatus } from '@/libs/service'
 import FinanceTitleInfoCard from './finance-title-info-card'
+import EntryStatusChip from './finance-entry-status-chip'
+import FinancePaymentHistoryDrawer from './finance-payment-history-drawer'
 
 const validate = (values) => {
   const errors = {}
@@ -28,6 +30,7 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
   const [loading, setLoading] = useState(true)
   const [entry, setEntry] = useState(null)
   const [isTitleEditing, setIsTitleEditing] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   useEffect(() => {
     if (open && entryId) {
@@ -108,6 +111,15 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
 
               {!isTitleEditing && (
                 <Grid container spacing={2}>
+                  <Grid item size={{ xs: 12 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <EntryStatusChip
+                        entry={entry}
+                        operationType={Number(entry?.title?.type_operation || entry?.operationTypeId || entry?.operationType || 0)}
+                        onClick={() => setHistoryOpen(true)}
+                      />
+                    </Box>
+                  </Grid>
                   <Grid item size={{ xs: 12, md: 4 }}>
                     <Field
                       name="installmentNumber"
@@ -158,6 +170,17 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
           </Form>
         )}
       </Formik>
+      <FinancePaymentHistoryDrawer
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        entryIds={entry?.id ? [entry.id] : []}
+        operationType={Number(entry?.title?.type_operation || entry?.operationTypeId || entry?.operationType || 0)}
+        zIndex={(zIndex || 2000) + 1000}
+        onSuccess={() => {
+          fetchEntry()
+          onSuccess?.()
+        }}
+      />
     </Dialog>
   )
 }
