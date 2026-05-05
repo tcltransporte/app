@@ -68,7 +68,7 @@ export class BankMovement {
     allowNull: true
   }
 
-  isReconciled = {
+  isConciled = {
     field: 'boolConciliado',
     type: DataTypes.BOOLEAN,
     allowNull: true

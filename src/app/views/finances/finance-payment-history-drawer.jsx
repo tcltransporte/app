@@ -429,7 +429,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                   value={move.value}
                   realDate={move.realDate}
                   description={move.description}
-                  isReconciled={move.isReconciled}
+                  isReconciled={move.isConciled}
                   bankMovementCode={move.codigo_movimento_bancario || move.id}
                 />
               ))}

@@ -144,7 +144,7 @@ export default function BankMovementTraceDrawer({ open, onClose, movementId, onS
                   value={move.value}
                   realDate={move.realDate}
                   description={move.description}
-                  isReconciled={move.isReconciled}
+                  isReconciled={move.isConciled}
                 />
               ))}
             </FinanceHistoryTimeline.Composition>

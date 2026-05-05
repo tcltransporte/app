@@ -70,7 +70,7 @@ export async function createPayment(transaction, { settlements, commonData }) {
             description: comp.description || `Baixa Parcela #${entry.installmentNumber} - Pgto ${payment.id}`,
             nominal: commonData.nominal || '',
             paymentEntryId: paymentEntry.id,
-            isReconciled: !!comp.isReconciled
+            isConciled: !!comp.isReconciled
           }, { transaction: t })
         }
       }

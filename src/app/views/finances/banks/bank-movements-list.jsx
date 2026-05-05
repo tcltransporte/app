@@ -14,7 +14,6 @@ import {
   Event as EventIcon,
   Download as DownloadIcon,
   Google as GoogleIcon,
-  CheckCircle as CheckIcon,
   AccountBalance as BankIcon,
   SwapHoriz as SwapHorizIcon,
   ArrowCircleUp as UpIcon,
@@ -182,12 +181,6 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
     },
     {
       field: 'description', headerName: 'Descrição', flex: 1,
-    },
-    {
-      field: 'isReconciled', headerName: 'Conc.', width: 80, align: 'center',
-      renderCell: (val) => (
-        val ? <CheckIcon color="success" fontSize="small" /> : null
-      )
     },
     {
       field: 'trace', headerName: 'Rastreio', width: 80, align: 'center',
