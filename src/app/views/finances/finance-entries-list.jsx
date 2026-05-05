@@ -5,6 +5,7 @@ import { Container, Table, Toolbar, RangeModal } from '@/components/common';
 import { useTable, useNavigation, useLoading, useRangeFilter, useExport, useFilter } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
+import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import { formatSqlDate } from '@/libs/date';
@@ -22,6 +23,7 @@ import {
   Google as GoogleIcon,
   Payment as PaymentIcon,
   CheckCircle as CheckIcon,
+  Undo as UndoIcon,
 } from '@mui/icons-material';
 import FinanceTitleModal from './finance-title-modal';
 import FinanceEntryModal from './finance-entry-modal';
@@ -79,6 +81,12 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     handleOpenHistory(table.selecteds.map(s => s.id));
   }, [table.selecteds, handleOpenHistory]);
 
+  const isPaidEntry = React.useCallback((entry) => {
+    return entry?.status === 'paid'
+      || entry?.displayStatus === 'paid'
+      || Number(entry?.paymentId) > 0
+      || Number(entry?.codigo_pagamento) > 0;
+  }, []);
 
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
@@ -110,6 +118,40 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       loading.hide();
     }
   }, [table.page, table.rowsPerPage, table.sortBy, table.sortOrder, operationType, rangeFilter.range, filter.filters]);
+
+  const handleDesfazerLote = React.useCallback(async () => {
+    if (table.selecteds.length === 0) return;
+
+    const hasOpenEntries = table.selecteds.some((entry) => !isPaidEntry(entry));
+    if (hasOpenEntries) {
+      alert.warning('Operação Inválida', 'Selecione apenas títulos já baixados para desfazer em lote.');
+      return;
+    }
+
+    const verb = operationType === 1 ? 'recebimento' : 'pagamento';
+    const ok = await alert.confirm(
+      `Desfazer ${verb} em lote?`,
+      'Essa ação remove os lançamentos de extrato da baixa, exclui os pagamentos e reabre as parcelas selecionadas.',
+      'warning'
+    );
+    if (!ok) return;
+
+    loading.show('Desfazendo baixa...', 'Aguarde alguns instantes.')
+    try {
+      const ids = table.selecteds.map((entry) => entry.id).filter(Boolean);
+      const result = await financeAction.reverseSettlementsFromEntries(ids);
+      if (result.header.status !== ServiceStatus.SUCCESS) {
+        throw result;
+      }
+
+      alert.success('Sucesso', 'Baixa em lote desfeita com sucesso!');
+      await fetchTable();
+    } catch (error) {
+      alert.error('Não foi possível desfazer', error?.body?.message || error.message);
+    } finally {
+      loading.hide();
+    }
+  }, [table.selecteds, isPaidEntry, operationType, fetchTable, loading]);
 
   const columns = [
     {
@@ -284,6 +326,13 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
               onClick: handleBaixar,
               variant: 'contained',
               color: 'success'
+            }] : []),
+            ...(table.selecteds.length > 0 ? [{
+              label: `Desfazer Baixa${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
+              icon: <UndoIcon />,
+              onClick: handleDesfazerLote,
+              variant: 'outlined',
+              color: 'warning'
             }] : [])
 
           ]}
@@ -435,6 +484,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
 
       <FinanceEntriesFilter
         open={filter.open}
+        operationType={operationType}
         filters={filter.filters}
         onClose={filter.handleClose}
         onApply={async (vals) => {

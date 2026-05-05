@@ -88,6 +88,30 @@ export async function reverseSettlementFromBankMovement(movementId) {
     return ServiceResponse.error(error)
   }
 }
+
+export async function reverseSettlementFromPayment(paymentId) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.reverseSettlementFromPayment(t, paymentId)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function reverseSettlementsFromEntries(entryIds) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.reverseSettlementsFromEntries(t, entryIds)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
 export async function createBankTransfer(data) {
   const db = new AppContext()
   try {

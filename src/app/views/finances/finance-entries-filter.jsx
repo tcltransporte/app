@@ -4,7 +4,8 @@ import { FilterDrawer } from '@/components/common';
 import { TextField, SelectField, AutoComplete, NumericField } from '@/components/controls';
 import * as search from '@/libs/search';
 
-export default function FinanceEntriesFilter({ open, onClose, filters, onApply }) {
+export default function FinanceEntriesFilter({ open, onClose, filters, onApply, operationType }) {
+  const paidStatusLabel = Number(operationType) === 2 ? 'Pago' : 'Recebido';
   const initialValues = {
     company: filters.company || null,
     documentNumber: filters.documentNumber || '',
@@ -120,11 +121,12 @@ export default function FinanceEntriesFilter({ open, onClose, filters, onApply }
             component={SelectField}
             name="status"
             label="Status"
+            placeholder="[Todos]"
             fullWidth
             size="small"
             options={[
               { value: 'open', label: 'Em aberto' },
-              { value: 'paid', label: 'Recebido' }
+              { value: 'paid', label: paidStatusLabel }
             ]}
           />
         </Grid>

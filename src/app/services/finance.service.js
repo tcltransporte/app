@@ -442,6 +442,77 @@ export async function reverseSettlementFromBankMovement(transaction, movementId)
   return await financeRepository.reversePaymentSettlement(transaction, paymentId)
 }
 
+/**
+ * Desfaz recebimento/pagamento diretamente pelo código do pagamento (`codigo_pagamento`).
+ */
+export async function reverseSettlementFromPayment(transaction, paymentId) {
+  const session = await getSession()
+  const parsedPaymentId = Number(paymentId)
+
+  if (!parsedPaymentId || Number.isNaN(parsedPaymentId)) {
+    throw { code: 'INVALID_PAYMENT', message: 'Pagamento inválido' }
+  }
+
+  const payment = await financeRepository.findPayment(transaction, parsedPaymentId, {
+    include: [
+      {
+        association: 'entries',
+        required: true,
+        include: [
+          {
+            association: 'title',
+            required: true,
+            where: { companyId: session.company.id },
+            attributes: ['id', 'companyId']
+          }
+        ]
+      }
+    ]
+  })
+
+  if (!payment) {
+    throw { code: 'NOT_FOUND', message: 'Pagamento não encontrado ou sem permissão' }
+  }
+
+  return await financeRepository.reversePaymentSettlement(transaction, parsedPaymentId)
+}
+
+/**
+ * Desfaz recebimentos/pagamentos em lote a partir de parcelas selecionadas.
+ */
+export async function reverseSettlementsFromEntries(transaction, entryIds = []) {
+  const session = await getSession()
+  const normalizedEntryIds = [...new Set((entryIds || []).map(Number).filter((id) => !Number.isNaN(id) && id > 0))]
+
+  if (normalizedEntryIds.length === 0) {
+    throw { code: 'INVALID_ENTRIES', message: 'Nenhuma parcela válida foi informada' }
+  }
+
+  const entries = await Promise.all(
+    normalizedEntryIds.map((id) => financeRepository.findEntry(transaction, id))
+  )
+
+  if (entries.some((entry) => !entry)) {
+    throw { code: 'NOT_FOUND', message: 'Uma ou mais parcelas não foram encontradas' }
+  }
+
+  const unauthorized = entries.some((entry) => Number(entry?.title?.company?.id) !== Number(session.company.id))
+  if (unauthorized) {
+    throw { code: 'FORBIDDEN', message: 'Uma ou mais parcelas não pertencem à empresa da sessão' }
+  }
+
+  const paymentIds = [...new Set(entries.map((entry) => Number(entry.paymentId)).filter((id) => !Number.isNaN(id) && id > 0))]
+  if (paymentIds.length === 0) {
+    throw { code: 'NOT_LINKED', message: 'As parcelas selecionadas não possuem baixa registrada' }
+  }
+
+  for (const paymentId of paymentIds) {
+    await financeRepository.reversePaymentSettlement(transaction, paymentId)
+  }
+
+  return { reversedPayments: paymentIds.length, reversedEntries: normalizedEntryIds.length }
+}
+
 export async function createBankTransfer(transaction, { originAccountId, destinationAccountId, value, realDate, description }) {
   const session = await getSession()
 

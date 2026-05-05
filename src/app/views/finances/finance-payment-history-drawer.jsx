@@ -36,11 +36,13 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   History as HistoryIcon,
+  Undo as UndoIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { AutoComplete, DateField, NumericField, SelectField, CheckField } from '@/components/controls';
 import * as paymentAction from '@/app/actions/payment.action';
+import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import * as search from '@/libs/search';
@@ -269,6 +271,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
   const [formData, setFormData] = React.useState({ methods: [] });
   const [selectedEntryId, setSelectedEntryId] = React.useState(null);
   const [entryModalOpen, setEntryModalOpen] = React.useState(false);
+  const [reverseRunning, setReverseRunning] = React.useState(false);
   const formikRef = React.useRef(null);
   /** Estado em memória da sessão para a próxima baixa — useRef para não reaplicar initialValues ao editar (evita reset do Formik). */
   const lastBaixaDraftRef = React.useRef(null);
@@ -287,6 +290,35 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
   const handleOpenEntry = (id) => {
     setSelectedEntryId(id);
     setEntryModalOpen(true);
+  };
+
+  const handleReverseSettlement = async () => {
+    const paymentId = data?.payment?.id;
+    if (!paymentId) return;
+
+    const verb = Number(operationType) === 1 ? 'recebimento' : 'pagamento';
+    const ok = await alert.confirm(
+      `Desfazer ${verb}?`,
+      'Isso remove os lançamentos de extrato da baixa, exclui o pagamento e devolve a(s) parcela(s) para aberto.',
+      'warning'
+    );
+    if (!ok) return;
+
+    setReverseRunning(true);
+    try {
+      const result = await financeAction.reverseSettlementFromPayment(paymentId);
+      if (result.header.status !== ServiceStatus.SUCCESS) {
+        throw result;
+      }
+
+      alert.success('Baixa desfeita');
+      onSuccess?.();
+      onClose?.();
+    } catch (error) {
+      alert.error('Não foi possível desfazer', error?.body?.message || error.message);
+    } finally {
+      setReverseRunning(false);
+    }
   };
 
   const fetchHistory = React.useCallback(async () => {
@@ -425,7 +457,11 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                 <FinanceHistoryTimeline.Movement
                   key={move.id}
                   bank={move.bankAccount?.bank}
-                  accountInfo={move.bankAccount ? `${move.bankAccount.bankName} - Ag: ${move.bankAccount.agency} / Cc: ${move.bankAccount.accountNumber}` : null}
+                  accountInfo={
+                    move.bankAccount
+                      ? `${move.bankAccount.description || move.bankAccount.descricao || ''} - Ag: ${move.bankAccount.agency} / Cc: ${move.bankAccount.accountNumber}`
+                      : null
+                  }
                   value={move.value}
                   realDate={move.realDate}
                   description={move.description}
@@ -522,9 +558,28 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                         : `Baixar Títulos: ${data?.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
                   </Typography>
                 </Stack>
-                <IconButton onClick={rememberAndClose} size="small" sx={{ color: 'inherit' }}>
-                  <CloseIcon />
-                </IconButton>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {!loading && data?.payment && (
+                    <Button
+                      variant="contained"
+                      color="warning"
+                      size="small"
+                      disabled={reverseRunning}
+                      startIcon={<UndoIcon />}
+                      onClick={handleReverseSettlement}
+                      sx={{
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        color: (theme) => theme.palette.grey[900],
+                      }}
+                    >
+                      Desfazer {Number(operationType) === 1 ? 'recebimento' : 'pagamento'}
+                    </Button>
+                  )}
+                  <IconButton onClick={rememberAndClose} size="small" sx={{ color: 'inherit' }}>
+                    <CloseIcon />
+                  </IconButton>
+                </Stack>
               </Box>
 
               <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 0, position: 'relative', bgcolor: 'background.default' }}>
