@@ -2,6 +2,7 @@
 
 import React from 'react'
 import UnifiedChip from '@/components/common/UnifiedChip'
+import { CheckCircle as CheckIcon } from '@mui/icons-material'
 
 /**
  * EntryStatusChip
@@ -37,6 +38,7 @@ export default function EntryStatusChip({ entry, operationType, sx, onClick }) {
 
   const { label, color } = statusMap[statusKey] ?? statusMap.open
   const title = statusKey === 'pending_recon' ? 'Aguardando conciliação' : label
+  const showBaixarAction = statusKey === 'late'
 
   return (
     <UnifiedChip
@@ -44,6 +46,10 @@ export default function EntryStatusChip({ entry, operationType, sx, onClick }) {
       color={color}
       title={title}
       onClick={onClick}
+      actionLabel={showBaixarAction ? 'Baixar' : undefined}
+      actionIcon={showBaixarAction ? <CheckIcon fontSize="small" /> : undefined}
+      onActionClick={showBaixarAction ? onClick : undefined}
+      showActionOnHover={showBaixarAction}
       variant="outlined"
       chipSx={{ ...sx }}
     />

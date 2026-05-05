@@ -133,13 +133,14 @@ export const Toolbar = ({
   return (
     <Box
       sx={{
-        py: 2,
+        pt: '2px',
+        pb: '6px',
         px: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: 2,
+        gap: 1,
         animation: `${slideUp} 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`
       }}
     >

@@ -55,7 +55,7 @@ export default function UnifiedChip({
           title={title || actionLabel}
           onClick={(e) => {
             e.stopPropagation();
-            onActionClick();
+            onActionClick(e);
           }}
           sx={{
             display: showActionOnHover ? 'none' : 'inline-flex',
