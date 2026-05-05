@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Card, CardContent, Box, Typography, IconButton, Grid, Button, Tooltip, Chip } from '@mui/material'
+import { Card, CardContent, Box, Typography, IconButton, Grid, Button, Tooltip } from '@mui/material'
 import {
   Edit as EditIcon,
   Close as CancelIcon,
@@ -13,6 +13,7 @@ import * as financeAction from '@/app/actions/finance.action'
 import * as search from '@/libs/search'
 import { alert } from '@/libs/alert'
 import { ServiceStatus } from '@/libs/service'
+import UnifiedChip from '@/components/common/UnifiedChip'
 
 export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewEntries, onEditingChange }) {
   const [isEditing, setIsEditing] = useState(false)
@@ -204,27 +205,23 @@ export default function FinanceTitleInfoCard({ title, onUpdate, sx = {}, onViewE
             )}
             {onViewEntries && (
               <Box sx={{ position: 'absolute', bottom: 16, right: 16 }}>
-                <Tooltip title="Ver todas as parcelas">
-                  <Chip
-                    label={`${title.currentInstallmentNumber || 1}/${title.installmentsCount || '?'}`}
-                    size="small"
-                    color="primary"
-                    onClick={onViewEntries}
-                    sx={{
-                      height: 24,
-                      fontSize: '0.75rem',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      boxShadow: (theme) => `0 2px 4px ${theme.palette.primary.main}44`,
-                      '&:hover': {
-                        opacity: 0.9,
-                        transform: 'scale(1.05)',
-                        boxShadow: (theme) => `0 4px 8px ${theme.palette.primary.main}66`,
-                      },
-                      transition: 'all 0.2s'
-                    }}
-                  />
-                </Tooltip>
+                <UnifiedChip
+                  label={`${title.currentInstallmentNumber || 1}/${title.installmentsCount || '?'}`}
+                  color="primary"
+                  variant="filled"
+                  title="Ver todas as parcelas"
+                  onClick={onViewEntries}
+                  chipSx={{
+                    cursor: 'pointer',
+                    boxShadow: (theme) => `0 2px 4px ${theme.palette.primary.main}44`,
+                    '&:hover': {
+                      opacity: 0.9,
+                      transform: 'scale(1.05)',
+                      boxShadow: (theme) => `0 4px 8px ${theme.palette.primary.main}66`,
+                    },
+                    transition: 'all 0.2s'
+                  }}
+                />
               </Box>
             )}
           </>

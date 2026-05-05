@@ -290,6 +290,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
   const handleOpenEntry = (id) => {
     setSelectedEntryId(id);
     setEntryModalOpen(true);
+    onClose?.();
   };
 
   const handleReverseSettlement = async () => {
@@ -547,10 +548,10 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
               stashDraft={stashDraft}
             />
             <Form style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.dark', color: 'white' }}>
+              <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.dark', color: 'white' }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   {data?.payment ? <HistoryIcon /> : <ReceiptIcon />}
-                  <Typography variant="h6" fontWeight={700}>
+                  <Typography variant="subtitle1" fontWeight={700}>
                     {loading
                       ? 'Carregando...'
                       : data?.payment
@@ -612,10 +613,10 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
                     {renderHistory()}
                   </>
                 ) : (
-                  <Box sx={{ p: 2 }}>
+                  <Box sx={{ p: 1.5 }}>
                     {values.items.length > 1 && (
-                      <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, mb: 2 }}>
-                        <Grid container spacing={1}>
+                      <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1, mb: 1.5 }}>
+                        <Grid container spacing={0.75}>
                           <Grid item xs={12} sm={2}>
                             <Field
                               name="globalIsReconciled"
@@ -682,7 +683,7 @@ export default function FinancePaymentHistoryDrawer({ entryIds, open, onClose, o
               {!loading && !data?.payment && (
                 <>
                   <Divider />
-                  <Box sx={{ px: 3, py: 2, bgcolor: 'background.paper' }}>
+                  <Box sx={{ px: 2, py: 1.5, bgcolor: 'background.paper' }}>
                     <Stack direction="row" spacing={2}>
                       <Button
                         fullWidth

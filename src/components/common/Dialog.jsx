@@ -16,7 +16,7 @@ function Actions({ children }) {
   return <DialogActions sx={{ p: 2.5, pt: 1.5 }}>{children}</DialogActions>;
 }
 
-export function Dialog({ open, loading, title, onClose, children, maxWidth = 'sm', width }) {
+export function Dialog({ open, loading, title, onClose, children, maxWidth = 'sm', width, zIndex }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -46,6 +46,7 @@ export function Dialog({ open, loading, title, onClose, children, maxWidth = 'sm
           ...(customWidth && !isMobile && { width: customWidth, maxWidth: 'none' })
         } 
       }}
+      sx={zIndex ? { zIndex } : undefined}
     >
       <DialogTitle sx={{ fontWeight: 700, pb: 1, pr: 6 }}>
         {title}

@@ -54,9 +54,9 @@ export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, docu
         anchor="right"
         open={open}
         onClose={onClose}
-        sx={{ zIndex: (theme) => onTop ? theme.zIndex.modal + 1 : theme.zIndex.drawer }}
+        sx={{ zIndex: (theme) => onTop ? 4000 : theme.zIndex.drawer }}
         PaperProps={{
-          sx: { width: { xs: '100%', sm: 500 }, p: 0 }
+          sx: { width: { xs: '100%', sm: 540 }, p: 0 }
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -95,14 +95,14 @@ export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, docu
                 </Box>
 
                 <Box sx={{ p: 2 }}>
-                  <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+                  <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, overflowX: 'hidden' }}>
                     <Table size="small">
                       <TableHead sx={{ bgcolor: 'action.selected' }}>
                         <TableRow>
                           <TableCell width={60}>Nº</TableCell>
                           <TableCell>Vencimento</TableCell>
-                          <TableCell align="right">Valor</TableCell>
-                          <TableCell align="center">Status</TableCell>
+                          <TableCell align="right" width={110}>Valor</TableCell>
+                          <TableCell align="center" width={120}>Status</TableCell>
                           <TableCell width={50} align="center">Ações</TableCell>
                         </TableRow>
                       </TableHead>
@@ -169,6 +169,7 @@ export default function FinanceTitleDetailsDrawer({ open, onClose, titleId, docu
         entryIds={historyEntryIds}
         onClose={() => setHistoryOpen(false)}
         onSuccess={() => fetchEntries()}
+        zIndex={5000}
       />
     </>
   )
