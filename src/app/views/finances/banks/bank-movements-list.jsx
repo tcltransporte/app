@@ -19,6 +19,7 @@ import {
   SwapHoriz as SwapHorizIcon,
   AllInclusive as AllIcon,
   Add as AddIcon,
+  Remove as RemoveIcon,
   AccountTree as HistoryIcon,
   Undo as UndoIcon,
 } from '@mui/icons-material';
@@ -39,6 +40,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
   const [bankAccounts, setBankAccounts] = React.useState(Array.isArray(initialBankAccounts) ? initialBankAccounts : []);
   const [showBankAccounts, setShowBankAccounts] = React.useState(false);
   const [movementModalOpen, setMovementModalOpen] = React.useState(false);
+  const [movementTypeId, setMovementTypeId] = React.useState(1);
   const [accountDrawerOpen, setAccountDrawerOpen] = React.useState(false);
   const [traceMovementId, setTraceMovementId] = React.useState(null);
   const [traceOpen, setTraceOpen] = React.useState(false);
@@ -72,7 +74,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         page: overrides.page || table.page,
         limit: overrides.rowsPerPage || table.rowsPerPage,
         where,
-        filters: overrides.filters || filter.filters,
+        filters: { ...(overrides.filters || filter.filters || {}), status: 'conciled' },
         range: overrides.range || rangeFilter.range,
         sortBy: overrides.sortBy || table.sortBy || undefined,
         sortOrder: overrides.sortOrder || table.sortOrder || undefined
@@ -154,7 +156,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
 
   const columns = React.useMemo(() => [
     {
-      field: 'realDate', headerName: 'Data Real', width: 150, align: 'center',
+      field: 'realDate', headerName: 'Data Real', width: 180, align: 'center',
       renderCell: (value) => value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' }) : ''
     },
     {
@@ -162,7 +164,26 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
       renderCell: (val, row) => {
         const acc = row.bankAccount;
         if (!acc) return '';
-        return acc.description || acc.bankName || ''
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar
+              variant="rounded"
+              src={getBankIcon(acc?.bank)}
+              alt={acc?.bank?.description || acc?.bankName || 'Banco'}
+              sx={{
+                width: 20,
+                height: 20,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+              imgProps={{ loading: 'lazy' }}
+            >
+              <BankIcon sx={{ fontSize: 14 }} />
+            </Avatar>
+            <span>{acc.description || acc.bankName || ''}</span>
+          </Box>
+        )
       }
     },
     {
@@ -186,40 +207,49 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
       field: 'description', headerName: 'Descrição', flex: 1,
     },
     {
-      field: 'trace', headerName: 'Rastreio', width: 80, align: 'center',
-      renderCell: (val, row) => (
-        <IconButton
-          size="small"
-          onClick={() => {
-            setTraceMovementId(row.id);
-            setTraceOpen(true);
-          }}
-          disabled={!row.paymentEntryId}
-          title={row.paymentEntryId ? "Rastrear Origem" : "Sem Informação de Origem"}
-        >
-          <HistoryIcon fontSize="small" color={row.paymentEntryId ? "primary" : "disabled"} />
-        </IconButton>
-      )
-    },
-    {
-      field: 'reverse', headerName: 'Desfazer', width: 90, align: 'center',
+      field: 'actions', headerName: 'Ações', width: 110, align: 'center',
       renderCell: (val, row) => {
         const canReverse = !!row.paymentEntryId;
         const verb = Number(row.typeId) === 1 ? 'Recebimento' : 'Pagamento';
         return (
-          <IconButton
-            size="small"
-            color={canReverse ? 'warning' : 'default'}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!canReverse) return;
-              handleReverseSettlement(row);
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 0.5,
+              opacity: 0,
+              transition: 'opacity 0.15s ease-in-out',
+              '.MuiTableRow-hover:hover &': { opacity: 1 },
+              '.Mui-selected &': { opacity: 1 }
             }}
-            disabled={!canReverse || reverseBankMovementId === row.id}
-            title={canReverse ? `Desfazer ${verb}` : 'Sem baixa financeira ligada'}
           >
-            <UndoIcon fontSize="small" />
-          </IconButton>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                setTraceMovementId(row.id);
+                setTraceOpen(true);
+              }}
+              disabled={!row.paymentEntryId}
+              title={row.paymentEntryId ? "Rastrear Origem" : "Sem Informação de Origem"}
+            >
+              <HistoryIcon fontSize="small" color={row.paymentEntryId ? "primary" : "disabled"} />
+            </IconButton>
+            <IconButton
+              size="small"
+              color={canReverse ? 'warning' : 'default'}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!canReverse) return;
+                handleReverseSettlement(row);
+              }}
+              disabled={!canReverse || reverseBankMovementId === row.id}
+              title={canReverse ? `Desfazer ${verb}` : 'Sem baixa financeira ligada'}
+            >
+              <UndoIcon fontSize="small" />
+            </IconButton>
+          </Box>
         );
       },
     },
@@ -265,37 +295,25 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         <Toolbar
           primary={[
             {
-              label: selectedBankAccount ? selectedBankAccount.description : 'Todas as contas',
-              icon: selectedBankAccount ? (
-                <Avatar
-                  variant="rounded"
-                  src={getBankIcon(selectedBankAccount?.bank)}
-                  alt={selectedBankAccount?.bank?.description || selectedBankAccount?.bankName || 'Banco'}
-                  sx={{
-                    width: 20,
-                    height: 20,
-                    bgcolor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                  }}
-                  imgProps={{ loading: 'lazy' }}
-                >
-                  <BankIcon sx={{ fontSize: 14 }} />
-                </Avatar>
-              ) : (
-                <BankIcon fontSize="small" />
-              ),
-              endIcon: <SwapHorizIcon fontSize="small" sx={{ opacity: 0.8 }} />,
-              variant: 'outlined',
-              color: 'primary',
-              onClick: () => setShowBankAccounts((v) => !v),
-            },
-            {
               label: 'Crédito',
               icon: <AddIcon />,
-              variant: 'contained',
-              color: 'success',
-              onClick: () => setMovementModalOpen(true),
+              variant: 'outlined',
+              color: 'primary',
+              sx: { boxShadow: 'none', px: 2 },
+              onClick: () => {
+                setMovementTypeId(1);
+                setMovementModalOpen(true);
+              },
+            },
+            {
+              label: 'Débito',
+              icon: <RemoveIcon />,
+              variant: 'outlined',
+              color: 'primary',
+              onClick: () => {
+                setMovementTypeId(2);
+                setMovementModalOpen(true);
+              },
             },
             {
               label: 'Transferência',
@@ -306,6 +324,11 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
             },
           ]}
           secondary={[
+            {
+              label: selectedBankAccount ? selectedBankAccount.description : 'Todas as contas',
+              icon: <BankIcon fontSize="small" />,
+              onClick: () => setShowBankAccounts((v) => !v),
+            },
             {
               label: rangeFilter.label,
               icon: <EventIcon fontSize="small" />,
@@ -620,13 +643,10 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         open={filter.open}
         filters={filter.filters}
         onClose={filter.handleClose}
-        onApply={async (vals) => {
-          const ok = await fetchTable({ filters: vals, page: 1 });
-          if (ok) {
-            filter.setFilters(vals);
-            filter.setOpen(false);
-            table.setPage(1);
-          }
+        onApply={(vals) => {
+          filter.setFilters(vals);
+          filter.setOpen(false);
+          table.setPage(1);
         }}
       />
 
@@ -634,6 +654,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
         open={movementModalOpen}
         onClose={() => setMovementModalOpen(false)}
         initialBankAccount={selectedBankAccount}
+        initialTypeId={movementTypeId}
         onSuccess={() => {
           fetchTable();
           fetchBankAccounts();

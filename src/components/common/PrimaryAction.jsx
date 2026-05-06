@@ -41,11 +41,12 @@ export const PrimaryAction = ({
             size={index === 0 ? "large" : "medium"}
             onClick={action.onClick}
             sx={{
-              boxShadow: theme?.shadows[index === 0 ? 8 : 4],
+              boxShadow: 'none',
               backgroundColor: index === 0 ? 'primary.main' : 'background.paper',
               color: index === 0 ? 'primary.contrastText' : 'text.primary',
               '&:hover': {
                 backgroundColor: index === 0 ? 'primary.dark' : 'background.default',
+                boxShadow: 'none',
               }
             }}
           >
@@ -71,9 +72,6 @@ export const PrimaryAction = ({
             fontWeight: 600,
             borderRadius: '8px',
             px: index === 0 ? 3 : 2,
-            ...(index === 0 && {
-              boxShadow: `0 4px 12px ${theme?.palette.primary.main}44`,
-            }),
             ...props.sx,
             ...action.sx,
           }}

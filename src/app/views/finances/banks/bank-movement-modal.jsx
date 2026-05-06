@@ -21,9 +21,9 @@ const validate = (values) => {
   return errors
 }
 
-export default function BankMovementModal({ open, onClose, initialBankAccount, onSuccess }) {
+export default function BankMovementModal({ open, onClose, initialBankAccount, onSuccess, initialTypeId = 2 }) {
   const initialValues = {
-    typeId: 2, // Default to Débito (Saída)
+    typeId: initialTypeId, // 1 = Crédito (Entrada), 2 = Débito (Saída)
     bankAccount: initialBankAccount || null,
     realDate: new Date(),
     value: 0,
