@@ -14,14 +14,14 @@ const AutocompleteContainer = styled.div`
 `
 
 const SuggestionsBox = styled.div`
-  position: absolute;
+  position: fixed;
   max-height: 300px;
   overflow-y: auto;
   background-color: white;
   z-index: 9999;
   border: 1px solid #ccc;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-  border-radius: ${(props) => (props.isAbove ? '4px 4px 0 0' : '0 0 4px 4px')};
+  border-radius: 0 0 4px 4px;
 `
 
 const Suggestion = styled.div`
@@ -114,15 +114,16 @@ export const AutoComplete = (props) => {
     const rect = (inputBase || container)?.getBoundingClientRect()
 
     if (rect) {
-      const boxHeight = 300 // max-height
-      const spaceBelow = window.innerHeight - rect.bottom
-      const showAbove = spaceBelow < boxHeight && rect.top > boxHeight
+      const rawZoom = Number(
+        window.getComputedStyle(document.body).getPropertyValue('--app-zoom')
+      )
+      const zoom = Number.isFinite(rawZoom) && rawZoom > 0 ? rawZoom : 1
 
       setBoxPosition({
-        top: (showAbove ? rect.top - boxHeight : rect.bottom) + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        isAbove: showAbove,
+        top: rect.bottom / zoom,
+        left: rect.left / zoom,
+        width: rect.width / zoom,
+        isAbove: false,
       })
     }
   }, [])
@@ -337,9 +338,8 @@ export const AutoComplete = (props) => {
     ReactDOM.createPortal(
       <SuggestionsBox
         ref={suggestionsRef}
-        isAbove={boxPosition.isAbove}
         style={{
-          top: boxPosition.isAbove ? boxPosition.top + (300 - (suggestionsRef.current?.offsetHeight || 0)) : boxPosition.top,
+          top: boxPosition.top,
           left: boxPosition.left,
           width: boxPosition.width,
         }}

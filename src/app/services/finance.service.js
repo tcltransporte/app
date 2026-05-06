@@ -77,6 +77,7 @@ export async function findAllEntries(transaction, params = {}) {
 
   const selectedCompanyId = params?.filters?.company?.id ? Number(params.filters.company.id) : null
   const titleWhere = selectedCompanyId ? { companyId: selectedCompanyId } : {}
+  const invoiceWhere = {}
 
   if (params.operationType) {
     params.where = {
@@ -127,9 +128,13 @@ export async function findAllEntries(transaction, params = {}) {
     }
 
     if (filters.invoiceNumber) {
-      const invoiceNumber = Number(String(filters.invoiceNumber).trim())
-      if (!Number.isNaN(invoiceNumber)) {
-        titleWhere.invoiceId = invoiceNumber
+      const invoiceNumberSearch = String(filters.invoiceNumber).trim()
+      if (invoiceNumberSearch) {
+        const movementIds = await financeRepository.findBillMovementIdsByInvoiceNumber(transaction, {
+          companyId: selectedCompanyId || session.company.id,
+          invoiceNumber: invoiceNumberSearch
+        })
+        titleWhere.id = { [Op.in]: movementIds.length ? movementIds : [0] }
       }
     }
 
@@ -220,6 +225,12 @@ export async function findAllEntries(transaction, params = {}) {
       { association: 'partner', attributes: ['id', 'name', 'surname'] },
       { association: 'accountPlan', required: false, attributes: ['id', 'description', 'code'] },
       { association: 'costCenter', required: false, attributes: ['id', 'description'] },
+      {
+        association: 'invoice',
+        required: Object.keys(invoiceWhere).length > 0,
+        ...(Object.keys(invoiceWhere).length > 0 ? { where: invoiceWhere } : {}),
+        attributes: ['id', 'invoiceNumber']
+      },
       { association: 'company', required: false, attributes: ['id', 'name', 'surname'] }
     ]
   }
@@ -277,6 +288,7 @@ export async function findAllBankMovements(transaction, params = {}) {
   const { page = 1, limit = 50, sortBy = 'realDate', sortOrder = 'DESC' } = params
   const offset = (page - 1) * limit
   const statusFilter = params?.filters?.status || params?.status || 'conciled'
+  const selectedCompanyId = Number(params?.filters?.company?.id) || session.company.id
 
   let isConciledFilter
   if (statusFilter === 'conciled') isConciledFilter = true
@@ -290,11 +302,45 @@ export async function findAllBankMovements(transaction, params = {}) {
     where.isConciled = isConciledFilter
   }
 
+  const documentNumberFilter = String(params?.filters?.documentNumber || '').trim()
+  if (documentNumberFilter) {
+    where.documentNumber = { [Op.like]: `%${documentNumberFilter}%` }
+  }
+
+  const descriptionFilter = String(params?.filters?.description || '').trim()
+  if (descriptionFilter) {
+    where.description = { [Op.like]: `%${descriptionFilter}%` }
+  }
+
+  const rawValueFilter = params?.filters?.value
+  if (rawValueFilter != null && String(rawValueFilter).trim() !== '') {
+    const normalizedValue = String(rawValueFilter)
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .trim()
+    const parsedValue = Number(normalizedValue)
+    if (!Number.isNaN(parsedValue)) {
+      where.value = parsedValue
+    }
+  }
+
+  const bankAccountIdFilter = Number(params?.filters?.bankAccount?.id)
+  if (bankAccountIdFilter) {
+    where.bankAccountId = bankAccountIdFilter
+  }
+
   const include = [
     {
       association: 'bankAccount',
-      where: { companyId: session.company.id },
-      required: true
+      where: { companyId: selectedCompanyId },
+      required: true,
+      include: [
+        {
+          association: 'bank',
+          required: false,
+          attributes: ['id', 'code', 'description']
+        }
+      ]
     }
   ]
 

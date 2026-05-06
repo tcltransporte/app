@@ -7,7 +7,7 @@ import { ExportFormat } from '@/hooks/useExport';
 import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
-import { Typography, Badge } from '@mui/material';
+import { Typography, Badge, Avatar, Box } from '@mui/material';
 import {
   Search as SearchIcon,
   Event as EventIcon,
@@ -15,6 +15,7 @@ import {
   Google as GoogleIcon,
   FilterList as FilterIcon,
   CheckCircle as CheckIcon,
+  AccountBalance as BankIcon,
 } from '@mui/icons-material';
 import ConciliationFilter from './conciliation-filter';
 import ConciliationApproveDrawer from './conciliation-approve-drawer';
@@ -27,7 +28,7 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
   const { selectedId: selectedBankAccountId, setSelectedId: setSelectedBankAccountId } = useNavigation('/finances/conciliation', selectedId);
   const filter = useFilter({ initialFilters });
   const [approveDrawerOpen, setApproveDrawerOpen] = React.useState(false);
-  const [selectedMovement, setSelectedMovement] = React.useState(null);
+  const [selectedMovementsForApproval, setSelectedMovementsForApproval] = React.useState([]);
   const [selectedMovementIdsForApproval, setSelectedMovementIdsForApproval] = React.useState([]);
 
   const rangeFilter = useRangeFilter({
@@ -82,58 +83,45 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
       return;
     }
 
-    setSelectedMovement(null);
+    setSelectedMovementsForApproval(table.selecteds);
     setSelectedMovementIdsForApproval(table.selecteds.map((row) => row.id).filter(Boolean));
     setApproveDrawerOpen(true);
   }, [table.selecteds]);
 
   const handleApproveConciliationRow = React.useCallback(async (row) => {
     if (!row?.id || row?.isConciled) return;
-    setSelectedMovement(row);
+    setSelectedMovementsForApproval([row]);
     setSelectedMovementIdsForApproval([row.id]);
     setApproveDrawerOpen(true);
   }, []);
-
-  const handleConfirmApproveMovement = React.useCallback(async (values) => {
-    if (!selectedMovement?.id) return;
-
-    loading.show('Aprovando conciliação...', 'Aguarde alguns instantes.');
-    try {
-      const result = await financeAction.approveConciliationMovement({
-        movementId: selectedMovement.id,
-        realDate: values.realDate,
-        bankAccountId: values.bankAccount?.id || values.bankAccount
-      });
-      if (result.header.status !== ServiceStatus.SUCCESS) {
-        throw result;
-      }
-      alert.success('Sucesso', 'Conciliação aprovada com sucesso!');
-      setApproveDrawerOpen(false);
-      setSelectedMovement(null);
-      await fetchTable();
-    } catch (error) {
-      alert.error('Não foi possível conciliar', error?.body?.message || error.message);
-    } finally {
-      loading.hide();
-    }
-  }, [selectedMovement, fetchTable, loading]);
 
   const handleConfirmApproveBatch = React.useCallback(async (values) => {
     if (!selectedMovementIdsForApproval.length) return;
 
     loading.show('Aprovando conciliação...', 'Aguarde alguns instantes.');
     try {
-      const result = await financeAction.approveConciliationBatch({
-        movementIds: selectedMovementIdsForApproval,
-        realDate: values.realDate,
-        bankAccountId: values.bankAccount?.id || values.bankAccount
-      });
-      if (result.header.status !== ServiceStatus.SUCCESS) {
-        throw result;
+      const movementPayloads = Array.isArray(values?.movements)
+        ? values.movements
+        : [];
+
+      if (movementPayloads.length === 0) {
+        throw new Error('Nenhum movimento válido para aprovação');
       }
+
+      for (const item of movementPayloads) {
+        const result = await financeAction.approveConciliationMovement({
+          movementId: item.movementId,
+          realDate: item.realDate,
+          bankAccountId: item.bankAccount?.id || item.bankAccount
+        });
+        if (result.header.status !== ServiceStatus.SUCCESS) {
+          throw result;
+        }
+      }
+
       alert.success('Sucesso', 'Conciliação em lote aprovada com sucesso!');
       setApproveDrawerOpen(false);
-      setSelectedMovement(null);
+      setSelectedMovementsForApproval([]);
       setSelectedMovementIdsForApproval([]);
       await fetchTable();
     } catch (error) {
@@ -154,7 +142,7 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
 
   const columns = React.useMemo(() => [
     {
-      field: 'realDate', headerName: 'Data Real', width: 150, align: 'center',
+      field: 'realDate', headerName: 'Data Real', width: 170, align: 'center',
       renderCell: (value) => value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' }) : ''
     },
     {
@@ -162,7 +150,27 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
       renderCell: (val, row) => {
         const acc = row.bankAccount;
         if (!acc) return '';
-        return `${acc.description || acc.bankName} - Ag: ${acc.agency} / Cc: ${acc.accountNumber}`
+        const bankIcon = acc?.bank?.code ? `/assets/banks/${acc.bank.code}.png` : undefined;
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar
+              variant="rounded"
+              src={bankIcon}
+              alt={acc?.bank?.description || acc.bankName || 'Banco'}
+              sx={{
+                width: 20,
+                height: 20,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider'
+              }}
+              imgProps={{ loading: 'lazy' }}
+            >
+              <BankIcon sx={{ fontSize: 14 }} />
+            </Avatar>
+            <span>{acc.description || acc.bankName || ''}</span>
+          </Box>
+        )
       }
     },
     { field: 'documentNumber', headerName: 'Nº Doc.', width: 120 },
@@ -238,15 +246,13 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
 
       <Container.Content>
         <Toolbar
-          primary={[
-            ...(table.selecteds.length > 0 ? [{
-              label: `Aprovar ${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
-              icon: <CheckIcon />,
-              variant: 'contained',
-              color: 'success',
-              onClick: handleApproveConciliation
-            }] : [])
-          ]}
+          primary={table.selecteds.length > 0 ? [{
+            label: `Aprovar ${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
+            icon: <CheckIcon />,
+            variant: 'contained',
+            color: 'success',
+            onClick: handleApproveConciliation
+          }] : null}
           secondary={[
             { label: rangeFilter.label, icon: <EventIcon fontSize="small" />, onClick: rangeFilter.handleOpen },
             {
@@ -343,14 +349,14 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
 
       <ConciliationApproveDrawer
         open={approveDrawerOpen}
-        movement={selectedMovement}
-        selectedCount={selectedMovementIdsForApproval.length || (selectedMovement ? 1 : 0)}
+        movements={selectedMovementsForApproval}
+        selectedCount={selectedMovementIdsForApproval.length}
         onClose={() => {
           setApproveDrawerOpen(false);
-          setSelectedMovement(null);
+          setSelectedMovementsForApproval([]);
           setSelectedMovementIdsForApproval([]);
         }}
-        onConfirm={(values) => selectedMovement ? handleConfirmApproveMovement(values) : handleConfirmApproveBatch(values)}
+        onConfirm={handleConfirmApproveBatch}
       />
     </Container>
   );

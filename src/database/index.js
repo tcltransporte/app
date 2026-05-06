@@ -39,6 +39,8 @@ import { BankMovement } from './models/bankMovement.model.js'
 import { PaymentMethod } from './models/paymentMethod.model.js'
 import { BankAccount } from './models/bankAccount.model.js'
 import { Bank } from './models/bank.model.js'
+import { Bill } from './models/bill.model.js'
+import { BillCte } from './models/billCte.model.js'
 import { DFeLoteDist } from './models/dfeLoteDist.model.js'
 import { DFeLoteDistSchema } from './models/dfeLoteDistSchema.model.js'
 import { ManifestEvent } from './models/manifestEvent.model.js'
@@ -120,6 +122,8 @@ export class AppContext extends Sequelize {
     this.PaymentMethod = this.define('paymentMethod', new PaymentMethod(), { tableName: 'tipo_pagamento' })
     this.BankAccount = this.define('bankAccount', new BankAccount(), { tableName: 'conta_bancaria' })
     this.Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
+    this.Bill = this.define('bill', new Bill(), { tableName: 'fatura' })
+    this.BillCte = this.define('billCte', new BillCte(), { tableName: 'fatura_cte' })
     this.DFeLoteDist = this.define('dfeLoteDist', new DFeLoteDist(), { tableName: 'DFeLoteDist' })
     this.DFeLoteDistSchema = this.define('dfeLoteDistSchema', new DFeLoteDistSchema(), { tableName: 'DFeLoteDistSchema' })
     this.ManifestEvent = this.define('manifestEvent', new ManifestEvent(), { tableName: 'ManifestEvent' })
@@ -194,9 +198,18 @@ export class AppContext extends Sequelize {
     this.FinanceTitle.belongsTo(this.FinanceTitle, { as: 'parent', foreignKey: 'parentMovementId' })
     this.FinanceTitle.belongsTo(this.AccountPlan, { as: 'accountPlan', foreignKey: 'accountPlanId' })
     this.FinanceTitle.belongsTo(this.CostCenter, { as: 'costCenter', foreignKey: 'costCenterId' })
+    this.FinanceTitle.belongsTo(this.Bill, { as: 'invoice', foreignKey: 'invoiceId' })
 
     this.FinanceTitle.hasMany(this.FinanceEntry, { as: 'entries', foreignKey: 'titleId' })
     this.FinanceTitle.hasMany(this.Document, { as: 'documents', foreignKey: 'financeTitleId' })
+    this.Bill.hasMany(this.FinanceTitle, { as: 'titles', foreignKey: 'invoiceId' })
+    this.Bill.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+    this.Bill.belongsTo(this.Partner, { as: 'customer', foreignKey: 'customerId' })
+    this.Bill.belongsTo(this.PaymentMethod, { as: 'paymentType', foreignKey: 'paymentTypeId' })
+    this.Bill.belongsTo(this.FinanceTitle, { as: 'interestMovement', foreignKey: 'interestMovementId' })
+    this.Bill.hasMany(this.BillCte, { as: 'billCtes', foreignKey: 'billId' })
+    this.BillCte.belongsTo(this.Bill, { as: 'bill', foreignKey: 'billId' })
+    this.BillCte.belongsTo(this.FinanceTitle, { as: 'movement', foreignKey: 'movementId' })
     this.FinanceEntry.belongsTo(this.FinanceTitle, { as: 'title', foreignKey: 'titleId' })
     this.FinanceEntry.belongsTo(this.Payment, { as: 'payment', foreignKey: 'paymentId' })
     this.Payment.hasMany(this.FinanceEntry, { as: 'entries', foreignKey: 'paymentId' })

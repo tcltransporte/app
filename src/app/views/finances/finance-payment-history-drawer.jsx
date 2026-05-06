@@ -137,6 +137,7 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
   const [expanded, setExpanded] = React.useState(true);
   const totalInformadoRow = item.composition.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
   const isDivergent = Math.abs(totalInformadoRow - item.value) > 0.01;
+  const hasRemoveColumn = item.composition.length > 1;
 
   return (
     <React.Fragment>
@@ -164,15 +165,15 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
       <TableRow>
         <TableCell colSpan={3} sx={{ py: 0, px: 0 }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
-            <Table size="small" sx={{ tableLayout: 'fixed', '& .MuiTableCell-root': { py: 0.5, px: 0.75 } }}>
+            <Table size="small" sx={{ width: '100%', tableLayout: 'fixed', '& .MuiTableCell-root': { py: 0.5, px: 0.75 } }}>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ pl: 1.5, width: 64 }}>Conc.</TableCell>
                   <TableCell sx={{ width: '18%' }}>Data Pgto</TableCell>
                   <TableCell sx={{ width: '22%' }}>Forma</TableCell>
-                  <TableCell sx={{ width: '30%' }}>Conta Bancária</TableCell>
-                  <TableCell align="right" sx={{ width: '16%', pr: 0.5 }}>Valor</TableCell>
-                  <TableCell width={40}></TableCell>
+                  <TableCell>Conta Bancária</TableCell>
+                  <TableCell align="right" sx={{ width: '16%', pr: 0.5, textAlign: 'right' }}>Valor</TableCell>
+                  {hasRemoveColumn && <TableCell width={40}></TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -221,19 +222,20 @@ const InstallmentRow = ({ item, index, formData, data, handleSearch, textFn }) =
                               component={NumericField}
                               size="small"
                               fullWidth
+                              sx={{ '& input': { textAlign: 'right' } }}
                             />
                           </TableCell>
-                          <TableCell>
-                            {item.composition.length > 1 && (
+                          {hasRemoveColumn && (
+                            <TableCell>
                               <IconButton size="small" color="error" onClick={() => remove(cIdx)}>
                                 <DeleteIcon fontSize="small" />
                               </IconButton>
-                            )}
-                          </TableCell>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                       <TableRow>
-                        <TableCell colSpan={6} sx={{ p: 0.5 }}>
+                        <TableCell colSpan={hasRemoveColumn ? 6 : 5} sx={{ p: 0.5 }}>
                           <Button
                             size="small"
                             startIcon={<AddIcon />}

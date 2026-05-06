@@ -2,15 +2,13 @@ import { AppContext } from "@/database"
 
 function coerceDate(value) {
   if (value == null || value === '') return new Date()
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    // Parse date-only values in local timezone to avoid day shifting.
+    return new Date(year, month - 1, day, 12, 0, 0, 0)
+  }
   const d = value instanceof Date ? value : new Date(value)
   return Number.isNaN(d.getTime()) ? new Date() : d
-}
-
-/** data_pagamento = Data Pgto do primeiro detalhe com valor. */
-function paymentDateFromComposition(composition) {
-  if (!Array.isArray(composition) || composition.length === 0) return new Date()
-  const candidate = composition.find((c) => Number(c.value) > 0) ?? composition[0]
-  return coerceDate(candidate?.realDate)
 }
 
 /**
@@ -25,7 +23,7 @@ export async function createPayment(transaction, { settlements, commonData }) {
 
     for (const item of settlements) {
       const entry = await db.FinanceEntry.findByPk(item.entryId, { 
-        attributes: ['id', 'installmentValue', 'installmentNumber'],
+        attributes: ['id', 'installmentValue', 'installmentNumber', 'description'],
         transaction: t 
       })
       if (!entry) continue
@@ -34,7 +32,8 @@ export async function createPayment(transaction, { settlements, commonData }) {
 
       // Create a unique Payment (Capa) for this installment
       const payment = await db.Payment.create({
-        date: paymentDateFromComposition(item.composition),
+        // "Data da baixa" must always reflect the current timestamp.
+        date: new Date(),
         totalValue: entryValue
       }, { transaction: t })
 
@@ -60,6 +59,7 @@ export async function createPayment(transaction, { settlements, commonData }) {
 
         // Create BankMovement
         if (comp.bankAccountId) {
+          const entryDescription = String(entry.description || '').trim()
           await db.BankMovement.create({
             bankAccountId: comp.bankAccountId,
             typeId: comp.typeId || (commonData.isReceivable ? 1 : 2),
@@ -67,7 +67,7 @@ export async function createPayment(transaction, { settlements, commonData }) {
             realDate: coerceDate(comp.realDate),
             value: value,
             documentNumber: comp.paymentMethodNumber || 0,
-            description: comp.description || `Baixa Parcela #${entry.installmentNumber} - Pgto ${payment.id}`,
+            description: entryDescription || comp.description || `Baixa Parcela #${entry.installmentNumber} - Pgto ${payment.id}`,
             nominal: commonData.nominal || '',
             paymentEntryId: paymentEntry.id,
             isConciled: !!comp.isReconciled

@@ -2,6 +2,7 @@ import ConciliationView from '@/app/views/finances/conciliation';
 import * as financeAction from '@/app/actions/finance.action';
 import * as bankAccountAction from '@/app/actions/bankAccount.action';
 import { ServiceStatus } from '@/libs/service';
+import { getSession } from '@/libs/session';
 
 export const metadata = {
   title: 'Conciliação',
@@ -9,11 +10,17 @@ export const metadata = {
 
 export default async function FinanceConciliationPage({ params }) {
   try {
+    const session = await getSession();
     const { slug } = await params;
     const selectedId = Array.isArray(slug) && slug.length > 0 ? slug[0] : undefined;
 
     const initialRange = { start: '', end: '', field: 'realDate' };
-    const initialFilters = { status: 'not_conciled' };
+    const initialFilters = {
+      status: 'not_conciled',
+      company: session?.company
+        ? { id: session.company.id, name: session.company.name, surname: session.company.surname }
+        : null
+    };
 
     const [movementsResult, bankAccountsResult] = await Promise.all([
       financeAction.findAllBankMovements({
@@ -50,6 +57,7 @@ export default async function FinanceConciliationPage({ params }) {
         initialBankAccounts={initialBankAccounts}
         selectedId={selectedId}
         initialRange={initialRange}
+        initialFilters={initialFilters}
       />
     );
 

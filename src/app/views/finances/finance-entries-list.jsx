@@ -247,6 +247,13 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       renderCell: (value) => formatSqlDate(value)
     },
     {
+      field: 'paymentRealDate',
+      headerName: operationType === 1 ? 'Recebimento' : 'Pagamento',
+      width: 120,
+      align: 'center',
+      renderCell: (value) => value ? formatSqlDate(value) : '-'
+    },
+    {
       field: 'installmentValue', headerName: 'Valor', width: 90, align: 'right',
       renderCell: (value) => value ? parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'
     },

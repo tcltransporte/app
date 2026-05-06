@@ -158,6 +158,16 @@ export async function findAllEntries(transaction, { attributes, include, where, 
               ELSE 'pending_recon'
             END)`),
             'displayStatus'
+          ],
+          [
+            db.literal(`(
+              SELECT TOP 1 CONVERT(varchar(10), [mb].[data_real], 23)
+              FROM [movimento_bancario] AS [mb]
+              INNER JOIN [pagamentos_detalhe] AS [pd] ON [pd].[codigo_pagamento_detalhe] = [mb].[IDPagamentoDetalhe]
+              WHERE [pd].[codigo_pagamento] = [financeEntry].[codigo_pagamento]
+              ORDER BY [mb].[data_real] DESC, [mb].[codigo_movimento_bancario] DESC
+            )`),
+            'paymentRealDate'
           ]
         ]
       },
@@ -166,6 +176,33 @@ export async function findAllEntries(transaction, { attributes, include, where, 
     })
 
     return { rows: rows.map(r => r.toJSON()), count }
+  })
+}
+
+export async function findBillMovementIdsByInvoiceNumber(transaction, { companyId, invoiceNumber }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const rows = await db.BillCte.findAll({
+      attributes: ['movementId'],
+      where: {
+        movementId: { [Op.ne]: null }
+      },
+      include: [
+        {
+          association: 'bill',
+          required: true,
+          where: {
+            ...(companyId ? { companyId } : {}),
+            invoiceNumber: { [Op.like]: `%${invoiceNumber}%` }
+          },
+          attributes: []
+        }
+      ],
+      transaction: t
+    })
+
+    const ids = [...new Set(rows.map((row) => Number(row.movementId)).filter((id) => !Number.isNaN(id)))]
+    return ids
   })
 }
 

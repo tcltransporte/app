@@ -7,6 +7,7 @@ import {
   Typography,
   IconButton,
   Divider,
+  Slider,
   ToggleButton,
   ToggleButtonGroup,
   Switch,
@@ -17,6 +18,8 @@ import {
 } from '@mui/material';
 import {
   Close as CloseIcon,
+  Remove as RemoveIcon,
+  Add as AddIcon,
   LightMode,
   DarkMode,
   SettingsBrightness,
@@ -165,18 +168,42 @@ export default function SettingsDrawer({ open, onClose }) {
         />
 
         <Typography variant="subtitle2" sx={{ mb: 1 }}>Zoom</Typography>
-        <ToggleButtonGroup
-          value={zoom}
-          exclusive
-          onChange={(_, newZoom) => newZoom && setZoom(newZoom)}
-          fullWidth
-          size="small"
-          sx={{ mb: 2 }}
-        >
-          <ToggleButton value={0.9}>90%</ToggleButton>
-          <ToggleButton value={1}>100%</ToggleButton>
-          <ToggleButton value={1.1}>110%</ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <IconButton
+            size="small"
+            onClick={() => setZoom(Math.max(0.8, Number((zoom - 0.1).toFixed(1))))}
+            disabled={zoom <= 0.8}
+            sx={{ border: '1px solid', borderColor: 'divider' }}
+            title="Diminuir zoom"
+          >
+            <RemoveIcon fontSize="small" />
+          </IconButton>
+          <Slider
+            value={zoom}
+            min={0.8}
+            max={1.1}
+            step={0.1}
+            marks={[
+              { value: 0.8, label: '80%' },
+              { value: 0.9, label: '90%' },
+              { value: 1, label: '100%' },
+              { value: 1.1, label: '110%' }
+            ]}
+            onChange={(_, val) => setZoom(Array.isArray(val) ? val[0] : val)}
+            valueLabelDisplay="auto"
+            valueLabelFormat={(value) => `${Math.round(value * 100)}%`}
+            sx={{ flex: 1 }}
+          />
+          <IconButton
+            size="small"
+            onClick={() => setZoom(Math.min(1.1, Number((zoom + 0.1).toFixed(1))))}
+            disabled={zoom >= 1.1}
+            sx={{ border: '1px solid', borderColor: 'divider' }}
+            title="Aumentar zoom"
+          >
+            <AddIcon fontSize="small" />
+          </IconButton>
+        </Box>
 
         <Divider sx={{ mb: 2 }} />
 

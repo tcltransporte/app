@@ -1,15 +1,17 @@
 import { Grid } from '@mui/material';
 import { Field } from 'formik';
 import { FilterDrawer } from '@/components/common';
-import { SelectField } from '@/components/controls';
+import { SelectField, TextField } from '@/components/controls';
 
 export default function BankMovementsFilter({ open, onClose, filters, onApply }) {
   const initialValues = {
+    documentNumber: filters.documentNumber || '',
     status: filters.status || 'not_conciled'
   };
 
   const handleClear = (setValues) => {
     const clearedValues = {
+      documentNumber: '',
       status: 'not_conciled'
     };
     setValues(clearedValues);
@@ -26,6 +28,15 @@ export default function BankMovementsFilter({ open, onClose, filters, onApply })
       title="Filtros"
     >
       <Grid container spacing={2.5}>
+        <Grid size={12}>
+          <Field
+            component={TextField}
+            name="documentNumber"
+            label="Nº Doc"
+            fullWidth
+            size="small"
+          />
+        </Grid>
         <Grid size={12}>
           <Field
             component={SelectField}

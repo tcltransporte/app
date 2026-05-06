@@ -6,7 +6,7 @@ import { Menu as MenuIcon, Settings as SettingsIcon, Logout, Person, Settings } 
 import { useLayout } from '@/context/LayoutContext';
 import { ThemeContext } from "@/context/ThemeContext";
 import { SessionContext } from '@/context/SessionContext';
-import { useContext, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import * as loginService from "@/app/services/login.service";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -18,10 +18,27 @@ export default function Header({ children }) {
   const pathname = usePathname();
 
   const [anchorEl, setAnchorEl] = useState(null);
+  const userMenuAnchorRef = useRef(null);
+  const [anchorPosition, setAnchorPosition] = useState(null);
   const open = Boolean(anchorEl);
 
-  const handleClick = (event) => setAnchorEl(event.currentTarget);
-  const handleClose = () => setAnchorEl(null);
+  const handleClick = () => {
+    const anchor = userMenuAnchorRef.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const rawZoom = Number(window.getComputedStyle(document.body).getPropertyValue('--app-zoom'));
+    const zoom = Number.isFinite(rawZoom) && rawZoom > 0 ? rawZoom : 1;
+
+    setAnchorPosition({
+      top: rect.bottom / zoom,
+      left: rect.right / zoom
+    });
+    setAnchorEl(anchor);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+    setAnchorPosition(null);
+  };
 
   const handleSignOut = async () => {
     handleClose();
@@ -63,7 +80,7 @@ export default function Header({ children }) {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 } }}>
+          <Box ref={userMenuAnchorRef} sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: '0.875rem', fontWeight: 500, color: 'text.secondary' }}>
                 {session?.user?.userName?.toLowerCase() || 'usuário'}
@@ -134,10 +151,13 @@ export default function Header({ children }) {
 
           <Menu
             anchorEl={anchorEl}
+            anchorReference="anchorPosition"
+            anchorPosition={anchorPosition || undefined}
             id="account-menu"
             open={open}
             onClose={handleClose}
             onClick={handleClose}
+            disablePortal
             slotProps={{
               paper: {
                 elevation: 0,

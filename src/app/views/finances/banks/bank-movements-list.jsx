@@ -162,7 +162,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
       renderCell: (val, row) => {
         const acc = row.bankAccount;
         if (!acc) return '';
-        return `${acc.bankName} - Ag: ${acc.agency} / Cc: ${acc.accountNumber}`
+        return acc.description || acc.bankName || ''
       }
     },
     {
@@ -291,7 +291,7 @@ export default function BankMovementsList({ title, initialTable, initialRange, i
               onClick: () => setShowBankAccounts((v) => !v),
             },
             {
-              label: 'Incluir',
+              label: 'Crédito',
               icon: <AddIcon />,
               variant: 'contained',
               color: 'success',
