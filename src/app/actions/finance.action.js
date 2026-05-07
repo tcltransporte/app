@@ -151,3 +151,39 @@ export async function createBankTransfer(data) {
     return ServiceResponse.error(error)
   }
 }
+
+export async function findCashClosuresByDate(params) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.findCashClosuresByDate(t, params || {})
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function openCashClosure(data) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.openCashClosure(t, data || {})
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function closeCashClosure(data) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.closeCashClosure(t, data || {})
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}

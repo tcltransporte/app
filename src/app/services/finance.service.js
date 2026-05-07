@@ -27,12 +27,17 @@ async function assertCashNotClosedForOperation(transaction, { bankAccountId, dat
     bankAccountId: parsedBankAccountId,
     date: parsedDate
   })
+  const account = await financeRepository.findBankAccount(transaction, {
+    where: { id: parsedBankAccountId },
+    attributes: ['id', 'description']
+  })
+  const accountLabel = account?.description || `#${parsedBankAccountId}`
 
   if (closure && Number(closure.statusId) === CASH_STATUS_CLOSED) {
     const dateLabel = parsedDate.toLocaleDateString('pt-BR')
     throw {
       code: 'CASH_CLOSED',
-      message: `Não é possível ${operationLabel}: o caixa da conta ${parsedBankAccountId} em ${dateLabel} está fechado`
+      message: `Não é possível ${operationLabel}: o caixa da conta "${accountLabel}" em ${dateLabel} está fechado`
     }
   }
 }
@@ -51,12 +56,17 @@ async function assertCashOpenForOperation(transaction, { bankAccountId, date, op
     bankAccountId: parsedBankAccountId,
     date: parsedDate
   })
+  const account = await financeRepository.findBankAccount(transaction, {
+    where: { id: parsedBankAccountId },
+    attributes: ['id', 'description']
+  })
+  const accountLabel = account?.description || `#${parsedBankAccountId}`
 
   const dateLabel = parsedDate.toLocaleDateString('pt-BR')
   if (!closure || Number(closure.statusId) !== CASH_STATUS_OPEN) {
     throw {
       code: 'CASH_NOT_OPEN',
-      message: `Não é possível ${operationLabel}: o caixa da conta ${parsedBankAccountId} em ${dateLabel} não está aberto`
+      message: `Não é possível ${operationLabel}: o caixa da conta "${accountLabel}" em ${dateLabel} não está aberto`
     }
   }
 }
@@ -822,6 +832,160 @@ export async function approveConciliationMovement(transaction, { movementId, rea
   })
 
   return { movementId: parsedMovementId }
+}
+
+export async function findCashClosuresByDate(transaction, { date, bankAccountId } = {}) {
+  const session = await getSession()
+  const targetDate = parseCashDate(date || new Date())
+  if (Number.isNaN(targetDate.getTime())) {
+    throw { code: 'INVALID_DATE', message: 'Data inválida' }
+  }
+
+  const start = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0, 0)
+  const end = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate() + 1, 0, 0, 0, 0)
+  const parsedBankAccountId = Number(bankAccountId)
+
+  const accounts = await financeRepository.findAllBankAccounts(transaction, {
+    where: {
+      companyId: session.company.id,
+      isActive: true,
+      ...(parsedBankAccountId && !Number.isNaN(parsedBankAccountId) ? { id: parsedBankAccountId } : {})
+    },
+    attributes: ['id', 'description', 'bankName', 'agency', 'accountNumber'],
+    include: [{ association: 'bank', attributes: ['id', 'code', 'description'], required: false }]
+  })
+
+  if (accounts.length === 0) return { rows: [], count: 0 }
+
+  const closures = await financeRepository.findAllCashClosures(transaction, {
+    where: {
+      bankAccountId: { [Op.in]: accounts.map((account) => account.id) },
+      date: { [Op.gte]: start, [Op.lt]: end }
+    },
+    include: [{ association: 'status', attributes: ['id', 'description'], required: false }],
+    order: [['bankAccountId', 'ASC']]
+  })
+
+  const closureByBankAccountId = new Map(closures.rows.map((item) => [Number(item.bankAccountId), item]))
+
+  const rows = accounts.map((account) => {
+    const closure = closureByBankAccountId.get(Number(account.id))
+    const statusId = closure ? Number(closure.statusId) : CASH_STATUS_CLOSED
+    return {
+      id: closure?.id || `draft-${account.id}`,
+      date: closure?.date || targetDate,
+      bankAccountId: account.id,
+      bankAccount: account,
+      statusId,
+      statusText: statusId === CASH_STATUS_OPEN ? 'Aberto' : 'Fechado',
+      closureId: closure?.id || null
+    }
+  })
+
+  return { rows, count: rows.length }
+}
+
+export async function openCashClosure(transaction, { bankAccountId, date, description }) {
+  const session = await getSession()
+  const parsedBankAccountId = Number(bankAccountId)
+  const targetDate = parseCashDate(date || new Date())
+
+  if (!parsedBankAccountId || Number.isNaN(parsedBankAccountId)) {
+    throw { code: 'INVALID_ACCOUNT', message: 'Conta bancária inválida' }
+  }
+  if (Number.isNaN(targetDate.getTime())) {
+    throw { code: 'INVALID_DATE', message: 'Data inválida' }
+  }
+
+  const account = await financeRepository.findBankAccount(transaction, {
+    where: { id: parsedBankAccountId, companyId: session.company.id, isActive: true },
+    attributes: ['id', 'description']
+  })
+  if (!account) {
+    throw { code: 'INVALID_ACCOUNT', message: 'Conta bancária não pertence à empresa da sessão' }
+  }
+
+  const existing = await financeRepository.findCashClosureByAccountAndDate(transaction, {
+    bankAccountId: parsedBankAccountId,
+    date: targetDate
+  })
+
+  let closureId = existing?.id
+  if (!existing) {
+    const created = await financeRepository.createCashClosure(transaction, {
+      date: targetDate,
+      statusId: CASH_STATUS_OPEN,
+      bankAccountId: parsedBankAccountId
+    })
+    closureId = created.id
+  } else if (Number(existing.statusId) === CASH_STATUS_OPEN) {
+    throw { code: 'CASH_ALREADY_OPEN', message: 'Caixa já está aberto para esta conta e data' }
+  } else {
+    await financeRepository.updateCashClosure(transaction, {
+      where: { id: existing.id }
+    }, {
+      statusId: CASH_STATUS_OPEN
+    })
+  }
+
+  await financeRepository.createCashClosureHistory(transaction, {
+    date: new Date(),
+    description: description || 'Abertura de caixa',
+    statusId: CASH_STATUS_OPEN,
+    userId: session.user.id,
+    cashClosureId: closureId
+  })
+
+  return { id: closureId, bankAccountId: parsedBankAccountId, date: targetDate, statusId: CASH_STATUS_OPEN }
+}
+
+export async function closeCashClosure(transaction, { bankAccountId, date, description }) {
+  const session = await getSession()
+  const parsedBankAccountId = Number(bankAccountId)
+  const targetDate = parseCashDate(date || new Date())
+
+  if (!parsedBankAccountId || Number.isNaN(parsedBankAccountId)) {
+    throw { code: 'INVALID_ACCOUNT', message: 'Conta bancária inválida' }
+  }
+  if (Number.isNaN(targetDate.getTime())) {
+    throw { code: 'INVALID_DATE', message: 'Data inválida' }
+  }
+
+  const account = await financeRepository.findBankAccount(transaction, {
+    where: { id: parsedBankAccountId, companyId: session.company.id, isActive: true },
+    attributes: ['id', 'description']
+  })
+  if (!account) {
+    throw { code: 'INVALID_ACCOUNT', message: 'Conta bancária não pertence à empresa da sessão' }
+  }
+
+  const existing = await financeRepository.findCashClosureByAccountAndDate(transaction, {
+    bankAccountId: parsedBankAccountId,
+    date: targetDate
+  })
+
+  if (!existing) {
+    throw { code: 'CASH_NOT_OPEN', message: 'Não existe caixa aberto para esta conta e data' }
+  }
+  if (Number(existing.statusId) === CASH_STATUS_CLOSED) {
+    throw { code: 'CASH_ALREADY_CLOSED', message: 'Caixa já está fechado para esta conta e data' }
+  }
+
+  await financeRepository.updateCashClosure(transaction, {
+    where: { id: existing.id }
+  }, {
+    statusId: CASH_STATUS_CLOSED
+  })
+
+  await financeRepository.createCashClosureHistory(transaction, {
+    date: new Date(),
+    description: description || 'Fechamento de caixa',
+    statusId: CASH_STATUS_CLOSED,
+    userId: session.user.id,
+    cashClosureId: existing.id
+  })
+
+  return { id: existing.id, bankAccountId: parsedBankAccountId, date: targetDate, statusId: CASH_STATUS_CLOSED }
 }
 
 export async function createBankTransfer(transaction, { originAccountId, destinationAccountId, value, realDate, description }) {

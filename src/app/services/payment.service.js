@@ -30,12 +30,17 @@ async function assertCashIsOpenForSettlement(transaction, { bankAccountId, realD
     bankAccountId: parsedBankAccountId,
     date: parsedDate
   })
+  const account = await financeRepository.findBankAccount(transaction, {
+    where: { id: parsedBankAccountId },
+    attributes: ['id', 'description']
+  })
+  const accountLabel = account?.description || `#${parsedBankAccountId}`
 
   if (closure && Number(closure.statusId) === CASH_STATUS_CLOSED) {
     const dateLabel = parsedDate.toLocaleDateString('pt-BR')
     throw {
       code: 'CASH_CLOSED',
-      message: `Caixa da conta bancária ${parsedBankAccountId} em ${dateLabel} está fechado`
+      message: `Caixa da conta bancária "${accountLabel}" em ${dateLabel} está fechado`
     }
   }
 
@@ -43,7 +48,7 @@ async function assertCashIsOpenForSettlement(transaction, { bankAccountId, realD
     const dateLabel = parsedDate.toLocaleDateString('pt-BR')
     throw {
       code: 'CASH_NOT_OPEN',
-      message: `Caixa da conta bancária ${parsedBankAccountId} em ${dateLabel} não está aberto para baixa`
+      message: `Caixa da conta bancária "${accountLabel}" em ${dateLabel} não está aberto para baixa`
     }
   }
 }

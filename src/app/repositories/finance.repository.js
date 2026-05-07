@@ -297,6 +297,20 @@ export async function findBankAccount(transaction, { where, attributes, include 
   })
 }
 
+export async function findAllBankAccounts(transaction, { where, attributes, include, order } = {}) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const rows = await db.BankAccount.findAll({
+      where,
+      attributes,
+      include,
+      order: order || [['description', 'ASC']],
+      transaction: t
+    })
+    return rows.map((row) => row.toJSON())
+  })
+}
+
 export async function createBankMovement(transaction, data) {
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {
@@ -362,6 +376,46 @@ export async function findCashClosureByAccountAndDate(transaction, { bankAccount
     })
 
     return row?.toJSON() || null
+  })
+}
+
+export async function findAllCashClosures(transaction, { where, include, order, limit, offset }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const { rows, count } = await db.CashClosure.findAndCountAll({
+      where,
+      include,
+      order,
+      limit,
+      offset,
+      transaction: t,
+      distinct: true
+    })
+    return { rows: rows.map((row) => row.toJSON()), count }
+  })
+}
+
+export async function createCashClosure(transaction, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const row = await db.CashClosure.create(data, { transaction: t })
+    return row.toJSON()
+  })
+}
+
+export async function updateCashClosure(transaction, { where }, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const [affectedCount] = await db.CashClosure.update(data, { where, transaction: t })
+    return affectedCount
+  })
+}
+
+export async function createCashClosureHistory(transaction, data) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const row = await db.CashClosureHistory.create(data, { transaction: t })
+    return row.toJSON()
   })
 }
 
