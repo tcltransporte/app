@@ -242,6 +242,20 @@ export async function updateEntry(transaction, id, data) {
   })
 }
 
+export async function deleteEntry(transaction, id) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const affected = await db.FinanceEntry.destroy({
+      where: {
+        id,
+        paymentId: null
+      },
+      transaction: t
+    })
+    return affected
+  })
+}
+
 export async function findEntryPaymentHistory(transaction, id) {
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {

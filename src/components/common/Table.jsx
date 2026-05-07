@@ -394,7 +394,7 @@ export const Table = ({
       sx={{
         flexGrow: 1,
         overflow: 'auto',
-        overflowX: fixed ? 'hidden' : 'auto',
+        overflowX: 'auto',
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: 2,
@@ -410,7 +410,15 @@ export const Table = ({
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <MuiTable stickyHeader size="small" sx={{ tableLayout: fixed ? 'fixed' : 'auto', width: '100%' }}>
+          <MuiTable
+            stickyHeader
+            size="small"
+            sx={{
+              tableLayout: fixed ? 'fixed' : 'auto',
+              width: fixed ? 'max-content' : '100%',
+              minWidth: '100%'
+            }}
+          >
             <TableHead>
               <TableRow>
                 <TableCell
@@ -420,12 +428,14 @@ export const Table = ({
                     position: 'sticky',
                     top: 0,
                     zIndex: 3,
-                    width: 44,
-                    minWidth: 44,
-                    px: 0.5
+                    width: 28,
+                    minWidth: 28,
+                    maxWidth: 28,
+                    px: 0
                   }}
                 >
                   <Checkbox
+                    size="small"
                     indeterminate={selecteds.length > 0 && selecteds.length < items.length}
                     checked={items.length > 0 && selecteds.length === items.length}
                     onChange={onSelectAll}
@@ -454,7 +464,7 @@ export const Table = ({
               {loading ? (
                 Array.from(new Array(15)).map((_, rowIndex) => (
                   <TableRow key={`skeleton-row-${rowIndex}`}>
-                    <TableCell padding="checkbox" sx={{ width: 44, minWidth: 44, px: 0.5 }}>
+                    <TableCell padding="checkbox" sx={{ width: 28, minWidth: 28, maxWidth: 28, px: 0 }}>
                       <Skeleton variant="rectangular" width={20} height={20} />
                     </TableCell>
                     {columns.map((col, colIndex) => (
@@ -512,8 +522,8 @@ export const Table = ({
                       '&.Mui-selected': { backgroundColor: 'primary.lighter' }
                     }}
                   >
-                    <TableCell padding="checkbox" sx={{ width: 44, minWidth: 44, px: 0.5 }}>
-                      <Checkbox checked={isItemSelected} />
+                    <TableCell padding="checkbox" sx={{ width: 28, minWidth: 28, maxWidth: 28, px: 0 }}>
+                      <Checkbox size="small" checked={isItemSelected} />
                     </TableCell>
                     {columns.map((col, index) => (
                       <TableCell
@@ -542,7 +552,15 @@ export const Table = ({
           </MuiTable>
         </DndContext>
       ) : (
-        <MuiTable stickyHeader size="small" sx={{ tableLayout: fixed ? 'fixed' : 'auto', width: '100%' }}>
+        <MuiTable
+          stickyHeader
+          size="small"
+          sx={{
+            tableLayout: fixed ? 'fixed' : 'auto',
+            width: fixed ? 'max-content' : '100%',
+            minWidth: '100%'
+          }}
+        >
           <TableHead>
             <TableRow>
               <TableCell
@@ -552,12 +570,14 @@ export const Table = ({
                   position: 'sticky',
                   top: 0,
                   zIndex: 3,
-                  width: 44,
-                  minWidth: 44,
-                  px: 0.5
+                  width: 28,
+                  minWidth: 28,
+                  maxWidth: 28,
+                  px: 0
                 }}
               >
                 <Checkbox
+                  size="small"
                   indeterminate={selecteds.length > 0 && selecteds.length < items.length}
                   checked={items.length > 0 && selecteds.length === items.length}
                   onChange={onSelectAll}
@@ -590,7 +610,7 @@ export const Table = ({
             {loading ? (
               Array.from(new Array(15)).map((_, rowIndex) => (
                 <TableRow key={`skeleton-row-${rowIndex}`}>
-                  <TableCell padding="checkbox" sx={{ width: 44, minWidth: 44, px: 0.5 }}>
+                  <TableCell padding="checkbox" sx={{ width: 28, minWidth: 28, maxWidth: 28, px: 0 }}>
                     <Skeleton variant="rectangular" width={20} height={20} />
                   </TableCell>
                   {columns.map((col, colIndex) => (
@@ -634,8 +654,8 @@ export const Table = ({
                     '&.Mui-selected': { backgroundColor: 'primary.lighter' }
                   }}
                 >
-                  <TableCell padding="checkbox" sx={{ width: 44, minWidth: 44, px: 0.5 }}>
-                    <Checkbox checked={isItemSelected} />
+                  <TableCell padding="checkbox" sx={{ width: 28, minWidth: 28, maxWidth: 28, px: 0 }}>
+                    <Checkbox size="small" checked={isItemSelected} />
                   </TableCell>
                   {columns.map((col, index) => (
                     <TableCell

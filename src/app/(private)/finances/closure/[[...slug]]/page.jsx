@@ -8,11 +8,13 @@ export const metadata = {
 
 export default async function FinanceClosurePage() {
   try {
-    const now = new Date();
-    const initialDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
+    const initialDate = '';
     const result = await financeAction.findCashClosuresByDate({
-      date: initialDate
+      date: initialDate,
+      page: 1,
+      limit: 50,
+      sortBy: 'date',
+      sortOrder: 'DESC'
     });
 
     if (result?.header?.status !== ServiceStatus.SUCCESS) {
@@ -22,8 +24,10 @@ export default async function FinanceClosurePage() {
     const initialTable = {
       items: result.body.rows || [],
       total: result.body.count || 0,
-      sortBy: 'bankAccountId',
-      sortOrder: 'ASC'
+      page: 1,
+      limit: 50,
+      sortBy: 'date',
+      sortOrder: 'DESC'
     };
 
     return (
@@ -33,6 +37,6 @@ export default async function FinanceClosurePage() {
       />
     );
   } catch (error) {
-    return error?.body?.message || error.message
+    return error?.body?.message || error.message;
   }
 }

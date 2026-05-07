@@ -51,3 +51,15 @@ export async function findEntryPaymentHistory(id) {
     return ServiceResponse.error(error)
   }
 }
+
+export async function deleteEntry(id) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.deleteEntry(t, id)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}

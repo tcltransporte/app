@@ -335,6 +335,29 @@ export async function updateEntry(transaction, id, data) {
   return await financeRepository.updateEntry(transaction, id, safeData)
 }
 
+export async function deleteEntry(transaction, id) {
+  const session = await getSession()
+  const entry = await financeRepository.findEntry(transaction, id)
+  if (!entry) {
+    throw { code: "NOT_FOUND", message: "Parcela financeira não encontrada" }
+  }
+
+  if (Number(entry?.title?.companyId) !== Number(session?.company?.id)) {
+    throw { code: "FORBIDDEN", message: "Parcela não pertence à empresa da sessão" }
+  }
+
+  if (Number(entry?.paymentId) > 0) {
+    throw { code: "INVALID_OPERATION", message: "Não é possível excluir parcela já baixada" }
+  }
+
+  const affected = await financeRepository.deleteEntry(transaction, id)
+  if (!affected) {
+    throw { code: "INVALID_OPERATION", message: "Parcela não pode ser excluída" }
+  }
+
+  return { id, deleted: true }
+}
+
 export async function findEntryPaymentHistory(transaction, id) {
   const entry = await financeRepository.findEntryPaymentHistory(transaction, id)
 
@@ -411,6 +434,21 @@ export async function findAllBankMovements(transaction, params = {}) {
     }
   ]
 
+  if (params.includePaymentMethod) {
+    include.push({
+      association: 'paymentEntry',
+      required: false,
+      attributes: ['id', 'paymentMethodId'],
+      include: [
+        {
+          association: 'paymentMethod',
+          required: false,
+          attributes: ['id', 'description']
+        }
+      ]
+    })
+  }
+
   if (params.range) {
     const { start, end, field = 'realDate' } = params.range
     if (start && end) {
@@ -426,6 +464,7 @@ export async function findAllBankMovements(transaction, params = {}) {
 
   delete params.filters
   delete params.status
+  delete params.includePaymentMethod
 
   return await financeRepository.findAllBankMovements(transaction, {
     ...params,
@@ -834,55 +873,78 @@ export async function approveConciliationMovement(transaction, { movementId, rea
   return { movementId: parsedMovementId }
 }
 
-export async function findCashClosuresByDate(transaction, { date, bankAccountId } = {}) {
+export async function findCashClosuresByDate(transaction, { date, bankAccountId, page = 1, limit = 50, sortBy = 'date', sortOrder = 'DESC' } = {}) {
   const session = await getSession()
-  const targetDate = parseCashDate(date || new Date())
-  if (Number.isNaN(targetDate.getTime())) {
+  const hasDateFilter = !!date
+  const targetDate = hasDateFilter ? parseCashDate(date) : null
+  if (hasDateFilter && Number.isNaN(targetDate.getTime())) {
     throw { code: 'INVALID_DATE', message: 'Data inválida' }
   }
 
-  const start = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0, 0)
-  const end = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate() + 1, 0, 0, 0, 0)
+  const start = hasDateFilter ? new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0, 0) : null
+  const end = hasDateFilter ? new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate() + 1, 0, 0, 0, 0) : null
   const parsedBankAccountId = Number(bankAccountId)
 
-  const accounts = await financeRepository.findAllBankAccounts(transaction, {
-    where: {
-      companyId: session.company.id,
-      isActive: true,
-      ...(parsedBankAccountId && !Number.isNaN(parsedBankAccountId) ? { id: parsedBankAccountId } : {})
-    },
-    attributes: ['id', 'description', 'bankName', 'agency', 'accountNumber'],
-    include: [{ association: 'bank', attributes: ['id', 'code', 'description'], required: false }]
+  const where = {}
+  if (parsedBankAccountId && !Number.isNaN(parsedBankAccountId)) {
+    where.bankAccountId = parsedBankAccountId
+  }
+  if (hasDateFilter) {
+    where.date = { [Op.gte]: start, [Op.lt]: end }
+  }
+
+  const parsedPage = Number(page) > 0 ? Number(page) : 1
+  const parsedLimit = Number(limit) > 0 ? Number(limit) : 50
+  const offset = (parsedPage - 1) * parsedLimit
+
+  const result = await financeRepository.findAllCashClosures(transaction, {
+    where,
+    include: [
+      {
+        association: 'bankAccount',
+        required: true,
+        where: { companyId: session.company.id, isActive: true },
+        attributes: ['id', 'description', 'bankName', 'agency', 'accountNumber'],
+        include: [{ association: 'bank', attributes: ['id', 'code', 'description'], required: false }]
+      },
+      { association: 'status', attributes: ['id', 'description'], required: false }
+    ],
+    order: [[sortBy, sortOrder], ['bankAccountId', 'ASC']],
+    limit: parsedLimit,
+    offset
   })
 
-  if (accounts.length === 0) return { rows: [], count: 0 }
-
-  const closures = await financeRepository.findAllCashClosures(transaction, {
-    where: {
-      bankAccountId: { [Op.in]: accounts.map((account) => account.id) },
-      date: { [Op.gte]: start, [Op.lt]: end }
-    },
-    include: [{ association: 'status', attributes: ['id', 'description'], required: false }],
-    order: [['bankAccountId', 'ASC']]
-  })
-
-  const closureByBankAccountId = new Map(closures.rows.map((item) => [Number(item.bankAccountId), item]))
-
-  const rows = accounts.map((account) => {
-    const closure = closureByBankAccountId.get(Number(account.id))
-    const statusId = closure ? Number(closure.statusId) : CASH_STATUS_CLOSED
+  const rows = (result.rows || []).map((row) => {
+    const statusId = Number(row.statusId)
+    const account = row.bankAccount || {}
+    const bank = account.bank || {}
     return {
-      id: closure?.id || `draft-${account.id}`,
-      date: closure?.date || targetDate,
-      bankAccountId: account.id,
-      bankAccount: account,
+      id: row.id,
+      date: row.date,
       statusId,
       statusText: statusId === CASH_STATUS_OPEN ? 'Aberto' : 'Fechado',
-      closureId: closure?.id || null
+      closureId: row.id,
+      bankAccountId: row.bankAccountId,
+      bankAccount: {
+        id: account.id,
+        description: account.description || '',
+        bankName: account.bankName || '',
+        agency: account.agency || '',
+        accountNumber: account.accountNumber || '',
+        bank: {
+          id: bank.id,
+          code: bank.code || '',
+          description: bank.description || ''
+        }
+      },
+      status: {
+        id: row?.status?.id,
+        description: row?.status?.description || ''
+      }
     }
   })
 
-  return { rows, count: rows.length }
+  return { rows, count: result.count }
 }
 
 export async function openCashClosure(transaction, { bankAccountId, date, description }) {

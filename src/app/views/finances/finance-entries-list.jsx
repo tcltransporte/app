@@ -9,7 +9,7 @@ import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import { formatSqlDate } from '@/libs/date';
-import { Button, IconButton, Box, Typography, Badge } from '@mui/material';
+import { Button, IconButton, Box, Typography, Badge, MenuItem, ListItemIcon, ListItemText, Popper, Paper, ClickAwayListener } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -21,9 +21,10 @@ import {
   Event as EventIcon,
   Download as DownloadIcon,
   Google as GoogleIcon,
-  Payment as PaymentIcon,
   CheckCircle as CheckIcon,
   Undo as UndoIcon,
+  MoreVert as MoreVertIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import FinanceTitleModal from './finance-title-modal';
 import FinanceEntryModal from './finance-entry-modal';
@@ -56,6 +57,8 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const [drawerOnTop, setDrawerOnTop] = React.useState(false);
   const [historyDrawerOpen, setHistoryDrawerOpen] = React.useState(false);
   const [selectedHistoryEntryId, setSelectedHistoryEntryId] = React.useState(null);
+  const [actionMenuAnchor, setActionMenuAnchor] = React.useState(null);
+  const [actionMenuRow, setActionMenuRow] = React.useState(null);
 
   const handleEdit = React.useCallback((row) => {
     navigation.setSelectedId(row.id);
@@ -71,6 +74,17 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const handleOpenHistory = React.useCallback((ids) => {
     setSelectedHistoryEntryId(ids);
     setHistoryDrawerOpen(true);
+  }, []);
+
+  const handleOpenActionMenu = React.useCallback((event, row) => {
+    event.stopPropagation();
+    setActionMenuAnchor(event.currentTarget);
+    setActionMenuRow(row);
+  }, []);
+
+  const handleCloseActionMenu = React.useCallback(() => {
+    setActionMenuAnchor(null);
+    setActionMenuRow(null);
   }, []);
 
   const handleBaixar = React.useCallback(() => {
@@ -154,9 +168,39 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     }
   }, [table.selecteds, isPaidEntry, operationType, fetchTable, loading]);
 
+  const handleDeleteEntry = React.useCallback(async (row) => {
+    if (!row) return;
+
+    if (isPaidEntry(row)) {
+      alert.warning('Operação Inválida', 'Só é possível excluir parcelas que ainda não foram baixadas.');
+      return;
+    }
+
+    const ok = await alert.confirm(
+      'Excluir parcela?',
+      'Essa ação não poderá ser desfeita.',
+      'warning'
+    );
+    if (!ok) return;
+
+    loading.show('Excluindo parcela...', 'Aguarde alguns instantes.');
+    try {
+      const result = await financeEntryAction.deleteEntry(row.id);
+      if (result.header.status !== ServiceStatus.SUCCESS) {
+        throw result;
+      }
+      alert.success('Sucesso', 'Parcela excluída com sucesso!');
+      await fetchTable();
+    } catch (error) {
+      alert.error('Não foi possível excluir', error?.body?.message || error.message);
+    } finally {
+      loading.hide();
+    }
+  }, [isPaidEntry, fetchTable, loading]);
+
   const columns = [
     {
-      field: 'documentNumber', headerName: 'Nº Doc.', width: 150,
+      field: 'documentNumber', headerName: 'Nº Doc.', width: 140,
       renderCell: (val, row) => (
         <Box sx={{
           display: 'flex',
@@ -203,7 +247,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       )
     },
     {
-      field: 'partner', headerName: 'Fornecedor/Cliente', width: 210,
+      field: 'partner', headerName: 'Fornecedor/Cliente', width: 200,
       renderCell: (val, row) => row.title?.partner?.surname || row.title?.partner?.name || ''
     },
     {
@@ -219,7 +263,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       renderCell: (val, row) => row.title?.costCenter ? row.title.costCenter.description : ''
     },
     {
-      field: 'status', headerName: 'Status', width: 120, align: 'center',
+      field: 'status', headerName: 'Status', width: 90, align: 'center',
       renderCell: (val, row) => (
         <span title={(row?.displayStatus ?? row?.status) === 'pending_recon' ? 'Pendente de conciliação' : 'Ver rastro de pagamento'}>
           <EntryStatusChip
@@ -243,37 +287,31 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       )
     },
     {
-      field: 'dueDate', headerName: 'Vencimento', width: 120, align: 'center',
+      field: 'dueDate', headerName: 'Vencimento', width: 110, align: 'center',
       renderCell: (value) => formatSqlDate(value)
     },
     {
       field: 'paymentRealDate',
       headerName: operationType === 1 ? 'Recebimento' : 'Pagamento',
-      width: 120,
+      width: 110,
       align: 'center',
       renderCell: (value) => value ? formatSqlDate(value) : '-'
     },
     {
-      field: 'installmentValue', headerName: 'Valor', width: 90, align: 'right',
+      field: 'installmentValue', headerName: 'Valor', width: 80, align: 'right',
       renderCell: (value) => value ? parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'
     },
-    /*{
-      field: 'actions', headerName: 'Ações', width: 80, align: 'center',
+    {
+      field: 'actions', headerName: '', width: 50, align: 'center', sortable: false,
       renderCell: (val, row) => (
-        <Tooltip title="Editar Parcela">
-          <IconButton
-            size="small"
-            color="primary"
-            onClick={() => {
-              setSelectedEntryId(row.id);
-              setEntryModalOpen(true);
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <IconButton
+          size="small"
+          onClick={(e) => handleOpenActionMenu(e, row)}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
       )
-    },*/
+    },
   ];
 
   React.useEffect(() => {
@@ -499,6 +537,62 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
           }
         }}
       />
+
+      <Popper
+        open={Boolean(actionMenuAnchor)}
+        anchorEl={actionMenuAnchor}
+        placement="bottom-end"
+        modifiers={[
+          { name: 'offset', options: { offset: [0, 4] } },
+          { name: 'flip', enabled: false }
+        ]}
+        sx={{ zIndex: 1400 }}
+      >
+        <ClickAwayListener onClickAway={handleCloseActionMenu}>
+          <Paper elevation={4} sx={{ minWidth: 180, borderRadius: 1.5, py: 0.5 }}>
+        <MenuItem onClick={() => {
+          const row = actionMenuRow;
+          handleCloseActionMenu();
+          if (row) handleEdit(row);
+        }}>
+          <ListItemIcon><EditNoteIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Editar</ListItemText>
+        </MenuItem>
+        <MenuItem
+          disabled={isPaidEntry(actionMenuRow)}
+          onClick={() => {
+          const row = actionMenuRow;
+          handleCloseActionMenu();
+          if (!row) return;
+          handleOpenHistory([row.id]);
+        }}>
+          <ListItemIcon><CheckIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Baixar</ListItemText>
+        </MenuItem>
+        <MenuItem
+          disabled={!isPaidEntry(actionMenuRow)}
+          onClick={() => {
+          const row = actionMenuRow;
+          handleCloseActionMenu();
+          if (!row) return;
+          handleOpenHistory([row.id]);
+        }}>
+          <ListItemIcon><UndoIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Desfazer</ListItemText>
+        </MenuItem>
+        <MenuItem
+          disabled={isPaidEntry(actionMenuRow)}
+          onClick={() => {
+          const row = actionMenuRow;
+          handleCloseActionMenu();
+          if (row) handleDeleteEntry(row);
+        }}>
+          <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Excluir</ListItemText>
+        </MenuItem>
+          </Paper>
+        </ClickAwayListener>
+      </Popper>
     </Container>
   );
 }

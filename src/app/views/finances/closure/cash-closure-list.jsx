@@ -8,7 +8,7 @@ import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import UnifiedChip from '@/components/common/UnifiedChip';
-import { Box, Badge, Button, Avatar } from '@mui/material';
+import { Box, Badge, Avatar } from '@mui/material';
 import {
   Search as SearchIcon,
   LockOpen as OpenIcon,
@@ -16,6 +16,7 @@ import {
   Event as EventIcon,
   AccountBalance as BankIcon,
 } from '@mui/icons-material';
+import CashCloseConfirmDrawer from './cash-close-confirm-drawer';
 
 export default function CashClosureList({ initialTable, initialDate }) {
   const table = useTable({ initialTable });
@@ -23,12 +24,18 @@ export default function CashClosureList({ initialTable, initialDate }) {
   const [selectedDate, setSelectedDate] = React.useState(initialDate);
   const [rangeOpen, setRangeOpen] = React.useState(false);
   const [runningBankAccountId, setRunningBankAccountId] = React.useState(null);
+  const [closeDrawerOpen, setCloseDrawerOpen] = React.useState(false);
+  const [closeTargetRow, setCloseTargetRow] = React.useState(null);
 
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
     try {
       const result = await financeAction.findCashClosuresByDate({
-        date: overrides.date || selectedDate
+        date: overrides.date ?? selectedDate,
+        page: overrides.page || table.page,
+        limit: overrides.rowsPerPage || table.rowsPerPage,
+        sortBy: table.sortBy || 'date',
+        sortOrder: table.sortOrder || 'DESC'
       });
       if (result.header.status !== ServiceStatus.SUCCESS) {
         throw result;
@@ -67,10 +74,16 @@ export default function CashClosureList({ initialTable, initialDate }) {
   }, [selectedDate, fetchTable]);
 
   const handleCloseCash = React.useCallback(async (row) => {
-    setRunningBankAccountId(row.bankAccountId);
+    setCloseTargetRow(row);
+    setCloseDrawerOpen(true);
+  }, []);
+
+  const handleConfirmCloseCash = React.useCallback(async () => {
+    if (!closeTargetRow) return;
+    setRunningBankAccountId(closeTargetRow.bankAccountId);
     try {
       const result = await financeAction.closeCashClosure({
-        bankAccountId: row.bankAccountId,
+        bankAccountId: closeTargetRow.bankAccountId,
         date: selectedDate
       });
       if (result.header.status !== ServiceStatus.SUCCESS) {
@@ -78,12 +91,14 @@ export default function CashClosureList({ initialTable, initialDate }) {
       }
       alert.success('Caixa fechado com sucesso');
       await fetchTable();
+      setCloseDrawerOpen(false);
+      setCloseTargetRow(null);
     } catch (error) {
       alert.error('Não foi possível fechar o caixa', error?.body?.message || error.message);
     } finally {
       setRunningBankAccountId(null);
     }
-  }, [selectedDate, fetchTable]);
+  }, [closeTargetRow, selectedDate, fetchTable]);
 
   const columns = React.useMemo(() => [
     {
@@ -128,53 +143,31 @@ export default function CashClosureList({ initialTable, initialDate }) {
     {
       field: 'statusText',
       headerName: 'Status',
-      width: 160,
+      width: 190,
       align: 'center',
-      renderCell: (value, row) => (
+      renderCell: (value, row) => {
+        const isOpen = Number(row.statusId) === 1;
+        const isRunning = runningBankAccountId === row.bankAccountId;
+        return (
         <UnifiedChip
-          label={value || 'Fechado'}
-          color={Number(row.statusId) === 1 ? 'success' : Number(row.statusId) === 2 ? 'error' : 'default'}
+          label={isOpen ? 'Aberto' : 'Fechado'}
+          color={isOpen ? 'success' : 'error'}
           variant="outlined"
-        />
-      )
-    },
-    {
-      field: 'action',
-      headerName: 'Ação',
-      width: 170,
-      align: 'center',
-      sortable: false,
-      renderCell: (value, row) => (
-        Number(row.statusId) === 1 ? (
-          <Button
-            size="small"
-            variant="outlined"
-            color="error"
-            startIcon={<CloseIcon />}
-            onClick={(e) => {
-              e.stopPropagation();
+          actionLabel={isOpen ? 'Fechar' : 'Abrir'}
+          actionIcon={isOpen ? <CloseIcon fontSize="small" /> : <OpenIcon fontSize="small" />}
+          actionColor={isOpen ? 'error' : 'success'}
+          onActionClick={() => {
+            if (isRunning) return;
+            if (isOpen) {
               handleCloseCash(row);
-            }}
-            disabled={runningBankAccountId === row.bankAccountId}
-          >
-            Fechar
-          </Button>
-        ) : (
-          <Button
-            size="small"
-            variant="contained"
-            color="success"
-            startIcon={<OpenIcon />}
-            onClick={(e) => {
-              e.stopPropagation();
+            } else {
               handleOpenCash(row);
-            }}
-            disabled={runningBankAccountId === row.bankAccountId}
-          >
-            Abrir
-          </Button>
-        )
-      )
+            }
+          }}
+          showActionOnHover
+          actionSx={{ minWidth: 92, opacity: isRunning ? 0.7 : 1, pointerEvents: isRunning ? 'none' : 'auto' }}
+        />
+      ) }
     }
   ], [handleOpenCash, handleCloseCash, runningBankAccountId]);
 
@@ -192,7 +185,7 @@ export default function CashClosureList({ initialTable, initialDate }) {
         <Toolbar
           secondary={[
             {
-              label: selectedDate ? `Data: ${new Date(selectedDate).toLocaleDateString('pt-BR')}` : 'Data',
+              label: selectedDate ? `Data: ${new Date(selectedDate).toLocaleDateString('pt-BR')}` : 'Todo o período',
               icon: <EventIcon fontSize="small" />,
               onClick: () => setRangeOpen(true)
             },
@@ -225,8 +218,18 @@ export default function CashClosureList({ initialTable, initialDate }) {
         page={table.page}
         rowsPerPage={table.rowsPerPage}
         selectedCount={table.selecteds.length}
-        onPageChange={() => {}}
-        onRowsPerPageChange={() => {}}
+        onPageChange={async (e, p) => {
+          const ok = await fetchTable({ page: p });
+          if (ok) table.setPage(p);
+        }}
+        onRowsPerPageChange={async (e) => {
+          const l = Number(e.target.value);
+          const ok = await fetchTable({ page: 1, rowsPerPage: l });
+          if (ok) {
+            table.setRowsPerPage(l);
+            table.setPage(1);
+          }
+        }}
       />
 
       <RangeModal
@@ -238,10 +241,21 @@ export default function CashClosureList({ initialTable, initialDate }) {
         initialEnd={selectedDate}
         fieldOptions={[{ label: 'Data', value: 'date' }]}
         onApply={(vals) => {
-          const nextDate = vals?.start || initialDate;
+          const nextDate = vals?.start || vals?.end || initialDate;
           setSelectedDate(nextDate);
           fetchTable({ date: nextDate });
         }}
+      />
+
+      <CashCloseConfirmDrawer
+        open={closeDrawerOpen}
+        onClose={() => {
+          setCloseDrawerOpen(false);
+          setCloseTargetRow(null);
+        }}
+        bankAccount={closeTargetRow?.bankAccount}
+        selectedDate={selectedDate}
+        onConfirm={handleConfirmCloseCash}
       />
     </Container>
   );
