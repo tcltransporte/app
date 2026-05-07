@@ -225,7 +225,7 @@ export async function findEntry(transaction, id) {
           'partner',
           'accountPlan',
           'costCenter',
-          { association: 'company', attributes: ['id', 'name', 'surname'] }
+          { association: 'company', attributes: ['id', 'name', 'surname', 'companyBusinessId'] }
         ]
       }],
       transaction: t

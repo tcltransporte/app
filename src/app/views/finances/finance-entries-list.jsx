@@ -203,19 +203,19 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       )
     },
     {
-      field: 'partner', headerName: 'Fornecedor/Cliente',
+      field: 'partner', headerName: 'Fornecedor/Cliente', width: 210,
       renderCell: (val, row) => row.title?.partner?.surname || row.title?.partner?.name || ''
     },
     {
-      field: 'description', headerName: 'Descrição', width: 240,
+      field: 'description', headerName: 'Descrição', width: 'auto',
       renderCell: (val, row) => row.description || row.title?.description || ''
     },
     {
-      field: 'accountPlan', headerName: 'Plano de Contas', width: 240,
+      field: 'accountPlan', headerName: 'Plano de Contas', width: 220,
       renderCell: (val, row) => row.title?.accountPlan ? `${row.title.accountPlan.code} - ${row.title.accountPlan.description}` : ''
     },
     {
-      field: 'costCenter', headerName: 'Centro de Custo', width: 180,
+      field: 'costCenter', headerName: 'Centro de Custo', width: 160,
       renderCell: (val, row) => row.title?.costCenter ? row.title.costCenter.description : ''
     },
     {

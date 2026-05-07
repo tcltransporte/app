@@ -26,6 +26,25 @@ const validate = (values) => {
   return errors
 }
 
+function parseDateAsLocal(value) {
+  if (!value) return new Date()
+  const datePart =
+    value instanceof Date
+      ? value.toISOString().slice(0, 10)
+      : typeof value === 'string'
+        ? value.slice(0, 10)
+        : ''
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    const [year, month, day] = datePart.split('-').map(Number)
+    // Use local noon to prevent timezone shift when rendering/editing.
+    return new Date(year, month - 1, day, 12, 0, 0, 0)
+  }
+
+  const parsed = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
+}
+
 export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, onViewEntries, zIndex }) {
   const [loading, setLoading] = useState(true)
   const [entry, setEntry] = useState(null)
@@ -84,7 +103,7 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
     >
       <Formik
         initialValues={{
-          dueDate: entry?.dueDate ? new Date(entry.dueDate) : new Date(),
+          dueDate: parseDateAsLocal(entry?.dueDate),
           installmentValue: entry?.installmentValue || 0,
           installmentNumber: entry?.installmentNumber || '',
           description: entry?.description || ''

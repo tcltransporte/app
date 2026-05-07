@@ -463,12 +463,19 @@ export async function traceBankMovement(transaction, id) {
  */
 export async function reverseSettlementFromBankMovement(transaction, movementId) {
   const session = await getSession()
+  const sessionCompanyBusinessId = Number(session?.company?.companyBusiness?.id)
 
   const include = [
     {
       association: 'bankAccount',
-      where: { companyId: session.company.id },
       required: true,
+      include: [
+        {
+          association: 'company',
+          required: true,
+          attributes: ['id', 'companyBusinessId']
+        }
+      ]
     },
     {
       association: 'paymentEntry',
@@ -481,6 +488,17 @@ export async function reverseSettlementFromBankMovement(transaction, movementId)
 
   if (!movement) {
     throw { code: 'NOT_FOUND', message: 'Movimento bancário não encontrado ou sem permissão' }
+  }
+
+  const movementCompanyBusinessId = Number(movement?.bankAccount?.company?.companyBusinessId)
+  if (
+    !sessionCompanyBusinessId ||
+    Number.isNaN(sessionCompanyBusinessId) ||
+    !movementCompanyBusinessId ||
+    Number.isNaN(movementCompanyBusinessId) ||
+    movementCompanyBusinessId !== sessionCompanyBusinessId
+  ) {
+    throw { code: 'FORBIDDEN', message: 'Movimento não pertence à mesma empresa da sessão' }
   }
 
   const paymentEntryId =
@@ -504,6 +522,7 @@ export async function reverseSettlementFromBankMovement(transaction, movementId)
  */
 export async function reverseSettlementFromPayment(transaction, paymentId) {
   const session = await getSession()
+  const sessionCompanyBusinessId = Number(session?.company?.companyBusiness?.id)
   const parsedPaymentId = Number(paymentId)
 
   if (!parsedPaymentId || Number.isNaN(parsedPaymentId)) {
@@ -519,8 +538,14 @@ export async function reverseSettlementFromPayment(transaction, paymentId) {
           {
             association: 'title',
             required: true,
-            where: { companyId: session.company.id },
-            attributes: ['id', 'companyId']
+            attributes: ['id', 'companyId'],
+            include: [
+              {
+                association: 'company',
+                required: true,
+                attributes: ['id', 'companyBusinessId']
+              }
+            ]
           }
         ]
       }
@@ -531,6 +556,20 @@ export async function reverseSettlementFromPayment(transaction, paymentId) {
     throw { code: 'NOT_FOUND', message: 'Pagamento não encontrado ou sem permissão' }
   }
 
+  const belongsToSameBusiness = (payment.entries || []).every((entry) => {
+    const entryCompanyBusinessId = Number(entry?.title?.company?.companyBusinessId)
+    return (
+      sessionCompanyBusinessId &&
+      !Number.isNaN(sessionCompanyBusinessId) &&
+      entryCompanyBusinessId &&
+      !Number.isNaN(entryCompanyBusinessId) &&
+      entryCompanyBusinessId === sessionCompanyBusinessId
+    )
+  })
+  if (!belongsToSameBusiness) {
+    throw { code: 'FORBIDDEN', message: 'Pagamento não pertence à mesma empresa da sessão' }
+  }
+
   return await financeRepository.reversePaymentSettlement(transaction, parsedPaymentId)
 }
 
@@ -539,6 +578,7 @@ export async function reverseSettlementFromPayment(transaction, paymentId) {
  */
 export async function reverseSettlementsFromEntries(transaction, entryIds = []) {
   const session = await getSession()
+  const sessionCompanyBusinessId = Number(session?.company?.companyBusiness?.id)
   const normalizedEntryIds = [...new Set((entryIds || []).map(Number).filter((id) => !Number.isNaN(id) && id > 0))]
 
   if (normalizedEntryIds.length === 0) {
@@ -553,7 +593,7 @@ export async function reverseSettlementsFromEntries(transaction, entryIds = []) 
     throw { code: 'NOT_FOUND', message: 'Uma ou mais parcelas não foram encontradas' }
   }
 
-  const unauthorized = entries.some((entry) => Number(entry?.title?.company?.id) !== Number(session.company.id))
+  const unauthorized = entries.some((entry) => Number(entry?.title?.company?.companyBusinessId) !== sessionCompanyBusinessId)
   if (unauthorized) {
     throw { code: 'FORBIDDEN', message: 'Uma ou mais parcelas não pertencem à empresa da sessão' }
   }

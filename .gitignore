@@ -43,3 +43,4 @@ src/middleware.js.bkp
 
 dist/build
 dist/release.tar.gz
+scripts/update-movimento-bancario-recebimento-cte.sql

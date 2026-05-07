@@ -50,6 +50,18 @@ export default function ConciliationFilter({ open, onClose, filters, onApply }) 
         </Grid>
         <Grid size={12}>
           <Field
+            component={AutoComplete}
+            name="bankAccount"
+            label="Conta bancária"
+            text={(v) => `${v?.description || ''} (${v?.bankName || ''})`}
+            onSearch={(value, signal) => search.bankAccount({ search: value }, signal)}
+            renderSuggestion={(v) => `${v?.description || ''} (${v?.bankName || ''})`}
+            fullWidth
+            size="small"
+          />
+        </Grid>
+        <Grid size={12}>
+          <Field
             component={TextField}
             name="documentNumber"
             label="Nº Doc"
@@ -71,18 +83,6 @@ export default function ConciliationFilter({ open, onClose, filters, onApply }) 
             component={NumericField}
             name="value"
             label="Valor"
-            fullWidth
-            size="small"
-          />
-        </Grid>
-        <Grid size={12}>
-          <Field
-            component={AutoComplete}
-            name="bankAccount"
-            label="Conta bancária"
-            text={(v) => `${v?.description || ''} (${v?.bankName || ''})`}
-            onSearch={(value, signal) => search.bankAccount({ search: value }, signal)}
-            renderSuggestion={(v) => `${v?.description || ''} (${v?.bankName || ''})`}
             fullWidth
             size="small"
           />

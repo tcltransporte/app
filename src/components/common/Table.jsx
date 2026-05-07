@@ -78,14 +78,14 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize, isFir
     top: 0,
     backgroundColor: 'background.default',
     fontWeight: 700,
-    whiteSpace: 'nowrap',
+    whiteSpace: 'normal',
     cursor: 'grab',
     opacity: isDragging ? 0.5 : 1,
     width: width || col.width || '100%',
     minWidth: width || col.width || 100,
     maxWidth: width || col.width || 'none',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
+    overflow: 'visible',
+    textOverflow: 'clip',
     ...col.headerSx
   };
 
@@ -107,7 +107,7 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize, isFir
             height: '100%',
             cursor: 'grab',
             minWidth: 0,
-            overflow: 'hidden'
+            overflow: 'visible'
           }}
         >
           {col.sortable !== false ? (
@@ -121,9 +121,15 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize, isFir
               sx={{
                 width: '100%',
                 justifyContent: col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start',
+                whiteSpace: 'normal',
+                lineHeight: 1.2,
                 '& .MuiTableSortLabel-icon': {
                   opacity: sortBy === col.field ? 1 : 0,
                   transition: 'opacity 0.2s ease-in-out',
+                },
+                '& .MuiTableSortLabel-label': {
+                  whiteSpace: 'normal',
+                  overflowWrap: 'anywhere',
                 },
                 '&:hover .MuiTableSortLabel-icon': {
                   opacity: 1,
@@ -136,8 +142,7 @@ const SortableHeader = ({ col, sortBy, sortOrder, onSort, width, onResize, isFir
             <Typography
               variant="subtitle2"
               fontWeight={700}
-              noWrap
-              sx={{ width: '100%', textAlign: col.align || 'left' }}
+              sx={{ width: '100%', textAlign: col.align || 'left', whiteSpace: 'normal', overflowWrap: 'anywhere', lineHeight: 1.2 }}
             >
               {col.headerName}
             </Typography>
@@ -565,7 +570,8 @@ export const Table = ({
                   sx={{
                     fontWeight: 700,
                     backgroundColor: 'background.paper',
-                    whiteSpace: 'nowrap',
+                    whiteSpace: 'normal',
+                    overflowWrap: 'anywhere',
                     pl: index === 0 ? 3 : 1,
                     pr: 1,
                     width: col.width || '100%',

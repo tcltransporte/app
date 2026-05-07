@@ -177,8 +177,14 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
     {
       field: 'value', headerName: 'Valor', width: 110, align: 'right',
       renderCell: (val, row) => (
-        <Typography variant="body2" sx={{ fontWeight: 700, color: row.typeId == 1 ? 'success.main' : 'error.main' }}>
-          {val ? (Math.round(parseFloat(val) * 100) / 100 === 0 ? 0 : parseFloat(val)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}
+        <Typography variant="body2" sx={{ color: row.typeId == 1 ? 'success.main' : 'error.main' }}>
+          {(() => {
+            const parsedValue = Number(val) || 0;
+            const roundedValue = Math.round(parsedValue * 100) / 100;
+            const absoluteValue = Math.abs(roundedValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const sign = row.typeId == 1 ? '+' : '-';
+            return `${sign} ${absoluteValue}`;
+          })()}
         </Typography>
       )
     },
