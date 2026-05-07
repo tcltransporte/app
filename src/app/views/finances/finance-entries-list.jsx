@@ -9,7 +9,7 @@ import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import { formatSqlDate } from '@/libs/date';
-import { Button, IconButton, Box, Typography, Badge, MenuItem, ListItemIcon, ListItemText, Popper, Paper, ClickAwayListener } from '@mui/material';
+import { Button, IconButton, Box, Typography, Badge, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -59,6 +59,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const [selectedHistoryEntryId, setSelectedHistoryEntryId] = React.useState(null);
   const [actionMenuAnchor, setActionMenuAnchor] = React.useState(null);
   const [actionMenuRow, setActionMenuRow] = React.useState(null);
+  const [actionMenuPosition, setActionMenuPosition] = React.useState(null);
 
   const handleEdit = React.useCallback((row) => {
     navigation.setSelectedId(row.id);
@@ -78,13 +79,23 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
 
   const handleOpenActionMenu = React.useCallback((event, row) => {
     event.stopPropagation();
-    setActionMenuAnchor(event.currentTarget);
+    const anchor = event.currentTarget;
+    const rect = anchor.getBoundingClientRect();
+    const rawZoom = Number(window.getComputedStyle(document.body).getPropertyValue('--app-zoom'));
+    const zoom = Number.isFinite(rawZoom) && rawZoom > 0 ? rawZoom : 1;
+
+    setActionMenuAnchor(anchor);
     setActionMenuRow(row);
+    setActionMenuPosition({
+      top: rect.bottom / zoom,
+      left: rect.right / zoom
+    });
   }, []);
 
   const handleCloseActionMenu = React.useCallback(() => {
     setActionMenuAnchor(null);
     setActionMenuRow(null);
+    setActionMenuPosition(null);
   }, []);
 
   const handleBaixar = React.useCallback(() => {
@@ -538,18 +549,45 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         }}
       />
 
-      <Popper
-        open={Boolean(actionMenuAnchor)}
+      <Menu
         anchorEl={actionMenuAnchor}
-        placement="bottom-end"
-        modifiers={[
-          { name: 'offset', options: { offset: [0, 4] } },
-          { name: 'flip', enabled: false }
-        ]}
-        sx={{ zIndex: 1400 }}
+        anchorReference="anchorPosition"
+        anchorPosition={actionMenuPosition || undefined}
+        open={Boolean(actionMenuAnchor)}
+        onClose={handleCloseActionMenu}
+        slotProps={{
+          paper: {
+            elevation: 0,
+            sx: {
+              overflow: 'visible',
+              filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.12))',
+              mt: 1.25,
+              minWidth: 180,
+              borderRadius: 2,
+              '& .MuiAvatar-root': {
+                width: 32,
+                height: 32,
+                ml: -0.5,
+                mr: 1,
+              },
+              '&:before': {
+                content: '""',
+                display: 'block',
+                position: 'absolute',
+                top: 0,
+                right: 14,
+                width: 10,
+                height: 10,
+                bgcolor: 'background.paper',
+                transform: 'translateY(-50%) rotate(45deg)',
+                zIndex: 0,
+              },
+            },
+          }
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <ClickAwayListener onClickAway={handleCloseActionMenu}>
-          <Paper elevation={4} sx={{ minWidth: 180, borderRadius: 1.5, py: 0.5 }}>
         <MenuItem onClick={() => {
           const row = actionMenuRow;
           handleCloseActionMenu();
@@ -590,9 +628,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
           <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Excluir</ListItemText>
         </MenuItem>
-          </Paper>
-        </ClickAwayListener>
-      </Popper>
+      </Menu>
     </Container>
   );
 }
