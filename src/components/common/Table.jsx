@@ -202,6 +202,18 @@ export const Table = ({
 }) => {
   const [isMounted, setIsMounted] = React.useState(false);
 
+  const tableMinWidth = React.useMemo(() => {
+    const checkboxWidth = 28
+    const columnsWidth = (columns || []).reduce((sum, col) => {
+      const explicitWidth = widths[col.field] ?? col.width
+      if (typeof explicitWidth === 'number' && Number.isFinite(explicitWidth)) {
+        return sum + explicitWidth
+      }
+      return sum + 100
+    }, 0)
+    return checkboxWidth + columnsWidth
+  }, [columns, widths]);
+
   React.useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -415,8 +427,8 @@ export const Table = ({
             size="small"
             sx={{
               tableLayout: fixed ? 'fixed' : 'auto',
-              width: fixed ? 'max-content' : '100%',
-              minWidth: '100%'
+              width: '100%',
+              minWidth: fixed ? tableMinWidth : '100%'
             }}
           >
             <TableHead>
@@ -557,8 +569,8 @@ export const Table = ({
           size="small"
           sx={{
             tableLayout: fixed ? 'fixed' : 'auto',
-            width: fixed ? 'max-content' : '100%',
-            minWidth: '100%'
+            width: '100%',
+            minWidth: fixed ? tableMinWidth : '100%'
           }}
         >
           <TableHead>

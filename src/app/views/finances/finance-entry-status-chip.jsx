@@ -16,6 +16,7 @@ import { CheckCircle as CheckIcon } from '@mui/icons-material'
  */
 export default function EntryStatusChip({ entry, operationType, sx, onClick }) {
   const statusKey = entry?.displayStatus ?? entry?.status
+  const showBaixarAction = statusKey === 'late' || statusKey === 'open'
 
   const statusMap = {
     paid: {
@@ -37,8 +38,13 @@ export default function EntryStatusChip({ entry, operationType, sx, onClick }) {
   }
 
   const { label, color } = statusMap[statusKey] ?? statusMap.open
-  const title = statusKey === 'pending_recon' ? 'Aguardando conciliação' : label
-  const showBaixarAction = statusKey === 'late'
+  const title = statusKey === 'pending_recon'
+    ? 'Pendente de conciliação'
+    : statusKey === 'paid'
+      ? (operationType === 1 ? 'Visualizar recebimento' : 'Visualizar pagamento')
+      : showBaixarAction || statusKey === 'open'
+        ? 'Clique para baixar'
+      : 'Ver histórico'
 
   return (
     <UnifiedChip

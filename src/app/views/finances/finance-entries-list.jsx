@@ -170,6 +170,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         throw result;
       }
 
+      loading.hide();
       alert.success('Sucesso', 'Baixa em lote desfeita com sucesso!');
       await fetchTable();
     } catch (error) {
@@ -178,6 +179,80 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       loading.hide();
     }
   }, [table.selecteds, isPaidEntry, operationType, fetchTable, loading]);
+
+  const handleDesfazerSingle = React.useCallback(async (row) => {
+    if (!row) return;
+
+    if (!isPaidEntry(row)) {
+      alert.warning('Operação Inválida', 'Selecione apenas títulos já baixados para desfazer.');
+      return;
+    }
+
+    const verb = operationType === 1 ? 'recebimento' : 'pagamento';
+    const ok = await alert.confirm(
+      `Desfazer ${verb}?`,
+      'Essa ação remove os lançamentos de extrato da baixa, exclui os pagamentos e reabre a parcela selecionada.',
+      'warning'
+    );
+    if (!ok) return;
+
+    loading.show('Desfazendo baixa...', 'Aguarde alguns instantes.');
+    try {
+      const result = await financeAction.reverseSettlementsFromEntries([row.id]);
+      if (result.header.status !== ServiceStatus.SUCCESS) {
+        throw result;
+      }
+
+      loading.hide();
+      alert.success('Sucesso', 'Baixa desfeita com sucesso!');
+      await fetchTable();
+    } catch (error) {
+      alert.error('Não foi possível desfazer', error?.body?.message || error.message);
+    } finally {
+      loading.hide();
+    }
+  }, [isPaidEntry, operationType, fetchTable, loading]);
+
+  const handleDeleteLote = React.useCallback(async () => {
+    if (table.selecteds.length === 0) return;
+
+    const hasPaidEntries = table.selecteds.some((entry) => isPaidEntry(entry));
+    if (hasPaidEntries) {
+      alert.warning('Operação Inválida', 'Só é possível excluir em lote parcelas que ainda não foram baixadas.');
+      return;
+    }
+
+    const ok = await alert.confirm(
+      'Excluir parcelas em lote?',
+      'Essa ação não poderá ser desfeita.',
+      'warning'
+    );
+    if (!ok) return;
+
+    loading.show('Excluindo parcelas...', 'Aguarde alguns instantes.');
+    try {
+      const ids = table.selecteds.map((entry) => entry.id).filter(Boolean);
+      const results = await Promise.all(ids.map((id) => financeEntryAction.deleteEntry(id)));
+      const failed = results.find((result) => result?.header?.status !== ServiceStatus.SUCCESS);
+      if (failed) {
+        throw failed;
+      }
+      alert.success('Sucesso', 'Parcelas excluídas com sucesso!');
+      await fetchTable();
+    } catch (error) {
+      alert.error('Não foi possível excluir', error?.body?.message || error.message);
+    } finally {
+      loading.hide();
+    }
+  }, [table.selecteds, isPaidEntry, fetchTable, loading]);
+
+  const hasSelectedRows = table.selecteds.length > 0;
+  const hasPaidSelected = hasSelectedRows && table.selecteds.some((entry) => isPaidEntry(entry));
+  const hasOpenSelected = hasSelectedRows && table.selecteds.some((entry) => !isPaidEntry(entry));
+  const canShowBatchBaixar = hasSelectedRows && !hasPaidSelected;
+  const canShowBatchDesfazer = hasSelectedRows && !hasOpenSelected;
+  const canShowBatchDelete = hasSelectedRows && !hasPaidSelected;
+  const canShowSingleEdit = table.selecteds.length === 1 && !isPaidEntry(table.selecteds[0]);
 
   const handleDeleteEntry = React.useCallback(async (row) => {
     if (!row) return;
@@ -276,7 +351,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     {
       field: 'status', headerName: 'Status', width: 90, align: 'center',
       renderCell: (val, row) => (
-        <span title={(row?.displayStatus ?? row?.status) === 'pending_recon' ? 'Pendente de conciliação' : 'Ver rastro de pagamento'}>
+        <span>
           <EntryStatusChip
             entry={row}
             operationType={operationType}
@@ -365,26 +440,33 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
               onClick: () => setTitleModalOpen(true),
               variant: 'contained'
             },
-            ...(table.selecteds.length === 1 ? [{
+            ...(canShowSingleEdit ? [{
               label: 'Editar',
               icon: <EditNoteIcon />,
               onClick: () => handleEdit(table.selecteds[0]),
               variant: 'outlined',
               color: 'primary'
             }] : []),
-            ...(table.selecteds.length > 0 ? [{
+            ...(canShowBatchBaixar ? [{
               label: `Baixar${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
               icon: <CheckIcon />,
               onClick: handleBaixar,
               variant: 'contained',
               color: 'success'
             }] : []),
-            ...(table.selecteds.length > 0 ? [{
+            ...(canShowBatchDesfazer ? [{
               label: `Desfazer${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
               icon: <UndoIcon />,
               onClick: handleDesfazerLote,
               variant: 'outlined',
               color: 'warning'
+            }] : []),
+            ...(canShowBatchDelete ? [{
+              label: `Excluir${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
+              icon: <DeleteIcon />,
+              onClick: handleDeleteLote,
+              variant: 'outlined',
+              color: 'error'
             }] : [])
 
           ]}
@@ -588,7 +670,9 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <MenuItem onClick={() => {
+        <MenuItem
+          disabled={isPaidEntry(actionMenuRow)}
+          onClick={() => {
           const row = actionMenuRow;
           handleCloseActionMenu();
           if (row) handleEdit(row);
@@ -613,7 +697,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
           const row = actionMenuRow;
           handleCloseActionMenu();
           if (!row) return;
-          handleOpenHistory([row.id]);
+          handleDesfazerSingle(row);
         }}>
           <ListItemIcon><UndoIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Desfazer</ListItemText>

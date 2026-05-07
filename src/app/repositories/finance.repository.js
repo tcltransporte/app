@@ -256,6 +256,39 @@ export async function deleteEntry(transaction, id) {
   })
 }
 
+export async function countEntriesByTitleId(transaction, titleId) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    return await db.FinanceEntry.count({
+      where: { titleId },
+      transaction: t
+    })
+  })
+}
+
+export async function deleteTitle(transaction, id) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    return await db.FinanceTitle.destroy({
+      where: { id },
+      transaction: t
+    })
+  })
+}
+
+export async function clearCteMovementLink(transaction, movementId) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    await db.query(
+      'UPDATE [Ctes] SET [IDMovimento] = NULL WHERE [IDMovimento] = :movementId',
+      {
+        replacements: { movementId },
+        transaction: t
+      }
+    )
+  })
+}
+
 export async function findEntryPaymentHistory(transaction, id) {
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {

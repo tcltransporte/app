@@ -327,7 +327,11 @@ export async function findEntry(transaction, id) {
 }
 
 export async function updateEntry(transaction, id, data) {
-  await findEntry(transaction, id) // Validate existence and company permissions first
+  const entry = await findEntry(transaction, id) // Validate existence and company permissions first
+
+  if (Number(entry?.paymentId) > 0) {
+    throw { code: "INVALID_OPERATION", message: "Não é possível atualizar parcela já baixada" }
+  }
 
   // Prevent updating security fields if present in data
   const { id: _id, titleId: _titleId, ...safeData } = data
@@ -353,6 +357,12 @@ export async function deleteEntry(transaction, id) {
   const affected = await financeRepository.deleteEntry(transaction, id)
   if (!affected) {
     throw { code: "INVALID_OPERATION", message: "Parcela não pode ser excluída" }
+  }
+
+  const remainingEntries = await financeRepository.countEntriesByTitleId(transaction, entry.titleId)
+  if (remainingEntries === 0) {
+    await financeRepository.clearCteMovementLink(transaction, entry.titleId)
+    await financeRepository.deleteTitle(transaction, entry.titleId)
   }
 
   return { id, deleted: true }
