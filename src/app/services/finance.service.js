@@ -4,6 +4,63 @@ import * as financeRepository from "@/app/repositories/finance.repository"
 import { getSession } from "@/libs/session"
 import { Op } from 'sequelize'
 
+const CASH_STATUS_OPEN = 1
+const CASH_STATUS_CLOSED = 2
+
+function parseCashDate(value) {
+  if (value instanceof Date) return value
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(year, month - 1, day, 12, 0, 0, 0)
+  }
+  return new Date(value)
+}
+
+async function assertCashNotClosedForOperation(transaction, { bankAccountId, date, operationLabel }) {
+  const parsedBankAccountId = Number(bankAccountId)
+  const parsedDate = parseCashDate(date || new Date())
+  if (!parsedBankAccountId || Number.isNaN(parsedBankAccountId) || Number.isNaN(parsedDate.getTime())) {
+    return
+  }
+
+  const closure = await financeRepository.findCashClosureByAccountAndDate(transaction, {
+    bankAccountId: parsedBankAccountId,
+    date: parsedDate
+  })
+
+  if (closure && Number(closure.statusId) === CASH_STATUS_CLOSED) {
+    const dateLabel = parsedDate.toLocaleDateString('pt-BR')
+    throw {
+      code: 'CASH_CLOSED',
+      message: `Não é possível ${operationLabel}: o caixa da conta ${parsedBankAccountId} em ${dateLabel} está fechado`
+    }
+  }
+}
+
+async function assertCashOpenForOperation(transaction, { bankAccountId, date, operationLabel }) {
+  const parsedBankAccountId = Number(bankAccountId)
+  const parsedDate = parseCashDate(date || new Date())
+  if (!parsedBankAccountId || Number.isNaN(parsedBankAccountId)) {
+    throw { code: 'INVALID_ACCOUNT', message: 'Conta bancária inválida' }
+  }
+  if (Number.isNaN(parsedDate.getTime())) {
+    throw { code: 'INVALID_DATE', message: 'Data inválida para operação' }
+  }
+
+  const closure = await financeRepository.findCashClosureByAccountAndDate(transaction, {
+    bankAccountId: parsedBankAccountId,
+    date: parsedDate
+  })
+
+  const dateLabel = parsedDate.toLocaleDateString('pt-BR')
+  if (!closure || Number(closure.statusId) !== CASH_STATUS_OPEN) {
+    throw {
+      code: 'CASH_NOT_OPEN',
+      message: `Não é possível ${operationLabel}: o caixa da conta ${parsedBankAccountId} em ${dateLabel} não está aberto`
+    }
+  }
+}
+
 export async function findAll(transaction, params = {}) {
   const session = await getSession()
 
@@ -514,6 +571,12 @@ export async function reverseSettlementFromBankMovement(transaction, movementId)
     }
   }
 
+  await assertCashNotClosedForOperation(transaction, {
+    bankAccountId: movement.bankAccountId,
+    date: movement.realDate || movement.entryDate,
+    operationLabel: 'desfazer baixa'
+  })
+
   return await financeRepository.reversePaymentSettlement(transaction, paymentId)
 }
 
@@ -548,6 +611,17 @@ export async function reverseSettlementFromPayment(transaction, paymentId) {
             ]
           }
         ]
+      },
+      {
+        association: 'paymentEntries',
+        required: false,
+        include: [
+          {
+            association: 'bankMovements',
+            required: false,
+            attributes: ['id', 'bankAccountId', 'realDate', 'entryDate']
+          }
+        ]
       }
     ]
   })
@@ -568,6 +642,15 @@ export async function reverseSettlementFromPayment(transaction, paymentId) {
   })
   if (!belongsToSameBusiness) {
     throw { code: 'FORBIDDEN', message: 'Pagamento não pertence à mesma empresa da sessão' }
+  }
+
+  const paymentMovements = (payment.paymentEntries || []).flatMap((item) => item.bankMovements || [])
+  for (const movement of paymentMovements) {
+    await assertCashNotClosedForOperation(transaction, {
+      bankAccountId: movement.bankAccountId,
+      date: movement.realDate || movement.entryDate,
+      operationLabel: 'desfazer baixa'
+    })
   }
 
   return await financeRepository.reversePaymentSettlement(transaction, parsedPaymentId)
@@ -619,7 +702,7 @@ export async function approveConciliationBatch(transaction, movementIds = [], op
   }
 
   const result = await financeRepository.findAllBankMovements(transaction, {
-    attributes: ['id', 'isConciled'],
+    attributes: ['id', 'isConciled', 'bankAccountId', 'realDate', 'entryDate'],
     where: { id: { [Op.in]: ids } },
     include: [{
       association: 'bankAccount',
@@ -665,6 +748,25 @@ export async function approveConciliationBatch(transaction, movementIds = [], op
     updateData.realDate = parsedDate
   }
 
+  if (updateData.bankAccountId != null) {
+    const targetDate = updateData.realDate || new Date()
+    await assertCashOpenForOperation(transaction, {
+      bankAccountId: updateData.bankAccountId,
+      date: targetDate,
+      operationLabel: 'aprovar conciliação'
+    })
+  } else {
+    for (const movement of found) {
+      const movementBankAccountId = Number(movement.bankAccountId)
+      if (!movementBankAccountId || Number.isNaN(movementBankAccountId)) continue
+      await assertCashOpenForOperation(transaction, {
+        bankAccountId: movementBankAccountId,
+        date: updateData.realDate || movement.realDate || movement.entryDate || new Date(),
+        operationLabel: 'aprovar conciliação'
+      })
+    }
+  }
+
   const affectedCount = await financeRepository.updateBankMovements(transaction, pendingIds, updateData)
   return { approvedCount: affectedCount }
 }
@@ -706,6 +808,12 @@ export async function approveConciliationMovement(transaction, { movementId, rea
   if (Number.isNaN(parsedDate.getTime())) {
     throw { code: 'INVALID_DATE', message: 'Data de pagamento inválida' }
   }
+
+  await assertCashOpenForOperation(transaction, {
+    bankAccountId: parsedBankAccountId,
+    date: parsedDate,
+    operationLabel: 'aprovar conciliação'
+  })
 
   await financeRepository.updateBankMovements(transaction, [parsedMovementId], {
     isConciled: true,

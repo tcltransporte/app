@@ -3,6 +3,51 @@
 import * as paymentRepository from "@/app/repositories/payment.repository"
 import * as financeRepository from "@/app/repositories/finance.repository"
 
+const CASH_STATUS_OPEN = 1
+const CASH_STATUS_CLOSED = 2
+
+function parseCashDate(value) {
+  if (value instanceof Date) return value
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(year, month - 1, day, 12, 0, 0, 0)
+  }
+  return new Date(value)
+}
+
+async function assertCashIsOpenForSettlement(transaction, { bankAccountId, realDate }) {
+  const parsedBankAccountId = Number(bankAccountId)
+  const parsedDate = parseCashDate(realDate || new Date())
+
+  if (!parsedBankAccountId || Number.isNaN(parsedBankAccountId)) {
+    throw { code: 'INVALID_ACCOUNT', message: 'Conta bancária inválida para baixa' }
+  }
+  if (Number.isNaN(parsedDate.getTime())) {
+    throw { code: 'INVALID_DATE', message: 'Data real inválida para baixa' }
+  }
+
+  const closure = await financeRepository.findCashClosureByAccountAndDate(transaction, {
+    bankAccountId: parsedBankAccountId,
+    date: parsedDate
+  })
+
+  if (closure && Number(closure.statusId) === CASH_STATUS_CLOSED) {
+    const dateLabel = parsedDate.toLocaleDateString('pt-BR')
+    throw {
+      code: 'CASH_CLOSED',
+      message: `Caixa da conta bancária ${parsedBankAccountId} em ${dateLabel} está fechado`
+    }
+  }
+
+  if (!closure || Number(closure.statusId) !== CASH_STATUS_OPEN) {
+    const dateLabel = parsedDate.toLocaleDateString('pt-BR')
+    throw {
+      code: 'CASH_NOT_OPEN',
+      message: `Caixa da conta bancária ${parsedBankAccountId} em ${dateLabel} não está aberto para baixa`
+    }
+  }
+}
+
 /** 1 = receber (entrada bancária), 2 = pagar (saída). Título primeiro; se nulo, plano de contas (`codigo_tipo_operacao`). */
 function resolveFinanceOperationType(title) {
   if (!title) return NaN
@@ -62,6 +107,16 @@ export async function executePayment(transaction, { settlements, commonData }) {
       }))
     }
   })
+
+  for (const settlement of mappedSettlements) {
+    for (const comp of settlement.composition || []) {
+      if (!comp.bankAccountId) continue
+      await assertCashIsOpenForSettlement(transaction, {
+        bankAccountId: comp.bankAccountId,
+        realDate: comp.realDate
+      })
+    }
+  }
 
   return await paymentRepository.createPayment(transaction, {
     settlements: mappedSettlements,

@@ -45,6 +45,9 @@ import { DFeLoteDist } from './models/dfeLoteDist.model.js'
 import { DFeLoteDistSchema } from './models/dfeLoteDistSchema.model.js'
 import { ManifestEvent } from './models/manifestEvent.model.js'
 import { DfeRepositorioNFe } from './models/dfeRepositorioNFe.model.js'
+import { CashClosure } from './models/cashClosure.model.js'
+import { CashClosureHistory } from './models/cashClosureHistory.model.js'
+import { CashClosureStatus } from './models/cashClosureStatus.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -128,6 +131,9 @@ export class AppContext extends Sequelize {
     this.DFeLoteDistSchema = this.define('dfeLoteDistSchema', new DFeLoteDistSchema(), { tableName: 'DFeLoteDistSchema' })
     this.ManifestEvent = this.define('manifestEvent', new ManifestEvent(), { tableName: 'ManifestEvent' })
     this.DfeRepositorioNFe = this.define('dfeRepositorioNFe', new DfeRepositorioNFe(), { tableName: 'DfeRepositorioNFe' })
+    this.CashClosure = this.define('cashClosure', new CashClosure(), { tableName: 'CaixaFechamento' })
+    this.CashClosureHistory = this.define('cashClosureHistory', new CashClosureHistory(), { tableName: 'CaixaFechamentoHistorico' })
+    this.CashClosureStatus = this.define('cashClosureStatus', new CashClosureStatus(), { tableName: 'CaixaFechamentoStatus' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -224,6 +230,12 @@ export class AppContext extends Sequelize {
     this.BankAccount.belongsTo(this.Bank, { as: 'bank', foreignKey: 'bankId' })
     this.Bank.hasMany(this.BankAccount, { as: 'accounts', foreignKey: 'bankId' })
     this.PaymentEntry.hasMany(this.BankMovement, { as: 'bankMovements', foreignKey: 'paymentEntryId' })
+    this.CashClosure.belongsTo(this.CashClosureStatus, { as: 'status', foreignKey: 'statusId' })
+    this.CashClosure.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId' })
+    this.CashClosure.hasMany(this.CashClosureHistory, { as: 'history', foreignKey: 'cashClosureId' })
+    this.CashClosureHistory.belongsTo(this.CashClosure, { as: 'cashClosure', foreignKey: 'cashClosureId' })
+    this.CashClosureHistory.belongsTo(this.CashClosureStatus, { as: 'status', foreignKey: 'statusId' })
+    this.CashClosureHistory.belongsTo(this.User, { as: 'user', foreignKey: 'userId', targetKey: 'id' })
     this.FreightLetter.belongsTo(this.Partner, { as: 'payee', foreignKey: 'payeeId' })
     this.FreightLetter.belongsTo(this.FinanceTitle, { as: 'movement', foreignKey: 'movementId' })
     this.FreightLetter.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })

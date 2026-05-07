@@ -341,6 +341,30 @@ export async function findPayment(transaction, id, { include } = {}) {
   })
 }
 
+export async function findCashClosureByAccountAndDate(transaction, { bankAccountId, date }) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const baseDate = date instanceof Date ? date : new Date(date)
+    if (Number.isNaN(baseDate.getTime())) return null
+
+    const start = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 0, 0, 0, 0)
+    const end = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + 1, 0, 0, 0, 0)
+
+    const row = await db.CashClosure.findOne({
+      where: {
+        bankAccountId,
+        date: { [Op.gte]: start, [Op.lt]: end }
+      },
+      include: [
+        { association: 'status', attributes: ['id', 'description'], required: false }
+      ],
+      transaction: t
+    })
+
+    return row?.toJSON() || null
+  })
+}
+
 /**
  * Desfaz a baixa ligada ao pagamento: remove movimento(s) de extrato gerados pela baixa,
  * detalhes e capa do pagamento, e libera a(s) parcela(s).
