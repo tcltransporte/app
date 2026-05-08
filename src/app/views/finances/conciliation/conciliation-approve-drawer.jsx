@@ -123,7 +123,13 @@ export default function ConciliationApproveDrawer({ open, movements = [], select
             Promise.resolve(onConfirm?.(values)).finally(() => setSubmitting(false));
           }}
         >
-          {({ isSubmitting, values, setFieldValue, submitForm }) => (
+          {({ isSubmitting, values, setFieldValue, submitForm }) => {
+            const totalValue = (values.movements || []).reduce(
+              (sum, movement) => sum + (Number(movement?.value) || 0),
+              0
+            );
+
+            return (
             <Form style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
               <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.dark', color: 'white' }}>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -182,6 +188,27 @@ export default function ConciliationApproveDrawer({ open, movements = [], select
               </Box>
 
               <Divider />
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  bgcolor: 'action.hover',
+                  borderTop: '1px solid',
+                  borderBottom: '1px solid',
+                  borderColor: 'divider'
+                }}
+              >
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
+                  Valor total selecionado
+                </Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                  {totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </Typography>
+              </Box>
+              <Divider />
               <Box sx={{ px: 2, py: 1.5, bgcolor: 'background.paper' }}>
                 <Stack direction="row" spacing={2}>
                   <Button
@@ -209,7 +236,8 @@ export default function ConciliationApproveDrawer({ open, movements = [], select
                 </Stack>
               </Box>
             </Form>
-          )}
+            );
+          }}
         </Formik>
       </Box>
     </Drawer>

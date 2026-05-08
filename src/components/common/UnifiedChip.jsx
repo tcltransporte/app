@@ -15,11 +15,13 @@ export default function UnifiedChip({
   actionColor = 'success',
   actionVariant = 'contained',
   onActionClick,
+  actionContent,
   showActionOnHover = false,
+  forceShowAction = false,
   chipSx = {},
   actionSx = {}
 }) {
-  const hasAction = Boolean(actionLabel && onActionClick);
+  const hasAction = Boolean(actionContent || (actionLabel && onActionClick));
 
   return (
     <Box
@@ -33,6 +35,12 @@ export default function UnifiedChip({
               '& .unified-chip__action': { display: 'none' },
               '&:hover .unified-chip__chip, .MuiTableRow-root:hover & .unified-chip__chip': { display: 'none' },
               '&:hover .unified-chip__action, .MuiTableRow-root:hover & .unified-chip__action': { display: 'inline-flex' }
+            }
+          : {}),
+        ...(hasAction && forceShowAction
+          ? {
+              '& .unified-chip__chip': { display: 'none' },
+              '& .unified-chip__action': { display: 'inline-flex' }
             }
           : {})
       }}
@@ -59,33 +67,47 @@ export default function UnifiedChip({
       />
 
       {hasAction && (
-        <Button
-          className="unified-chip__action"
-          size="small"
-          variant={actionVariant}
-          color={actionColor}
-          startIcon={actionIcon}
-          title={title || actionLabel}
-          onClick={(e) => {
-            e.stopPropagation();
-            onActionClick(e);
-          }}
-          sx={{
-            display: showActionOnHover ? undefined : 'inline-flex',
-            minWidth: 84,
-            height: 24,
-            minHeight: 24,
-            py: 0,
-            px: 1,
-            lineHeight: 1.2,
-            textTransform: 'none',
-            fontSize: '0.75rem',
-            fontWeight: 800,
-            ...actionSx
-          }}
-        >
-          {actionLabel}
-        </Button>
+        actionContent ? (
+          <Box
+            className="unified-chip__action"
+            sx={{
+              display: showActionOnHover ? undefined : 'inline-flex',
+              height: 24,
+              alignItems: 'center',
+              ...actionSx
+            }}
+          >
+            {actionContent}
+          </Box>
+        ) : (
+          <Button
+            className="unified-chip__action"
+            size="small"
+            variant={actionVariant}
+            color={actionColor}
+            startIcon={actionIcon}
+            title={title || actionLabel}
+            onClick={(e) => {
+              e.stopPropagation();
+              onActionClick(e);
+            }}
+            sx={{
+              display: showActionOnHover ? undefined : 'inline-flex',
+              minWidth: 84,
+              height: 24,
+              minHeight: 24,
+              py: 0,
+              px: 1,
+              lineHeight: 1.2,
+              textTransform: 'none',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              ...actionSx
+            }}
+          >
+            {actionLabel}
+          </Button>
+        )
       )}
     </Box>
   );

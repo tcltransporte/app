@@ -7,7 +7,7 @@ import { ExportFormat } from '@/hooks/useExport';
 import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
-import { Typography, Badge, Avatar, Box } from '@mui/material';
+import { Typography, Badge, Avatar, Box, IconButton } from '@mui/material';
 import {
   Search as SearchIcon,
   Event as EventIcon,
@@ -15,6 +15,7 @@ import {
   Google as GoogleIcon,
   FilterList as FilterIcon,
   CheckCircle as CheckIcon,
+  Undo as UndoIcon,
   AccountBalance as BankIcon,
 } from '@mui/icons-material';
 import ConciliationFilter from './conciliation-filter';
@@ -94,6 +95,61 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
     setSelectedMovementIdsForApproval([row.id]);
     setApproveDrawerOpen(true);
   }, []);
+
+  const handleRejectConciliation = React.useCallback(async () => {
+    if (table.selecteds.length === 0) return;
+
+    const verb = table.selecteds.length > 1 ? 'as conciliações selecionadas' : 'a conciliação selecionada';
+    const ok = await alert.confirm(
+      'Reprovar conciliação?',
+      `Isso irá desfazer pagamento/recebimento para ${verb}.`,
+      'warning'
+    );
+    if (!ok) return;
+
+    loading.show('Reprovando conciliação...', 'Aguarde alguns instantes.');
+    try {
+      const ids = table.selecteds.map((row) => row.id).filter(Boolean);
+      for (const movementId of ids) {
+        const result = await financeAction.reverseSettlementFromBankMovement(movementId);
+        if (result.header.status !== ServiceStatus.SUCCESS) {
+          throw result;
+        }
+      }
+
+      alert.success('Sucesso', 'Conciliação reprovada com sucesso!');
+      await fetchTable();
+    } catch (error) {
+      alert.error('Não foi possível reprovar', error?.body?.message || error.message);
+    } finally {
+      loading.hide();
+    }
+  }, [table.selecteds, fetchTable, loading]);
+
+  const handleRejectConciliationRow = React.useCallback(async (row) => {
+    if (!row?.id) return;
+
+    const ok = await alert.confirm(
+      'Reprovar conciliação?',
+      'Isso irá desfazer pagamento/recebimento deste movimento.',
+      'warning'
+    );
+    if (!ok) return;
+
+    loading.show('Reprovando conciliação...', 'Aguarde alguns instantes.');
+    try {
+      const result = await financeAction.reverseSettlementFromBankMovement(row.id);
+      if (result.header.status !== ServiceStatus.SUCCESS) {
+        throw result;
+      }
+      alert.success('Sucesso', 'Conciliação reprovada com sucesso!');
+      await fetchTable();
+    } catch (error) {
+      alert.error('Não foi possível reprovar', error?.body?.message || error.message);
+    } finally {
+      loading.hide();
+    }
+  }, [fetchTable, loading]);
 
   const handleConfirmApproveBatch = React.useCallback(async (values) => {
     if (!selectedMovementIdsForApproval.length) return;
@@ -193,32 +249,55 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
       field: 'status', headerName: 'Status', width: 140, align: 'center',
       renderCell: (val, row) => {
         const isConciled = !!row?.isConciled;
-        if (isConciled) {
-          return (
-            <UnifiedChip
-              label="Conciliado"
-              color="success"
-              variant="outlined"
-              title="Conciliado"
-            />
-          );
-        }
-
         return (
           <UnifiedChip
-            label="Pendente"
-            color="warning"
+            label={isConciled ? 'Conciliado' : 'Pendente'}
+            color={isConciled ? 'success' : 'warning'}
             variant="outlined"
-            title="Pendente de conciliação"
-            actionLabel="Aprovar"
-            actionIcon={<CheckIcon fontSize="small" />}
-            onActionClick={() => handleApproveConciliationRow(row)}
+            title={isConciled ? 'Conciliado' : 'Pendente'}
             showActionOnHover
+            actionSx={{
+              minWidth: 92,
+              width: 92,
+              justifyContent: 'center',
+              px: 0.25,
+            }}
+            actionContent={(
+              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25 }}>
+                <span title="Conciliar">
+                  <IconButton
+                    size="small"
+                    color="success"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleApproveConciliationRow(row);
+                    }}
+                  >
+                    <CheckIcon fontSize="small" />
+                  </IconButton>
+                </span>
+                <span title="Desfazer">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRejectConciliationRow(row);
+                    }}
+                    sx={{
+                      color: 'error.main',
+                      '&:hover': { backgroundColor: 'error.lighter' },
+                    }}
+                  >
+                    <UndoIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Box>
+            )}
           />
         );
       }
     },
-  ], [handleApproveConciliationRow]);
+  ], [handleApproveConciliationRow, handleRejectConciliationRow]);
 
   React.useEffect(() => {
     if (table.orderedColumns.length === 0 && columns.length > 0) {
@@ -252,13 +331,22 @@ export default function ConciliationList({ initialTable, selectedId, initialRang
 
       <Container.Content>
         <Toolbar
-          primary={table.selecteds.length > 0 ? [{
-            label: `Aprovar ${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
-            icon: <CheckIcon />,
-            variant: 'contained',
-            color: 'success',
-            onClick: handleApproveConciliation
-          }] : null}
+          primary={table.selecteds.length > 0 ? [
+            {
+              label: 'Conciliar',
+              icon: <CheckIcon />,
+              variant: 'contained',
+              color: 'success',
+              onClick: handleApproveConciliation
+            },
+            {
+              label: 'Desfazer',
+              icon: <UndoIcon />,
+              variant: 'outlined',
+              color: 'error',
+              onClick: handleRejectConciliation
+            }
+          ] : null}
           secondary={[
             { label: rangeFilter.label, icon: <EventIcon fontSize="small" />, onClick: rangeFilter.handleOpen },
             {

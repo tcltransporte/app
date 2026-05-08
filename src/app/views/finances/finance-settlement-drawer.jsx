@@ -415,7 +415,13 @@ export default function FinanceSettlementDrawer({ entryIds, open, onClose, onSuc
           onSubmit={handleSubmit}
           enableReinitialize
         >
-          {({ values, isSubmitting, setFieldValue, submitForm }) => (
+          {({ values, isSubmitting, setFieldValue, submitForm }) => {
+            const totalSelectedValue = (values.items || []).reduce(
+              (sum, item) => sum + (Number(item?.value) || 0),
+              0
+            );
+
+            return (
             <>
               <StashBaixaDraftOnEdit open={open} loading={loading} values={values} stashDraft={stashDraft} />
               <Form style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -496,6 +502,27 @@ export default function FinanceSettlementDrawer({ entryIds, open, onClose, onSuc
                 {!loading && (
                   <>
                     <Divider />
+                    <Box
+                      sx={{
+                        px: 2,
+                        py: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        bgcolor: 'action.hover',
+                        borderTop: '1px solid',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
+                        Valor total selecionado
+                      </Typography>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                        {totalSelectedValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </Typography>
+                    </Box>
+                    <Divider />
                     <Box sx={{ px: 2, py: 1.5, bgcolor: 'background.paper' }}>
                       <Stack direction="row" spacing={2}>
                         <Button fullWidth variant="outlined" onClick={rememberAndClose} sx={{ textTransform: 'none', fontWeight: 700 }}>Cancelar</Button>
@@ -508,7 +535,8 @@ export default function FinanceSettlementDrawer({ entryIds, open, onClose, onSuc
                 )}
               </Form>
             </>
-          )}
+          );
+          }}
         </Formik>
       </Drawer>
 
