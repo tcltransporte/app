@@ -30,6 +30,7 @@ import FinanceTitleModal from './finance-title-modal';
 import FinanceEntryModal from './finance-entry-modal';
 import FinanceTitleDetailsDrawer from './finance-title-details-drawer';
 import FinancePaymentHistoryDrawer from './finance-payment-history-drawer';
+import FinanceSettlementDrawer from './finance-settlement-drawer';
 import EntryStatusChip from './finance-entry-status-chip';
 import FinanceEntriesFilter from './finance-entries-filter';
 import UnifiedChip from '@/components/common/UnifiedChip';
@@ -57,6 +58,8 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const [drawerOnTop, setDrawerOnTop] = React.useState(false);
   const [historyDrawerOpen, setHistoryDrawerOpen] = React.useState(false);
   const [selectedHistoryEntryId, setSelectedHistoryEntryId] = React.useState(null);
+  const [settlementDrawerOpen, setSettlementDrawerOpen] = React.useState(false);
+  const [selectedSettlementEntryId, setSelectedSettlementEntryId] = React.useState(null);
   const [actionMenuAnchor, setActionMenuAnchor] = React.useState(null);
   const [actionMenuRow, setActionMenuRow] = React.useState(null);
 
@@ -74,6 +77,11 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const handleOpenHistory = React.useCallback((ids) => {
     setSelectedHistoryEntryId(ids);
     setHistoryDrawerOpen(true);
+  }, []);
+
+  const handleOpenSettlement = React.useCallback((ids) => {
+    setSelectedSettlementEntryId(ids);
+    setSettlementDrawerOpen(true);
   }, []);
 
   const handleOpenActionMenu = React.useCallback((event, row) => {
@@ -94,14 +102,30 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       || Number(entry?.codigo_pagamento) > 0;
   }, []);
 
+  const handleOpenPaymentDrawerForRows = React.useCallback((rows) => {
+    const list = (Array.isArray(rows) ? rows : [rows]).filter(Boolean);
+    if (list.length === 0) return;
+
+    const ids = list.map((row) => row?.id).filter(Boolean);
+    if (ids.length === 0) return;
+
+    const hasPaid = list.some((row) => isPaidEntry(row));
+    if (hasPaid) {
+      handleOpenHistory(ids);
+      return;
+    }
+
+    handleOpenSettlement(ids);
+  }, [isPaidEntry, handleOpenHistory, handleOpenSettlement]);
+
   const handleBaixar = React.useCallback(() => {
     const hasPaidEntries = table.selecteds.some((entry) => isPaidEntry(entry));
     if (hasPaidEntries) {
       alert.warning('Operação Inválida', 'Selecione apenas títulos em aberto para realizar a baixa em lote.');
       return;
     }
-    handleOpenHistory(table.selecteds.map(s => s.id));
-  }, [table.selecteds, isPaidEntry, handleOpenHistory]);
+    handleOpenSettlement(table.selecteds.map(s => s.id));
+  }, [table.selecteds, isPaidEntry, handleOpenSettlement]);
 
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
@@ -330,7 +354,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
             }}
             onClick={(e) => {
               e.stopPropagation();
-              handleOpenHistory([row.id]);
+              handleOpenPaymentDrawerForRows([row]);
             }}
           />
         </span>
@@ -412,21 +436,21 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
               color: 'primary'
             }] : []),
             ...(canShowBatchBaixar ? [{
-              label: `Baixar${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
+              label: 'Baixar',
               icon: <CheckIcon />,
               onClick: handleBaixar,
               variant: 'contained',
               color: 'success'
             }] : []),
             ...(canShowBatchDesfazer ? [{
-              label: `Desfazer${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
+              label: 'Desfazer',
               icon: <UndoIcon />,
               onClick: handleDesfazerLote,
               variant: 'outlined',
               color: 'warning'
             }] : []),
             ...(canShowBatchDelete ? [{
-              label: `Excluir${table.selecteds.length > 1 ? ` (${table.selecteds.length})` : ''}`,
+              label: 'Excluir',
               icon: <DeleteIcon />,
               onClick: handleDeleteLote,
               variant: 'outlined',
@@ -559,6 +583,14 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         operationType={operationType}
       />
 
+      <FinanceSettlementDrawer
+        open={settlementDrawerOpen}
+        entryIds={selectedSettlementEntryId}
+        onClose={() => setSettlementDrawerOpen(false)}
+        onSuccess={() => fetchTable()}
+        operationType={operationType}
+      />
+
       <RangeModal
         open={rangeFilter.open}
         onClose={rangeFilter.handleClose}
@@ -614,7 +646,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
             label: 'Baixar',
             icon: <CheckIcon fontSize="small" />,
             disabled: isPaidEntry(actionMenuRow),
-            onClick: () => actionMenuRow && handleOpenHistory([actionMenuRow.id]),
+            onClick: () => actionMenuRow && handleOpenSettlement([actionMenuRow.id]),
           },
           {
             id: 'undo',
