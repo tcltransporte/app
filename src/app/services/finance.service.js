@@ -362,6 +362,7 @@ export async function deleteEntry(transaction, id) {
   const remainingEntries = await financeRepository.countEntriesByTitleId(transaction, entry.titleId)
   if (remainingEntries === 0) {
     await financeRepository.clearCteMovementLink(transaction, entry.titleId)
+    await financeRepository.clearPurchaseMovementLink(transaction, entry.titleId)
     await financeRepository.deleteTitle(transaction, entry.titleId)
   }
 

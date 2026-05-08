@@ -15,7 +15,7 @@ import {
   CircularProgress,
   Stack,
   Button,
-  Grid,
+  Checkbox,
   Collapse,
   Tooltip,
 } from '@mui/material';
@@ -447,35 +447,56 @@ export default function FinanceSettlementDrawer({ entryIds, open, onClose, onSuc
                     <Box sx={{ p: 1.5 }}>
                       {values.items.length > 1 && (
                         <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1, mb: 1.5 }}>
-                          <Grid container spacing={0.75}>
-                            <Grid item xs={12} sm={2}>
-                              <Field name="globalIsReconciled" component={CheckField} label="Conc." onChange={(checked) => handleGlobalChange('isReconciled', checked, setFieldValue, values)} />
-                            </Grid>
-                            <Grid item xs={12} sm={3}>
-                              <Field name="globalRealDate" component={DateField} label="Data Pgto" fullWidth onChange={(val) => handleGlobalChange('realDate', val, setFieldValue, values)} />
-                            </Grid>
-                            <Grid item xs={12} sm={3.5}>
-                              <Field
-                                name="globalPaymentMethodId"
-                                component={SelectField}
-                                label="Forma"
-                                options={formData.methods.map((m) => ({ value: m.id, label: m.description }))}
-                                fullWidth
-                                onChange={(val) => handleGlobalChange('paymentMethodId', val, setFieldValue, values)}
+                          <Box
+                            sx={{
+                              display: 'grid',
+                              // Mesma régua dos campos por título:
+                              // Conc.(64px) | Data(18%) | Forma(22%) | Conta(+ espaço do Valor)
+                              gridTemplateColumns: { xs: '1fr', sm: '64px 18% 22% minmax(0, 1fr)' },
+                              gap: 0.75,
+                              alignItems: 'center'
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.25 }}>
+                                Conc.
+                              </Typography>
+                              <Checkbox
+                                size="small"
+                                checked={Boolean(values.globalIsReconciled)}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setFieldValue('globalIsReconciled', checked);
+                                  handleGlobalChange('isReconciled', checked, setFieldValue, values);
+                                }}
+                                sx={{ p: 0.5, mt: -0.25 }}
                               />
-                            </Grid>
-                            <Grid item xs={12} sm={3.5}>
-                              <Field
-                                name="globalBankAccount"
-                                component={AutoComplete}
-                                label="Conta"
-                                onSearch={handleSearchGlobal}
-                                text={textFnGlobal}
-                                fullWidth
-                                onChange={(val) => handleGlobalChange('bankAccount', val, setFieldValue, values)}
-                              />
-                            </Grid>
-                          </Grid>
+                            </Box>
+                            <Field
+                              name="globalRealDate"
+                              component={DateField}
+                              label="Data Pgto"
+                              fullWidth
+                              onChange={(val) => handleGlobalChange('realDate', val, setFieldValue, values)}
+                            />
+                            <Field
+                              name="globalPaymentMethodId"
+                              component={SelectField}
+                              label="Forma"
+                              options={formData.methods.map((m) => ({ value: m.id, label: m.description }))}
+                              fullWidth
+                              onChange={(val) => handleGlobalChange('paymentMethodId', val, setFieldValue, values)}
+                            />
+                            <Field
+                              name="globalBankAccount"
+                              component={AutoComplete}
+                              label="Conta"
+                              onSearch={handleSearchGlobal}
+                              text={textFnGlobal}
+                              fullWidth
+                              onChange={(val) => handleGlobalChange('bankAccount', val, setFieldValue, values)}
+                            />
+                          </Box>
                         </Box>
                       )}
 

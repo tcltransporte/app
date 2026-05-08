@@ -289,6 +289,19 @@ export async function clearCteMovementLink(transaction, movementId) {
   })
 }
 
+export async function clearPurchaseMovementLink(transaction, movementId) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    await db.query(
+      'UPDATE [Compras] SET [IDMovimento] = NULL WHERE [IDMovimento] = :movementId',
+      {
+        replacements: { movementId },
+        transaction: t
+      }
+    )
+  })
+}
+
 export async function findEntryPaymentHistory(transaction, id) {
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {
