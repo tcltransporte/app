@@ -15,6 +15,7 @@ import { ServiceStatus } from '@/libs/service'
 import FinanceTitleInfoCard from './finance-title-info-card'
 import EntryStatusChip from './finance-entry-status-chip'
 import FinancePaymentHistoryDrawer from './finance-payment-history-drawer'
+import FinanceSettlementDrawer from './finance-settlement-drawer'
 
 const validate = (values) => {
   const errors = {}
@@ -50,6 +51,14 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
   const [entry, setEntry] = useState(null)
   const [isTitleEditing, setIsTitleEditing] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [settlementOpen, setSettlementOpen] = useState(false)
+
+  const isPaidEntry = React.useCallback((item) => {
+    return item?.status === 'paid'
+      || item?.displayStatus === 'paid'
+      || Number(item?.paymentId) > 0
+      || Number(item?.codigo_pagamento) > 0
+  }, [])
 
   useEffect(() => {
     if (open && entryId) {
@@ -135,7 +144,13 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
                       <EntryStatusChip
                         entry={entry}
                         operationType={Number(entry?.title?.type_operation || entry?.operationTypeId || entry?.operationType || 0)}
-                        onClick={() => setHistoryOpen(true)}
+                        onClick={() => {
+                          if (isPaidEntry(entry)) {
+                            setHistoryOpen(true)
+                          } else {
+                            setSettlementOpen(true)
+                          }
+                        }}
                       />
                     </Box>
                   </Grid>
@@ -194,6 +209,16 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
         onClose={() => setHistoryOpen(false)}
         entryIds={entry?.id ? [entry.id] : []}
         operationType={Number(entry?.title?.type_operation || entry?.operationTypeId || entry?.operationType || 0)}
+        zIndex={(zIndex || 2000) + 1000}
+        onSuccess={() => {
+          fetchEntry()
+          onSuccess?.()
+        }}
+      />
+      <FinanceSettlementDrawer
+        open={settlementOpen}
+        onClose={() => setSettlementOpen(false)}
+        entryIds={entry?.id ? [entry.id] : []}
         zIndex={(zIndex || 2000) + 1000}
         onSuccess={() => {
           fetchEntry()

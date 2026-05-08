@@ -548,7 +548,7 @@ export default function FinanceSettlementDrawer({ entryIds, open, onClose, onSuc
                       <Stack direction="row" spacing={2}>
                         <Button fullWidth variant="outlined" onClick={rememberAndClose} sx={{ textTransform: 'none', fontWeight: 700 }}>Cancelar</Button>
                         <Button fullWidth variant="contained" onClick={submitForm} disabled={isSubmitting} sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 3 }}>
-                          {isSubmitting ? 'Processando...' : 'Confirmar Pagamento'}
+                          {isSubmitting ? 'Processando...' : 'Confirmar'}
                         </Button>
                       </Stack>
                     </Box>

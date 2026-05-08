@@ -83,6 +83,11 @@ export const ThemeContextProvider = ({ children, initialConfig = {}, initialMobi
     document.body.style.zoom = String(zoom);
   }, [zoom]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.style.setProperty('--route-progress-color', String(primaryColor || '#6366f1'));
+  }, [primaryColor]);
+
   const handleSetMode = (newMode) => {
     setMode(newMode);
     saveToStorage('mode', newMode);
