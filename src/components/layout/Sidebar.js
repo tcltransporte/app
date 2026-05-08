@@ -16,6 +16,7 @@ import {
   Divider,
   CircularProgress
 } from '@mui/material';
+import { darken } from '@mui/material/styles';
 import {
   Business,
   Verified,
@@ -196,9 +197,9 @@ export default function Sidebar({ mobileOpen, onMobileClose, session: propSessio
 
   // Logic for Semi-Dark theme
   const isDarkMenu = mode === 'dark' || semiDark;
-  const sidebarBg = isDarkMenu ? '#2b2c40' : '#ebebeb';
-  const sidebarText = isDarkMenu ? 'rgba(255, 255, 255, 0.85)' : 'text.primary';
-  const sidebarIcon = isDarkMenu ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary';
+  const sidebarBg = darken(primaryColor, 0.50);
+  const sidebarText = '#ffffff';
+  const sidebarIcon = '#ffffff';
   const subMenuBg = isDarkMenu ? '#32344d' : '#ffffff';
 
   const handleQuickAddSolicitationType = () => {
