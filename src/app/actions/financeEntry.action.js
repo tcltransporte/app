@@ -63,3 +63,15 @@ export async function deleteEntry(id) {
     return ServiceResponse.error(error)
   }
 }
+
+export async function deleteEntriesBatch(entryIds) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await financeService.deleteEntriesBatch(t, entryIds)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}

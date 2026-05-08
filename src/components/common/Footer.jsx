@@ -69,7 +69,7 @@ export const Footer = ({
         </Select>
       </Box>
       <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-        1-{rowsPerPage} of {total}
+        1-{rowsPerPage} de {total}
       </Typography>
       <Pagination
         count={derivedCount}

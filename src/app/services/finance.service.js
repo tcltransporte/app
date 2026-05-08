@@ -368,6 +368,39 @@ export async function deleteEntry(transaction, id) {
   return { id, deleted: true }
 }
 
+export async function deleteEntriesBatch(transaction, entryIds = []) {
+  const session = await getSession()
+  const normalizedEntryIds = [...new Set((entryIds || []).map(Number).filter((id) => !Number.isNaN(id) && id > 0))]
+
+  if (normalizedEntryIds.length === 0) {
+    throw { code: 'INVALID_ENTRIES', message: 'Nenhuma parcela válida foi informada' }
+  }
+
+  const entries = await Promise.all(
+    normalizedEntryIds.map((id) => financeRepository.findEntry(transaction, id))
+  )
+
+  if (entries.some((entry) => !entry)) {
+    throw { code: 'NOT_FOUND', message: 'Uma ou mais parcelas não foram encontradas' }
+  }
+
+  const unauthorized = entries.some((entry) => Number(entry?.title?.companyId) !== Number(session?.company?.id))
+  if (unauthorized) {
+    throw { code: 'FORBIDDEN', message: 'Uma ou mais parcelas não pertencem à empresa da sessão' }
+  }
+
+  const paidEntries = entries.filter((entry) => Number(entry?.paymentId) > 0)
+  if (paidEntries.length > 0) {
+    throw { code: 'INVALID_OPERATION', message: 'Só é possível excluir parcelas que ainda não foram baixadas' }
+  }
+
+  for (const id of normalizedEntryIds) {
+    await deleteEntry(transaction, id)
+  }
+
+  return { deletedEntries: normalizedEntryIds.length }
+}
+
 export async function findEntryPaymentHistory(transaction, id) {
   const entry = await financeRepository.findEntryPaymentHistory(transaction, id)
 

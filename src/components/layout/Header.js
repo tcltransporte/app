@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import { AppBar, Toolbar, IconButton, Typography, Box, Breadcrumbs, Link, Avatar, Menu, MenuItem, ListItemIcon, Divider, Badge } from '@mui/material';
-import { Menu as MenuIcon, Settings as SettingsIcon, Logout, Person, Settings } from '@mui/icons-material';
+import { AppBar, Toolbar, IconButton, Typography, Box, Badge, Avatar } from '@mui/material';
+import { Menu as MenuIcon, Logout, Person, Settings } from '@mui/icons-material';
+import { ActionMenu } from '@/components/common';
 import { useLayout } from '@/context/LayoutContext';
 import { ThemeContext } from "@/context/ThemeContext";
 import { SessionContext } from '@/context/SessionContext';
-import { useContext, useRef, useState } from 'react';
+import { useContext, useState } from 'react';
 import * as loginService from "@/app/services/login.service";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -18,26 +19,13 @@ export default function Header({ children }) {
   const pathname = usePathname();
 
   const [anchorEl, setAnchorEl] = useState(null);
-  const userMenuAnchorRef = useRef(null);
-  const [anchorPosition, setAnchorPosition] = useState(null);
   const open = Boolean(anchorEl);
 
-  const handleClick = () => {
-    const anchor = userMenuAnchorRef.current;
-    if (!anchor) return;
-    const rect = anchor.getBoundingClientRect();
-    const rawZoom = Number(window.getComputedStyle(document.body).getPropertyValue('--app-zoom'));
-    const zoom = Number.isFinite(rawZoom) && rawZoom > 0 ? rawZoom : 1;
-
-    setAnchorPosition({
-      top: rect.bottom / zoom,
-      left: rect.right / zoom
-    });
-    setAnchorEl(anchor);
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
     setAnchorEl(null);
-    setAnchorPosition(null);
   };
 
   const handleSignOut = async () => {
@@ -80,7 +68,7 @@ export default function Header({ children }) {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          <Box ref={userMenuAnchorRef} sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: '0.875rem', fontWeight: 500, color: 'text.secondary' }}>
                 {session?.user?.userName?.toLowerCase() || 'usuário'}
@@ -149,58 +137,29 @@ export default function Header({ children }) {
             </IconButton>
           </Box>
 
-          <Menu
-            anchorEl={anchorEl}
-            anchorReference="anchorPosition"
-            anchorPosition={anchorPosition || undefined}
-            id="account-menu"
+          <ActionMenu
             open={open}
+            anchorEl={anchorEl}
             onClose={handleClose}
-            onClick={handleClose}
-            disablePortal
-            slotProps={{
-              paper: {
-                elevation: 0,
-                sx: {
-                  overflow: 'visible',
-                  filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.12))',
-                  mt: 1.5,
-                  minWidth: 180,
-                  borderRadius: 2,
-                  '& .MuiAvatar-root': {
-                    width: 32,
-                    height: 32,
-                    ml: -0.5,
-                    mr: 1,
-                  },
-                  '&:before': {
-                    content: '""',
-                    display: 'block',
-                    position: 'absolute',
-                    top: 0,
-                    right: 14,
-                    width: 10,
-                    height: 10,
-                    bgcolor: 'background.paper',
-                    transform: 'translateY(-50%) rotate(45deg)',
-                    zIndex: 0,
-                  },
-                },
+            placement="bottom-end"
+            zoomAwareVertical
+            items={[
+              {
+                id: 'settings',
+                label: 'Ajustes',
+                icon: <Settings fontSize="small" />,
+                onClick: () => router.push('/settings'),
+              },
+              {
+                id: 'logout',
+                label: 'Sair',
+                icon: <Logout fontSize="small" color="error" />,
+                dividerBefore: true,
+                sx: { color: 'error.main' },
+                onClick: handleSignOut,
               }
-            }}
-            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-          >
-            <MenuItem onClick={() => router.push('/settings')}>
-              <ListItemIcon><Settings fontSize="small" /></ListItemIcon>
-              Ajustes
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleSignOut} sx={{ color: 'error.main' }}>
-              <ListItemIcon><Logout fontSize="small" color="error" /></ListItemIcon>
-              Sair
-            </MenuItem>
-          </Menu>
+            ]}
+          />
         </Box>
       </Toolbar>
     </AppBar>

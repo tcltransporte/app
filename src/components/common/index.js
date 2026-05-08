@@ -12,5 +12,6 @@ export * from './RangeModal';
 export * from './SplitButton';
 export * from './Loading';
 export * from './PDFViewer';
+export * from './ActionMenu';
 
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Container, Table, Toolbar, RangeModal } from '@/components/common';
+import { Container, Table, Toolbar, RangeModal, ActionMenu } from '@/components/common';
 import { useTable, useNavigation, useLoading, useRangeFilter, useExport, useFilter } from '@/hooks';
 import { ExportFormat } from '@/hooks/useExport';
 import * as financeEntryAction from '@/app/actions/financeEntry.action';
@@ -9,7 +9,7 @@ import * as financeAction from '@/app/actions/finance.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 import { formatSqlDate } from '@/libs/date';
-import { Button, IconButton, Box, Typography, Badge, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Button, IconButton, Box, Typography, Badge } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -59,7 +59,6 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const [selectedHistoryEntryId, setSelectedHistoryEntryId] = React.useState(null);
   const [actionMenuAnchor, setActionMenuAnchor] = React.useState(null);
   const [actionMenuRow, setActionMenuRow] = React.useState(null);
-  const [actionMenuPosition, setActionMenuPosition] = React.useState(null);
 
   const handleEdit = React.useCallback((row) => {
     navigation.setSelectedId(row.id);
@@ -79,33 +78,14 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
 
   const handleOpenActionMenu = React.useCallback((event, row) => {
     event.stopPropagation();
-    const anchor = event.currentTarget;
-    const rect = anchor.getBoundingClientRect();
-    const rawZoom = Number(window.getComputedStyle(document.body).getPropertyValue('--app-zoom'));
-    const zoom = Number.isFinite(rawZoom) && rawZoom > 0 ? rawZoom : 1;
-
-    setActionMenuAnchor(anchor);
+    setActionMenuAnchor(event.currentTarget);
     setActionMenuRow(row);
-    setActionMenuPosition({
-      top: rect.bottom / zoom,
-      left: rect.right / zoom
-    });
   }, []);
 
   const handleCloseActionMenu = React.useCallback(() => {
     setActionMenuAnchor(null);
     setActionMenuRow(null);
-    setActionMenuPosition(null);
   }, []);
-
-  const handleBaixar = React.useCallback(() => {
-    const hasPaid = table.selecteds.some(s => s.status === 'paid');
-    if (hasPaid) {
-      alert.warning('Operação Inválida', 'Selecione apenas títulos em aberto para realizar a baixa.');
-      return;
-    }
-    handleOpenHistory(table.selecteds.map(s => s.id));
-  }, [table.selecteds, handleOpenHistory]);
 
   const isPaidEntry = React.useCallback((entry) => {
     return entry?.status === 'paid'
@@ -113,6 +93,15 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
       || Number(entry?.paymentId) > 0
       || Number(entry?.codigo_pagamento) > 0;
   }, []);
+
+  const handleBaixar = React.useCallback(() => {
+    const hasPaidEntries = table.selecteds.some((entry) => isPaidEntry(entry));
+    if (hasPaidEntries) {
+      alert.warning('Operação Inválida', 'Selecione apenas títulos em aberto para realizar a baixa em lote.');
+      return;
+    }
+    handleOpenHistory(table.selecteds.map(s => s.id));
+  }, [table.selecteds, isPaidEntry, handleOpenHistory]);
 
   const fetchTable = React.useCallback(async (overrides = {}) => {
     table.setLoading(true);
@@ -148,12 +137,6 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const handleDesfazerLote = React.useCallback(async () => {
     if (table.selecteds.length === 0) return;
 
-    const hasOpenEntries = table.selecteds.some((entry) => !isPaidEntry(entry));
-    if (hasOpenEntries) {
-      alert.warning('Operação Inválida', 'Selecione apenas títulos já baixados para desfazer em lote.');
-      return;
-    }
-
     const verb = operationType === 1 ? 'recebimento' : 'pagamento';
     const ok = await alert.confirm(
       `Desfazer ${verb} em lote?`,
@@ -178,15 +161,10 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     } finally {
       loading.hide();
     }
-  }, [table.selecteds, isPaidEntry, operationType, fetchTable, loading]);
+  }, [table.selecteds, operationType, fetchTable, loading]);
 
   const handleDesfazerSingle = React.useCallback(async (row) => {
     if (!row) return;
-
-    if (!isPaidEntry(row)) {
-      alert.warning('Operação Inválida', 'Selecione apenas títulos já baixados para desfazer.');
-      return;
-    }
 
     const verb = operationType === 1 ? 'recebimento' : 'pagamento';
     const ok = await alert.confirm(
@@ -211,16 +189,10 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     } finally {
       loading.hide();
     }
-  }, [isPaidEntry, operationType, fetchTable, loading]);
+  }, [operationType, fetchTable, loading]);
 
   const handleDeleteLote = React.useCallback(async () => {
     if (table.selecteds.length === 0) return;
-
-    const hasPaidEntries = table.selecteds.some((entry) => isPaidEntry(entry));
-    if (hasPaidEntries) {
-      alert.warning('Operação Inválida', 'Só é possível excluir em lote parcelas que ainda não foram baixadas.');
-      return;
-    }
 
     const ok = await alert.confirm(
       'Excluir parcelas em lote?',
@@ -232,10 +204,9 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     loading.show('Excluindo parcelas...', 'Aguarde alguns instantes.');
     try {
       const ids = table.selecteds.map((entry) => entry.id).filter(Boolean);
-      const results = await Promise.all(ids.map((id) => financeEntryAction.deleteEntry(id)));
-      const failed = results.find((result) => result?.header?.status !== ServiceStatus.SUCCESS);
-      if (failed) {
-        throw failed;
+      const result = await financeEntryAction.deleteEntriesBatch(ids);
+      if (result?.header?.status !== ServiceStatus.SUCCESS) {
+        throw result;
       }
       alert.success('Sucesso', 'Parcelas excluídas com sucesso!');
       await fetchTable();
@@ -244,23 +215,16 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     } finally {
       loading.hide();
     }
-  }, [table.selecteds, isPaidEntry, fetchTable, loading]);
+  }, [table.selecteds, fetchTable, loading]);
 
   const hasSelectedRows = table.selecteds.length > 0;
-  const hasPaidSelected = hasSelectedRows && table.selecteds.some((entry) => isPaidEntry(entry));
-  const hasOpenSelected = hasSelectedRows && table.selecteds.some((entry) => !isPaidEntry(entry));
-  const canShowBatchBaixar = hasSelectedRows && !hasPaidSelected;
-  const canShowBatchDesfazer = hasSelectedRows && !hasOpenSelected;
-  const canShowBatchDelete = hasSelectedRows && !hasPaidSelected;
+  const canShowBatchBaixar = hasSelectedRows;
+  const canShowBatchDesfazer = hasSelectedRows;
+  const canShowBatchDelete = hasSelectedRows;
   const canShowSingleEdit = table.selecteds.length === 1 && !isPaidEntry(table.selecteds[0]);
 
   const handleDeleteEntry = React.useCallback(async (row) => {
     if (!row) return;
-
-    if (isPaidEntry(row)) {
-      alert.warning('Operação Inválida', 'Só é possível excluir parcelas que ainda não foram baixadas.');
-      return;
-    }
 
     const ok = await alert.confirm(
       'Excluir parcela?',
@@ -282,7 +246,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
     } finally {
       loading.hide();
     }
-  }, [isPaidEntry, fetchTable, loading]);
+  }, [fetchTable, loading]);
 
   const columns = [
     {
@@ -631,88 +595,43 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
         }}
       />
 
-      <Menu
-        anchorEl={actionMenuAnchor}
-        anchorReference="anchorPosition"
-        anchorPosition={actionMenuPosition || undefined}
+      <ActionMenu
         open={Boolean(actionMenuAnchor)}
+        anchorEl={actionMenuAnchor}
         onClose={handleCloseActionMenu}
-        slotProps={{
-          paper: {
-            elevation: 0,
-            sx: {
-              overflow: 'visible',
-              filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.12))',
-              mt: 1.25,
-              minWidth: 180,
-              borderRadius: 2,
-              '& .MuiAvatar-root': {
-                width: 32,
-                height: 32,
-                ml: -0.5,
-                mr: 1,
-              },
-              '&:before': {
-                content: '""',
-                display: 'block',
-                position: 'absolute',
-                top: 0,
-                right: 14,
-                width: 10,
-                height: 10,
-                bgcolor: 'background.paper',
-                transform: 'translateY(-50%) rotate(45deg)',
-                zIndex: 0,
-              },
-            },
-          }
-        }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      >
-        <MenuItem
-          disabled={isPaidEntry(actionMenuRow)}
-          onClick={() => {
-          const row = actionMenuRow;
-          handleCloseActionMenu();
-          if (row) handleEdit(row);
-        }}>
-          <ListItemIcon><EditNoteIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Editar</ListItemText>
-        </MenuItem>
-        <MenuItem
-          disabled={isPaidEntry(actionMenuRow)}
-          onClick={() => {
-          const row = actionMenuRow;
-          handleCloseActionMenu();
-          if (!row) return;
-          handleOpenHistory([row.id]);
-        }}>
-          <ListItemIcon><CheckIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Baixar</ListItemText>
-        </MenuItem>
-        <MenuItem
-          disabled={!isPaidEntry(actionMenuRow)}
-          onClick={() => {
-          const row = actionMenuRow;
-          handleCloseActionMenu();
-          if (!row) return;
-          handleDesfazerSingle(row);
-        }}>
-          <ListItemIcon><UndoIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Desfazer</ListItemText>
-        </MenuItem>
-        <MenuItem
-          disabled={isPaidEntry(actionMenuRow)}
-          onClick={() => {
-          const row = actionMenuRow;
-          handleCloseActionMenu();
-          if (row) handleDeleteEntry(row);
-        }}>
-          <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Excluir</ListItemText>
-        </MenuItem>
-      </Menu>
+        placement="bottom-end"
+        zoomAwareVertical
+        items={[
+          {
+            id: 'edit',
+            label: 'Editar',
+            icon: <EditNoteIcon fontSize="small" />,
+            disabled: isPaidEntry(actionMenuRow),
+            onClick: () => actionMenuRow && handleEdit(actionMenuRow),
+          },
+          {
+            id: 'settle',
+            label: 'Baixar',
+            icon: <CheckIcon fontSize="small" />,
+            disabled: isPaidEntry(actionMenuRow),
+            onClick: () => actionMenuRow && handleOpenHistory([actionMenuRow.id]),
+          },
+          {
+            id: 'undo',
+            label: 'Desfazer',
+            icon: <UndoIcon fontSize="small" />,
+            disabled: !isPaidEntry(actionMenuRow),
+            onClick: () => actionMenuRow && handleDesfazerSingle(actionMenuRow),
+          },
+          {
+            id: 'delete',
+            label: 'Excluir',
+            icon: <DeleteIcon fontSize="small" />,
+            disabled: isPaidEntry(actionMenuRow),
+            onClick: () => actionMenuRow && handleDeleteEntry(actionMenuRow),
+          },
+        ]}
+      />
     </Container>
   );
 }
