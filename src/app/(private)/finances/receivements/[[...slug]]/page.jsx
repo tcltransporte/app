@@ -18,7 +18,7 @@ export default async function FinanceReceivablePage({ params }) {
   const operationType = 1
   const initialFilters = {
     status: 'open',
-    company: currentCompany
+    ...(currentCompany ? { company: currentCompany } : {})
   }
   const initialSort = { sortBy: 'dueDate', sortOrder: 'ASC' }
 

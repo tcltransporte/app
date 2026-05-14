@@ -198,7 +198,7 @@ export async function findAllEntries(transaction, params = {}) {
       const invoiceNumberSearch = String(filters.invoiceNumber).trim()
       if (invoiceNumberSearch) {
         const movementIds = await financeRepository.findBillMovementIdsByInvoiceNumber(transaction, {
-          companyId: selectedCompanyId || session.company.id,
+          ...(selectedCompanyId ? { companyId: selectedCompanyId } : {}),
           invoiceNumber: invoiceNumberSearch
         })
         titleWhere.id = { [Op.in]: movementIds.length ? movementIds : [0] }
