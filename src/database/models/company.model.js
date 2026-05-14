@@ -96,11 +96,6 @@ export class Company {
     type: DataTypes.SMALLINT
   }
 
-  subscriptionExpiresIn = {
-    field: 'subscriptionExpiresIn',
-    type: DataTypes.STRING
-  }
-  
   invoiceSerie = {
     field: 'SerieCte',
     type: DataTypes.STRING

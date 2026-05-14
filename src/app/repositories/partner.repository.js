@@ -1,4 +1,4 @@
-import { Op } from 'sequelize'
+import { Op, fn, col, where as sqlWhere, literal } from 'sequelize'
 import { AppContext } from '@/database'
 
 /**
@@ -28,6 +28,55 @@ export async function findOne(transaction, { attributes, include, where }) {
   return await db.withTransaction(transaction, async (t) => {
     const partner = await db.Partner.findOne({ attributes, include, where, transaction: t })
     return partner?.toJSON()
+  })
+}
+
+/**
+ * Parceiro pelo CPF/CNPJ só com dígitos (compara coluna `CpfCnpj` normalizada).
+ * @param {import('sequelize').Transaction} transaction
+ * @param {number|string} companyBusinessId
+ * @param {string} digitsOnly 11 ou 14 dígitos
+ * @returns {Promise<object|null>}
+ */
+export async function findOneByCompanyBusinessAndDocumentDigits(transaction, companyBusinessId, digitsOnly) {
+  const db = new AppContext()
+  const digits = String(digitsOnly || '').replace(/\D/g, '')
+  if (!digits || (digits.length !== 11 && digits.length !== 14)) {
+    return null
+  }
+  return await db.withTransaction(transaction, async (t) => {
+    const partner = await db.Partner.findOne({
+      attributes: ['id', 'cpfCnpj', 'name', 'surname', 'daysDeadlinePayment'],
+      where: {
+        companyBusinessId,
+        [Op.and]: sqlWhere(
+          fn(
+            'REPLACE',
+            fn(
+              'REPLACE',
+              fn(
+                'REPLACE',
+                fn(
+                  'REPLACE',
+                  fn('ISNULL', col('cpfCnpj'), literal("''")),
+                  '.',
+                  ''
+                ),
+                '/',
+                ''
+              ),
+              '-',
+              ''
+            ),
+            ' ',
+            ''
+          ),
+          digits
+        )
+      },
+      transaction: t
+    })
+    return partner?.toJSON() ?? null
   })
 }
 

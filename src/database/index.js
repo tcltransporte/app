@@ -48,6 +48,10 @@ import { DfeRepositorioNFe } from './models/dfeRepositorioNFe.model.js'
 import { CashClosure } from './models/cashClosure.model.js'
 import { CashClosureHistory } from './models/cashClosureHistory.model.js'
 import { CashClosureStatus } from './models/cashClosureStatus.model.js'
+import { Cte } from './models/cte.model.js'
+import { Nota } from './models/nota.model.js'
+import { CteNota } from './models/cteNota.model.js'
+import { Carga } from './models/carga.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -134,6 +138,10 @@ export class AppContext extends Sequelize {
     this.CashClosure = this.define('cashClosure', new CashClosure(), { tableName: 'CaixaFechamento' })
     this.CashClosureHistory = this.define('cashClosureHistory', new CashClosureHistory(), { tableName: 'CaixaFechamentoHistorico' })
     this.CashClosureStatus = this.define('cashClosureStatus', new CashClosureStatus(), { tableName: 'CaixaFechamentoStatus' })
+    this.Cte = this.define('cte', new Cte(), { tableName: 'Ctes' })
+    this.Nota = this.define('nota', new Nota(), { tableName: 'nota' })
+    this.CteNota = this.define('cteNota', new CteNota(), { tableName: 'CteNotas' })
+    this.Carga = this.define('carga', new Carga(), { tableName: 'carga' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -251,6 +259,25 @@ export class AppContext extends Sequelize {
     this.DfeRepositorioNFe.belongsTo(this.ManifestEvent, { as: 'lastManifestEvent', foreignKey: 'lastManifestEventId' })
     this.DfeRepositorioNFe.hasMany(this.ManifestEvent, { as: 'manifestEvents', foreignKey: 'dfeRepositorioNFeId' })
     this.ManifestEvent.belongsTo(this.DfeRepositorioNFe, { as: 'repositorioNfe', foreignKey: 'dfeRepositorioNFeId' })
+
+    this.CteNota.belongsTo(this.Cte, { foreignKey: 'cteId', as: 'cte' })
+    this.CteNota.belongsTo(this.Nota, { foreignKey: 'notaId', as: 'nota' })
+    this.Cte.hasMany(this.CteNota, { foreignKey: 'cteId', as: 'cteNotas' })
+    this.Nota.hasMany(this.CteNota, { foreignKey: 'notaId', as: 'cteNotas' })
+    this.Nota.belongsTo(this.Cte, { foreignKey: 'cteId', as: 'cte' })
+    this.Nota.belongsTo(this.Partner, { foreignKey: 'customerId', as: 'customer' })
+    this.Nota.belongsTo(this.Partner, { foreignKey: 'senderId', as: 'sender' })
+    this.Cte.hasMany(this.Nota, { foreignKey: 'cteId', as: 'notasByCteId' })
+    this.Cte.belongsTo(this.Partner, { foreignKey: 'customerId', as: 'destinatario' })
+    this.Cte.belongsTo(this.Partner, { foreignKey: 'senderId', as: 'sender' })
+
+    this.Carga.belongsTo(this.Partner, { as: 'customer', foreignKey: 'customerId' })
+    this.Carga.belongsTo(this.Partner, { as: 'receiver', foreignKey: 'receiverId' })
+    this.Carga.belongsTo(this.Partner, { as: 'expediter', foreignKey: 'expediterId' })
+    this.Carga.belongsTo(this.Partner, { as: 'thirdPartyPayer', foreignKey: 'thirdPartyPayerId' })
+    this.Carga.belongsTo(this.Company, { as: 'companyBranch', foreignKey: 'companyBranchId' })
+    this.Carga.belongsTo(this.User, { as: 'insertUser', foreignKey: 'insertUserId' })
+    this.Carga.belongsTo(this.User, { as: 'updateUser', foreignKey: 'updateUserId' })
 
     /*
     this.Company.addHook('afterFind', afterFind)

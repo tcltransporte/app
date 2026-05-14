@@ -426,7 +426,7 @@ export async function syncDistributions(transaction) {
     `<distNSU><ultNSU>${ultNSU}</ultNSU></distNSU>` +
     `</distDFeInt>`
 
-  const response = await fetch(`${process.env.SERVICE_API}/dfe/nfe/distribuicao-dfe`, {
+  const response = await fetch(`${process.env.SPED_DFE_API}/dfe/nfe/distribuicao-dfe`, {
     method: "POST",
     headers: {
       "content-type": "application/xml",
@@ -520,7 +520,7 @@ export async function syncDistributionsById(transaction, manifestedLoteId) {
 </consChNFe>
 </distDFeInt>`
 
-  const response = await fetch(`${process.env.SERVICE_API}/dfe/nfe/distribuicao-dfe`, {
+  const response = await fetch(`${process.env.SPED_DFE_API}/dfe/nfe/distribuicao-dfe`, {
     method: "POST",
     headers: {
       "content-type": "application/xml",
@@ -700,7 +700,7 @@ export async function manifest(transaction, id, manifestation) {
 </Manifestation>
 `.trim()
 
-  const response = await fetch(`${process.env.SERVICE_API}/dfe/nfe/manifestation`, {
+  const response = await fetch(`${process.env.SPED_DFE_API}/dfe/nfe/manifestation`, {
     method: "POST",
     headers: {
       "content-type": "application/xml",

@@ -54,6 +54,9 @@ import { Dialog } from './Dialog';
 import { DateField } from '@/components/controls/DateField';
 import { SelectField } from '@/components/controls/SelectField';
 
+/** Referência estável: `fieldOptions = []` no default recriava o array a cada render e disparava o `useEffect` em loop com o modal aberto. */
+const EMPTY_FIELD_OPTIONS = Object.freeze([]);
+
 export const PRESETS = [
   { label: 'Todo o período', isAllPeriod: true, getValue: () => null },
   { label: 'Hoje', getValue: () => ({ start: startOfDay(new Date()), end: endOfDay(new Date()) }) },
@@ -84,7 +87,7 @@ export function RangeModal({
   initialStart, 
   initialEnd,
   initialField,
-  fieldOptions = []
+  fieldOptions = EMPTY_FIELD_OPTIONS
 }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -178,7 +181,9 @@ export function RangeModal({
         if (input && typeof input.focus === 'function') input.focus();
       }, 0);
     }
-  }, [open, initialStart, initialEnd, initialField, fieldOptions]);
+    // fieldOptions: leitura atual no efeito; não incluir nas deps (default [] recriava referência e causava loop com DateRange).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: só re-sincroniza com open / datas / campo inicial
+  }, [open, initialStart, initialEnd, initialField]);
 
   const handleSelect = (ranges) => {
     setDateRange([ranges.selection]);

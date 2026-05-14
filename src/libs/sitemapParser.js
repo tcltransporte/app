@@ -45,7 +45,7 @@ export async function parseSitemap() {
             text: attributes.title,
             description: attributes.description || '',
             icon: attributes.icon || null,
-            path: attributes.url ? attributes.url.replace('~\\', 'https://global.tcltransporte.com.br/').replace(/\\/g, '/') : null,
+            path: attributes.url ? attributes.url.replace('~\\', 'http://global.tcltransporte.com.br/').replace(/\\/g, '/') : null,
             roles: attributes.roles ? attributes.roles.split(',').map(r => r.trim()) : []
           };
 

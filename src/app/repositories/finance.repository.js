@@ -26,7 +26,19 @@ export async function findAll(transaction, { attributes, include, where, limit, 
 export async function findOne(transaction, { attributes, include, where }) {
   const db = new AppContext()
   return await db.withTransaction(transaction, async (t) => {
-    const title = await db.FinanceTitle.findOne({ attributes, include: [...(include || []), 'company'], where, transaction: t })
+    const companyAttrs = ['id', 'name', 'surname', 'cnpj', 'companyBusinessId']
+    const inc = [...(include || [])]
+    const companyIdx = inc.findIndex(
+      (i) => i === 'company' || (typeof i === 'object' && i && i.association === 'company')
+    )
+    if (companyIdx === -1) {
+      inc.push({ association: 'company', attributes: companyAttrs })
+    } else if (inc[companyIdx] === 'company') {
+      inc[companyIdx] = { association: 'company', attributes: companyAttrs }
+    } else if (inc[companyIdx] && !inc[companyIdx].attributes) {
+      inc[companyIdx] = { ...inc[companyIdx], attributes: companyAttrs }
+    }
+    const title = await db.FinanceTitle.findOne({ attributes, include: inc, where, transaction: t })
     return title?.toJSON()
   })
 }
@@ -271,6 +283,25 @@ export async function deleteTitle(transaction, id) {
   return await db.withTransaction(transaction, async (t) => {
     return await db.FinanceTitle.destroy({
       where: { id },
+      transaction: t
+    })
+  })
+}
+
+/**
+ * Remove parcelas e capa do título (para rollback após falha).
+ * @param {import('sequelize').Transaction} transaction
+ * @param {number|string} titleId
+ */
+export async function destroyTitleAndEntries(transaction, titleId) {
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    await db.FinanceEntry.destroy({
+      where: { titleId },
+      transaction: t
+    })
+    return await db.FinanceTitle.destroy({
+      where: { id: titleId },
       transaction: t
     })
   })
