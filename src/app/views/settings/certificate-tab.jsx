@@ -56,6 +56,7 @@ export function CertificateTab() {
           confirmButtonText: 'Enviar',
           cancelButtonText: 'Cancelar',
           inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+          scrollbarPadding: false,
         });
 
         if (password === undefined) return;
@@ -66,6 +67,7 @@ export function CertificateTab() {
             title: 'Ops!',
             text: 'É necessário informar a senha do certificado!',
             confirmButtonText: 'Ok',
+            scrollbarPadding: false,
           });
           return;
         }
@@ -81,13 +83,14 @@ export function CertificateTab() {
           throw new Error(result.body?.message || 'Erro ao salvar certificado.');
         }
 
-        await Swal.fire({ icon: 'success', text: 'Certificado atualizado com sucesso!' });
+        await Swal.fire({ icon: 'success', text: 'Certificado atualizado com sucesso!', scrollbarPadding: false });
         if (result.body?.expired) {
           await Swal.fire({
             icon: 'warning',
             title: 'Atenção',
             text: 'Este certificado está vencido.',
             confirmButtonText: 'Ok',
+            scrollbarPadding: false,
           });
         }
       } else {
@@ -97,6 +100,7 @@ export function CertificateTab() {
           showCancelButton: true,
           confirmButtonText: 'Sim',
           cancelButtonText: 'Não',
+          scrollbarPadding: false,
         });
 
         if (!result.isConfirmed) return;
@@ -107,7 +111,7 @@ export function CertificateTab() {
           throw new Error(del.body?.message || 'Erro ao excluir certificado.');
         }
 
-        await Swal.fire({ icon: 'success', text: 'Certificado excluído com sucesso!' });
+        await Swal.fire({ icon: 'success', text: 'Certificado excluído com sucesso!', scrollbarPadding: false });
       }
 
       await fetchCertificate();
@@ -115,6 +119,7 @@ export function CertificateTab() {
       await Swal.fire({
         icon: 'error',
         text: error?.body?.message || error?.message || 'Erro inesperado.',
+        scrollbarPadding: false,
       });
     } finally {
       setBackdropMessage('');

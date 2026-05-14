@@ -3,6 +3,21 @@
   z-index: 99999 !important;
 }
 
+/*
+  SweetAlert2 após a animação define overflow-y: auto no container em tela cheia,
+  o que costuma exibir barra de rolagem no overlay sem necessidade.
+  A rolagem fica no popup quando o conteúdo for alto.
+*/
+body.swal2-shown:not(.swal2-toast-shown) div:where(.swal2-container) {
+  overflow-y: hidden !important;
+}
+
+body.swal2-shown:not(.swal2-toast-shown) .swal2-popup:not(.swal2-toast) {
+  max-height: calc(100vh - 2.5rem);
+  max-height: calc(100dvh - 2.5rem);
+  overflow-y: auto;
+}
+
 .swal2-modal-custom {
   border-radius: 16px !important;
   font-family: inherit !important;

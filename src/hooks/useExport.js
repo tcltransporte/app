@@ -151,6 +151,7 @@ export const useExport = () => {
           showConfirmButton: false,
           showCancelButton: true,
           cancelButtonText: 'Agora não',
+          scrollbarPadding: false,
           customClass: {
             popup: 'swal2-modal-custom',
             cancelButton: 'swal2-cancel-custom',

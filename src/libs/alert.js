@@ -7,6 +7,8 @@ const premiumSwal = Swal.mixin({
     popup: 'swal2-modal-custom',
   },
   buttonsStyling: false,
+  /** Evita padding-right no body + conflito com zoom/layout (barra de rolagem fantasma) */
+  scrollbarPadding: false,
 });
 
 /**
