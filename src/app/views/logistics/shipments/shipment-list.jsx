@@ -85,7 +85,7 @@ export default function ShipmentList({
       const result = await shipmentAction.findAll({
         page: overrides.page !== undefined ? overrides.page : q.page,
         limit: overrides.rowsPerPage !== undefined ? overrides.rowsPerPage : q.rowsPerPage,
-        sortBy: overrides.sortBy !== undefined ? overrides.sortBy : (q.sortBy || 'departureDate'),
+        sortBy: overrides.sortBy !== undefined ? overrides.sortBy : (q.sortBy || 'id'),
         sortOrder: overrides.sortOrder !== undefined ? overrides.sortOrder : (q.sortOrder || 'DESC'),
         filters: overrides.filters !== undefined ? overrides.filters : filtersRef.current,
         range: overrides.range !== undefined ? overrides.range : rangeRef.current,
@@ -119,12 +119,6 @@ export default function ShipmentList({
 
   const columns = React.useMemo(() => ([
     {
-      field: 'id',
-      headerName: 'Código',
-      width: 90,
-      align: 'right'
-    },
-    {
       field: 'departureDate',
       headerName: 'Saída',
       width: 110,
@@ -139,16 +133,9 @@ export default function ShipmentList({
       renderCell: (value) => formatSqlDate(value) || ''
     },
     {
-      field: 'tripId',
-      headerName: 'Viagem',
-      width: 90,
-      align: 'right'
-    },
-    {
       field: 'transportDocumentId',
-      headerName: 'Doc. transp.',
-      width: 110,
-      align: 'right'
+      headerName: 'Nº Doc',
+      width: 100,
     },
     {
       field: 'customer',
@@ -156,12 +143,12 @@ export default function ShipmentList({
       width: 220,
       renderCell: (_, row) => partnerLabel(row?.customer)
     },
-    {
+    /*{
       field: 'receiver',
       headerName: 'Recebedor',
       width: 200,
       renderCell: (_, row) => partnerLabel(row?.receiver)
-    },
+    },*/
     {
       field: 'description',
       headerName: 'Descrição',
@@ -183,12 +170,6 @@ export default function ShipmentList({
       width: 120,
       align: 'right',
       renderCell: (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-    },
-    {
-      field: 'sequenceOrder',
-      headerName: 'Ordem',
-      width: 70,
-      align: 'center'
     }
   ]), []);
 

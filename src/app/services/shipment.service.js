@@ -3,8 +3,7 @@ import { endOfDay, isValid, parseISO, startOfDay } from 'date-fns'
 import { getSession } from '@/libs/session'
 import * as shipmentRepository from '@/app/repositories/shipment.repository'
 import * as shipmentLookupRepository from '@/app/repositories/shipment-lookup.repository'
-import * as freightLetterRepository from '@/app/repositories/freightLetter.repository'
-import * as freightLetterService from '@/app/services/freightLetter.service'
+import * as shipmentCompositionRepository from '@/app/repositories/shipmentComposition.repository'
 
 const SHIPMENT_INCLUDES = [
   {
@@ -24,10 +23,9 @@ const SHIPMENT_INCLUDES = [
     attributes: ['id', 'name', 'surname', 'cpfCnpj']
   },
   {
-    association: 'freightLetters',
+    association: 'compositions',
     include: [
-      { association: 'componentType', attributes: ['id', 'description'] },
-      { association: 'payee', attributes: ['id', 'name', 'surname', 'cpfCnpj'] }
+      { association: 'compositionType', attributes: ['id', 'description'] }
     ]
   }
 ]
@@ -36,6 +34,13 @@ function parseOptionalNumber(value) {
   if (value === '' || value == null) return null
   const n = Number(value)
   return Number.isFinite(n) ? n : null
+}
+
+/** IDs de FK / PK — evita enviar strings como "new-1" para colunas bigint. */
+function parseOptionalId(value) {
+  if (value === '' || value == null) return null
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null
 }
 
 function parseOptionalDate(value) {
@@ -67,7 +72,7 @@ export async function findAll(transaction, params = {}) {
   const {
     page = 1,
     limit = 50,
-    sortBy = 'departureDate',
+    sortBy = 'id',
     sortOrder = 'DESC',
     filters = {},
     range = {},
@@ -146,7 +151,7 @@ export async function findAll(transaction, params = {}) {
     }
   }
 
-  const normalizedSortBy = SORT_FIELD_MAP[sortBy] || 'departureDate'
+  const normalizedSortBy = SORT_FIELD_MAP[sortBy] || 'id'
   const normalizedSortOrder = String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC'
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200)
   const safePage = Math.max(Number(page) || 1, 1)
@@ -168,27 +173,27 @@ function buildWritablePayload(data, { session, isCreate }) {
 
   const payload = {
     customerId,
-    tripId: parseOptionalNumber(data.tripId),
-    transportDocumentId: parseOptionalNumber(data.transportDocumentId),
+    tripId: parseOptionalId(data.tripId),
+    transportDocumentId: parseOptionalId(data.transportDocumentId),
     deliveryQuantity: parseOptionalNumber(data.deliveryQuantity),
     weight: parseOptionalNumber(data.weight),
     freightValue: parseOptionalNumber(data.freightValue),
     freightLetterValue: parseOptionalNumber(data.freightLetterValue),
     description: trimMax(data.description, 60),
     proPred: trimMax(data.proPred, 60),
-    ncmId: parseOptionalNumber(data.ncmId),
-    paymentTypeId: parseOptionalNumber(data.paymentTypeId),
-    icmsCalculationTypeId: parseOptionalNumber(data.icmsCalculationTypeId),
-    serviceTypeId: parseOptionalNumber(data.serviceTypeId),
-    servicePayerTypeId: parseOptionalNumber(data.servicePayerTypeId),
-    thirdPartyPayerId: parseOptionalNumber(data.thirdPartyPayerId),
+    ncmId: parseOptionalId(data.ncmId),
+    paymentTypeId: parseOptionalId(data.paymentTypeId),
+    icmsCalculationTypeId: parseOptionalId(data.icmsCalculationTypeId),
+    serviceTypeId: parseOptionalId(data.serviceTypeId),
+    servicePayerTypeId: parseOptionalId(data.servicePayerTypeId),
+    thirdPartyPayerId: parseOptionalId(data.thirdPartyPayerId),
     refCteKey: trimMax(data.refCteKey, 44),
     departureDate: parseOptionalDate(data.departureDate),
     deliveryDate: parseOptionalDate(data.deliveryDate),
-    receiverId: parseOptionalNumber(data.receiverId),
-    expediterId: parseOptionalNumber(data.expediterId),
-    originMunicipalityId: parseOptionalNumber(data.originMunicipalityId),
-    destinationMunicipalityId: parseOptionalNumber(data.destinationMunicipalityId),
+    receiverId: parseOptionalId(data.receiverId),
+    expediterId: parseOptionalId(data.expediterId),
+    originMunicipalityId: parseOptionalId(data.originMunicipalityId),
+    destinationMunicipalityId: parseOptionalId(data.destinationMunicipalityId),
     sequenceOrder: parseOptionalNumber(data.sequenceOrder),
     observation: trimMax(data.observation, 300),
     updateUserId: session?.user?.id || null,
@@ -237,50 +242,41 @@ function sumFreightComponents(components = []) {
   return (components || []).reduce((sum, row) => sum + (Number(row.value) || 0), 0)
 }
 
-async function syncFreightLetters(transaction, loadId, tripId, components = []) {
-  const { rows: existing } = await freightLetterRepository.findAll(transaction, {
+async function syncShipmentCompositions(transaction, loadId, components = []) {
+  const { rows: existing } = await shipmentCompositionRepository.findAll(transaction, {
     attributes: ['id'],
     where: { loadId }
   })
 
   const keepIds = new Set(
     (components || [])
-      .map((c) => Number(c.id))
-      .filter((id) => Number.isFinite(id) && id > 0)
+      .map((c) => parseOptionalId(c.id))
+      .filter((id) => id != null)
   )
 
   for (const row of existing || []) {
     if (!keepIds.has(Number(row.id))) {
-      await freightLetterRepository.destroy(transaction, { where: { id: row.id } })
+      await shipmentCompositionRepository.destroy(transaction, { where: { id: row.id } })
     }
   }
 
-  const resolvedTripId = parseOptionalNumber(tripId) || Number(loadId)
+  const resolvedLoadId = parseOptionalId(loadId)
 
   for (const comp of components || []) {
-    const typeId = Number(comp.freightLetterComponentTypeId)
-    if (!typeId || Number.isNaN(typeId)) continue
+    const typeId = parseOptionalId(comp.compositionTypeId)
+    if (!typeId) continue
 
+    const compId = parseOptionalId(comp.id)
     const payload = {
-      loadId: Number(loadId),
-      tripId: resolvedTripId,
-      freightLetterComponentTypeId: typeId,
-      value: Number(comp.value) || 0,
-      discountValue: Number(comp.discountValue) || 0,
-      operatorId: 2,
-      statusId: 1,
-      effectiveDate: comp.effectiveDate ? new Date(comp.effectiveDate) : new Date(),
-      isSynchronized: false,
-      payeeId: parseOptionalNumber(comp.payeeId),
-      description: comp.description || null,
-      operatorProtocol: comp.operatorProtocol || null,
-      cardNumber: comp.cardNumber || null
+      loadId: resolvedLoadId,
+      compositionTypeId: typeId,
+      value: Number(comp.value) || 0
     }
 
-    if (comp.id) {
-      await freightLetterService.update(transaction, comp.id, payload)
+    if (compId) {
+      await shipmentCompositionRepository.update(transaction, { where: { id: compId } }, payload)
     } else {
-      await freightLetterService.create(transaction, payload)
+      await shipmentCompositionRepository.create(transaction, payload)
     }
   }
 
@@ -299,7 +295,7 @@ export async function getFormLookups(transaction) {
     shipmentLookupRepository.findServiceTypes(transaction),
     shipmentLookupRepository.findServicePayerTypes(transaction),
     shipmentLookupRepository.findIcmsCalculationTypes(transaction),
-    freightLetterService.findAllComponentTypes(transaction)
+    shipmentCompositionRepository.findAllCompositionTypes(transaction)
   ])
 
   return {
@@ -321,7 +317,7 @@ export async function findNcmById(transaction, id) {
 
 export async function create(transaction, data = {}) {
   const session = await getSession()
-  const components = data.freightComponents || []
+  const components = data.compositions || []
   const payload = buildWritablePayload(data, { session, isCreate: true })
   const freightSum = sumFreightComponents(components)
   if (freightSum > 0) payload.freightValue = freightSum
@@ -329,7 +325,7 @@ export async function create(transaction, data = {}) {
   const created = await shipmentRepository.create(transaction, payload)
 
   if (components.length) {
-    await syncFreightLetters(transaction, created.id, payload.tripId, components)
+    await syncShipmentCompositions(transaction, created.id, components)
   }
 
   const row = await shipmentRepository.findOne(transaction, created.id, {
@@ -341,11 +337,11 @@ export async function create(transaction, data = {}) {
 export async function update(transaction, id, data = {}) {
   const session = await getSession()
   await assertShipmentAccess(transaction, id)
-  const components = data.freightComponents
+  const components = data.compositions
   const payload = buildWritablePayload(data, { session, isCreate: false })
 
   if (Array.isArray(components)) {
-    const freightSum = await syncFreightLetters(transaction, id, payload.tripId ?? data.tripId, components)
+    const freightSum = await syncShipmentCompositions(transaction, id, components)
     if (freightSum > 0) payload.freightValue = freightSum
   }
 

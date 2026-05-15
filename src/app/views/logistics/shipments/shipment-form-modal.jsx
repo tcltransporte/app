@@ -37,21 +37,18 @@ function parseDateField(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function mapFreightLettersToComponents(freightLetters = []) {
-  return (freightLetters || []).map((fl, index) => ({
-    rowKey: fl.id ? `id-${fl.id}` : `row-${index}`,
-    id: fl.id,
-    freightLetterComponentTypeId: fl.freightLetterComponentTypeId,
-    componentDescription: fl.componentType?.description || '',
-    value: fl.value,
-    discountValue: fl.discountValue ?? 0,
-    operatorProtocol: fl.operatorProtocol || '',
-    description: fl.description || '',
-    effectiveDate: fl.effectiveDate,
-    payeeId: fl.payeeId,
-    payee: fl.payee || null,
-    cardNumber: fl.cardNumber || ''
-  }));
+function mapCompositionsToForm(compositions = []) {
+  return (compositions || []).map((item, index) => {
+    const dbId = Number(item.id);
+    const numericId = Number.isFinite(dbId) && dbId > 0 ? dbId : null;
+    return {
+      rowKey: numericId ? `id-${numericId}` : `row-${index}`,
+      id: numericId,
+      compositionTypeId: item.compositionTypeId,
+      componentDescription: item.compositionType?.description || '',
+      value: item.value
+    };
+  });
 }
 
 const emptyValues = {
@@ -79,7 +76,7 @@ const emptyValues = {
   destinationMunicipalityId: '',
   sequenceOrder: '',
   observation: '',
-  freightComponents: []
+  compositions: []
 };
 
 function rowToFormValues(row, ncmOption) {
@@ -109,7 +106,7 @@ function rowToFormValues(row, ncmOption) {
     destinationMunicipalityId: row.destinationMunicipalityId ?? '',
     sequenceOrder: row.sequenceOrder ?? '',
     observation: row.observation || '',
-    freightComponents: mapFreightLettersToComponents(row.freightLetters)
+    compositions: mapCompositionsToForm(row.compositions)
   };
 }
 
@@ -192,7 +189,7 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      const freightSum = (values.freightComponents || []).reduce(
+      const freightSum = (values.compositions || []).reduce(
         (sum, row) => sum + (Number(row.value) || 0),
         0
       );
@@ -222,17 +219,15 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
         destinationMunicipalityId: values.destinationMunicipalityId,
         sequenceOrder: values.sequenceOrder,
         observation: values.observation,
-        freightComponents: (values.freightComponents || []).map((row) => ({
-          id: row.id,
-          freightLetterComponentTypeId: row.freightLetterComponentTypeId,
-          value: row.value,
-          discountValue: row.discountValue ?? 0,
-          operatorProtocol: row.operatorProtocol,
-          description: row.description,
-          effectiveDate: row.effectiveDate,
-          payeeId: row.payee?.id ?? row.payeeId ?? null,
-          cardNumber: row.cardNumber
-        }))
+        compositions: (values.compositions || []).map((row) => {
+          const id = Number(row.id);
+          const numericId = Number.isFinite(id) && id > 0 ? id : null;
+          return {
+            ...(numericId ? { id: numericId } : {}),
+            compositionTypeId: row.compositionTypeId,
+            value: row.value
+          };
+        })
       };
 
       const result = isEdit
@@ -275,7 +270,7 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
         enableReinitialize
       >
         {({ isSubmitting, values, setFieldValue }) => {
-          const freightSum = (values.freightComponents || []).reduce(
+          const freightSum = (values.compositions || []).reduce(
             (sum, row) => sum + (Number(row.value) || 0),
             0
           );
@@ -285,7 +280,7 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
               <Dialog.Content>
                 <Grid container spacing={1}>
 
-                  <Grid size={{ xs: 12, md: 2.5 }}>
+                  <Grid size={{ xs: 12, md: 2.2 }}>
                     <Field
                       component={TextField}
                       name="transportDocumentId"
@@ -293,7 +288,7 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
                     />
                   </Grid>
 
-                  <Grid size={{ xs: 12, md: 9 }}>
+                  <Grid size={{ xs: 12, md: 9.8 }}>
                     <Field
                       component={AutoComplete}
                       name="customer"
@@ -369,11 +364,11 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
 
                   <Grid size={12}>
                     <ShipmentFreightComposition
-                      components={values.freightComponents}
+                      components={values.compositions}
                       componentTypes={lookups.componentTypes}
                       freightValue={freightSum > 0 ? freightSum : values.freightValue}
                       freightLetterValue={values.freightLetterValue}
-                      onChangeComponents={(next) => setFieldValue('freightComponents', next)}
+                      onChangeComponents={(next) => setFieldValue('compositions', next)}
                       onFreightLetterValueChange={(val) => setFieldValue('freightLetterValue', val ?? '')}
                     />
                   </Grid>
@@ -451,6 +446,7 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
                     </FormSection>
                   </Grid>
 
+                  {/*
                   <Grid size={12}>
                     <Button
                       size="small"
@@ -555,6 +551,8 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
                       </Grid>
                     </Collapse>
                   </Grid>
+                  */}
+
                 </Grid>
               </Dialog.Content>
               <Dialog.Actions>

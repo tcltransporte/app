@@ -4,7 +4,7 @@ import React from 'react';
 import { Box, Grid, Typography } from '@mui/material';
 import { NumericField } from '@/components/controls';
 import { SectionTable } from '@/components/common';
-import { ShipmentFreightLetterDrawer } from './shipment-freight-letter-drawer';
+import { ShipmentCompositionDrawer } from './shipment-composition-drawer';
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('pt-BR', {
@@ -19,44 +19,41 @@ function nextRowKey() {
   return `new-${tempKey}`;
 }
 
-function formatRowFromDrawer(data, componentTypes) {
-  const type = componentTypes.find(
-    (t) => Number(t.id) === Number(data.freightLetterComponentTypeId)
+function parseNumericId(value) {
+  if (value === '' || value == null) return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function formatRowFromDrawer(data, compositionTypes) {
+  const type = compositionTypes.find(
+    (t) => Number(t.id) === Number(data.compositionTypeId)
   );
   const rowKey = data.rowKey || nextRowKey();
+  const dbId = parseNumericId(data.id);
   return {
     ...data,
     rowKey,
-    id: data.id || rowKey,
+    id: dbId,
     componentDescription: type?.description || '',
-    payeeId: data.payee?.id ?? data.payeeId ?? null
+    compositionTypeId: data.compositionTypeId
   };
 }
 
-function buildColumns(componentTypes) {
+function buildColumns(compositionTypes) {
   return [
     {
       field: 'componentDescription',
       headerName: 'Componente',
       renderCell: (_, item) =>
         item.componentDescription
-        || componentTypes.find((t) => Number(t.id) === Number(item.freightLetterComponentTypeId))?.description
+        || compositionTypes.find((t) => Number(t.id) === Number(item.compositionTypeId))?.description
         || '—'
     },
     {
       field: 'value',
       headerName: 'Valor (R$)',
       renderCell: (val) => formatMoney(val)
-    },
-    {
-      field: 'discountValue',
-      headerName: 'Desc. (R$)',
-      renderCell: (val) => formatMoney(val)
-    },
-    {
-      field: 'operatorProtocol',
-      headerName: 'Protocolo',
-      renderCell: (val) => val || '—'
     }
   ];
 }
@@ -76,7 +73,7 @@ export function ShipmentFreightComposition({
   const tableItems = React.useMemo(
     () => components.map((row) => ({
       ...row,
-      id: row.id || row.rowKey
+      id: row.rowKey
     })),
     [components]
   );
@@ -89,11 +86,7 @@ export function ShipmentFreightComposition({
   const handleAdd = () => {
     setDrawer({
       open: true,
-      data: {
-        value: 0,
-        discountValue: 0,
-        effectiveDate: new Date().toISOString().split('T')[0]
-      },
+      data: { value: 0 },
       index: -1
     });
   };
@@ -156,10 +149,10 @@ export function ShipmentFreightComposition({
         </Grid>
       </Grid>
 
-      <ShipmentFreightLetterDrawer
+      <ShipmentCompositionDrawer
         open={drawer.open}
-        freightLetter={drawer.data}
-        componentTypes={componentTypes}
+        composition={drawer.data}
+        compositionTypes={componentTypes}
         onClose={handleCloseDrawer}
         onSave={handleSaveDrawer}
       />

@@ -25,7 +25,7 @@ export default async function ShipmentsPage({ params }) {
     }
 
     const initialSort = {
-      sortBy: 'departureDate',
+      sortBy: 'id',
       sortOrder: 'DESC'
     }
 

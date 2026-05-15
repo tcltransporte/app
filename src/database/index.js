@@ -31,6 +31,8 @@ import { FinanceTitle } from './models/financeTitle.model.js'
 import { FinanceEntry } from './models/financeEntry.model.js'
 import { FreightLetter } from './models/freightLetter.model.js'
 import { FreightLetterComponentType } from './models/freightLetterComponentType.model.js'
+import { ShipmentComposition } from './models/shipmentComposition.model.js'
+import { ShipmentCompositionType } from './models/shipmentCompositionType.model.js'
 import { AccountPlan } from './models/accountPlan.model.js'
 import { CostCenter } from './models/costCenter.model.js'
 import { Payment } from './models/payment.model.js'
@@ -121,6 +123,8 @@ export class AppContext extends Sequelize {
     this.FinanceEntry = this.define('financeEntry', new FinanceEntry(), { tableName: 'movimentos_detalhe' })
     this.FreightLetter = this.define('freightLetter', new FreightLetter(), { tableName: 'CompValorCartaFrete' })
     this.FreightLetterComponentType = this.define('freightLetterComponentType', new FreightLetterComponentType(), { tableName: 'CompValorCartaFreteTipo' })
+    this.ShipmentComposition = this.define('shipmentComposition', new ShipmentComposition(), { tableName: 'CompValorFrete' })
+    this.ShipmentCompositionType = this.define('shipmentCompositionType', new ShipmentCompositionType(), { tableName: 'TipoComponenteValorFrete' })
     this.AccountPlan = this.define('accountPlan', new AccountPlan(), { tableName: 'PlanoContasContabil' })
     this.CostCenter = this.define('costCenter', new CostCenter(), { tableName: 'CentroCusto' })
     this.Payment = this.define('payment', new Payment(), { tableName: 'pagamentos' })
@@ -249,6 +253,9 @@ export class AppContext extends Sequelize {
     this.FreightLetter.belongsTo(this.Solicitation, { as: 'solicitation', foreignKey: 'solicitationId' })
     this.FreightLetter.belongsTo(this.FreightLetterComponentType, { as: 'componentType', foreignKey: 'freightLetterComponentTypeId' })
 
+    this.ShipmentComposition.belongsTo(this.Shipment, { as: 'shipment', foreignKey: 'loadId' })
+    this.ShipmentComposition.belongsTo(this.ShipmentCompositionType, { as: 'compositionType', foreignKey: 'compositionTypeId' })
+    this.ShipmentCompositionType.hasMany(this.ShipmentComposition, { as: 'compositions', foreignKey: 'compositionTypeId' })
 
     this.DFeLoteDist.belongsTo(this.DFeLoteDistSchema, { as: 'schemaInfo', foreignKey: 'idSchema' })
     this.DFeLoteDist.belongsTo(this.DFeLoteDist, { as: 'loteOrigem', foreignKey: 'idDFeLoteDistOrigem', targetKey: 'id' })
@@ -280,7 +287,7 @@ export class AppContext extends Sequelize {
     this.Shipment.belongsTo(this.User, { as: 'updateUser', foreignKey: 'updateUserId' })
     this.Shipment.hasMany(this.Nota, { as: 'notas', foreignKey: 'loadId' })
     this.Shipment.hasMany(this.Cte, { as: 'ctes', foreignKey: 'loadId' })
-    this.Shipment.hasMany(this.FreightLetter, { as: 'freightLetters', foreignKey: 'loadId' })
+    this.Shipment.hasMany(this.ShipmentComposition, { as: 'compositions', foreignKey: 'loadId' })
     this.Nota.belongsTo(this.Shipment, { as: 'shipment', foreignKey: 'loadId' })
     this.Cte.belongsTo(this.Shipment, { as: 'shipment', foreignKey: 'loadId' })
     this.FreightLetter.belongsTo(this.Shipment, { as: 'shipment', foreignKey: 'loadId' })
