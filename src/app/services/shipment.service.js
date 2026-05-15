@@ -263,9 +263,16 @@ async function assertShipmentAccess(transaction, id) {
 
 export async function findOne(transaction, id) {
   await assertShipmentAccess(transaction, id)
-  return await shipmentRepository.findOne(transaction, id, {
+  const row = await shipmentRepository.findOne(transaction, id, {
     include: SHIPMENT_INCLUDES
   })
+  if (!row) return null
+
+  const ctesCountMap = await cteRepository.countByLoadIds(transaction, [id])
+  return {
+    ...row,
+    ctesCount: ctesCountMap.get(Number(id)) || 0
+  }
 }
 
 function sumFreightComponents(components = []) {

@@ -2,15 +2,17 @@
 
 import React from 'react';
 import { Formik, Form, Field } from 'formik';
-import { Grid, Button, Collapse } from '@mui/material';
+import { Grid, Button, Collapse, Box } from '@mui/material';
 import { Save as SaveIcon, ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon } from '@mui/icons-material';
 import { Dialog, FormSection } from '@/components/common';
+import UnifiedChip from '@/components/common/UnifiedChip';
 import { TextField, AutoComplete, DateField, NumericField, SelectField } from '@/components/controls';
 import * as shipmentAction from '@/app/actions/shipment.action';
 import * as search from '@/libs/search';
 import { alert } from '@/libs/alert';
 import { ServiceStatus } from '@/libs/service';
 import { ShipmentFreightComposition } from './shipment-freight-composition';
+import ShipmentCtesDrawer from './shipment-ctes-drawer';
 
 function partnerText(v) {
   const id = v?.id ?? '';
@@ -135,6 +137,8 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
     componentTypes: []
   });
   const [showExtra, setShowExtra] = React.useState(false);
+  const [ctesCount, setCtesCount] = React.useState(0);
+  const [ctesDrawerOpen, setCtesDrawerOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
@@ -152,6 +156,7 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
         if (!isEdit) {
           if (!cancelled) {
             setFormValues({ ...emptyValues, departureDate: new Date() });
+            setCtesCount(0);
           }
           return;
         }
@@ -171,6 +176,7 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
 
         if (!cancelled) {
           setFormValues(rowToFormValues(result.body, ncmOption));
+          setCtesCount(Number(result.body?.ctesCount) || 0);
         }
       } catch (error) {
         if (!cancelled) {
@@ -251,11 +257,29 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
     }
   };
 
+  const refreshCtesCount = React.useCallback(async () => {
+    if (!shipmentId) return;
+    try {
+      const result = await shipmentAction.findOne(shipmentId);
+      if (result?.header?.status === ServiceStatus.SUCCESS) {
+        setCtesCount(Number(result.body?.ctesCount) || 0);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [shipmentId]);
+
+  const shipmentLabel = React.useMemo(() => {
+    const doc = formValues.transportDocumentId;
+    return doc ? `Doc. ${doc}` : String(shipmentId || '');
+  }, [formValues.transportDocumentId, shipmentId]);
+
   if (!open) return null;
 
   const dialogTitle = isEdit ? `Edita carga - ${shipmentId}` : 'Adicionar romaneio';
 
   return (
+    <>
     <Dialog
       open={open}
       onClose={onClose}
@@ -279,6 +303,37 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
             <Form>
               <Dialog.Content>
                 <Grid container spacing={1}>
+
+                  {isEdit && (
+                    <Grid size={12}>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.5 }}>
+                        <span title="Ver CT-es da carga">
+                          <UnifiedChip
+                            label={String(ctesCount)}
+                            color={ctesCount > 0 ? 'primary' : 'default'}
+                            variant="filled"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCtesDrawerOpen(true);
+                            }}
+                            chipSx={{
+                              cursor: 'pointer',
+                              minWidth: 32,
+                              boxShadow: (theme) =>
+                                ctesCount > 0 ? `0 2px 4px ${theme.palette.primary.main}44` : 'none',
+                              '&:hover': {
+                                opacity: 0.9,
+                                transform: 'scale(1.05)',
+                                boxShadow: (theme) =>
+                                  ctesCount > 0 ? `0 4px 8px ${theme.palette.primary.main}66` : undefined
+                              },
+                              transition: 'all 0.2s'
+                            }}
+                          />
+                        </span>
+                      </Box>
+                    </Grid>
+                  )}
 
                   <Grid size={{ xs: 12, md: 2.2 }}>
                     <Field
@@ -573,5 +628,16 @@ export default function ShipmentFormModal({ open, shipmentId, onClose, onSuccess
         }}
       </Formik>
     </Dialog>
+
+    {isEdit && (
+      <ShipmentCtesDrawer
+        open={ctesDrawerOpen}
+        shipmentId={shipmentId}
+        shipmentLabel={shipmentLabel}
+        onClose={() => setCtesDrawerOpen(false)}
+        onCtesChanged={refreshCtesCount}
+      />
+    )}
+    </>
   );
 }
