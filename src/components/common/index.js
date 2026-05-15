@@ -1,4 +1,5 @@
 export { SectionTable } from './SectionTable';
+export { FormSection } from './FormSection';
 export * from './Container';
 export * from './Dialog';
 export * from './Footer';

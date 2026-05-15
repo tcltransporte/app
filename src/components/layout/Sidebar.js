@@ -127,7 +127,8 @@ const menuItems = [
   },
   {
     text: 'Logística', icon: <LocalShipping />, subMenu: [
-      { text: 'Conhecimentos', path: '/logistics/knowledge' }
+      { text: 'Conhecimentos', path: '/logistics/knowledge' },
+      { text: 'Romaneios', path: '/logistics/shipments' }
     ]
   },
   {

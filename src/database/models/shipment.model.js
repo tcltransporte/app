@@ -1,7 +1,10 @@
 import { DataTypes } from 'sequelize'
 
-/** Tabela `carga` — carga/viagem logística (legado GlobalTCL). */
-export class Carga {
+/**
+ * Tabela `dbo.carga` — romaneio / shipment (legado GlobalTCL).
+ * Vinculada a viagem, clientes (pessoa), CT-e, notas e carta frete.
+ */
+export class Shipment {
   id = {
     field: 'codigo_carga',
     primaryKey: true,
@@ -297,7 +300,7 @@ export class Carga {
     allowNull: true
   }
 
-  dataUpdate = {
+  updatedAt = {
     field: 'DataUpdate',
     type: DataTypes.DATE,
     allowNull: true

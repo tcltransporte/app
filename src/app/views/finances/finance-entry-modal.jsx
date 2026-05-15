@@ -159,6 +159,7 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
                       name="installmentNumber"
                       component={TextField}
                       label="Nº Parcela"
+                      disabled={isPaidEntry(entry)}
                     />
                   </Grid>
                   <Grid item size={{ xs: 12, md: 4 }}>
@@ -166,6 +167,7 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
                       name="dueDate"
                       component={DateField}
                       label="Vencimento"
+                      disabled={isPaidEntry(entry)}
                     />
                   </Grid>
                   <Grid item size={{ xs: 12, md: 4 }}>
@@ -173,6 +175,7 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
                       name="installmentValue"
                       component={NumericField}
                       label="Valor"
+                      disabled={isPaidEntry(entry)}
                     />
                   </Grid>
                   <Grid item size={{ xs: 12 }}>
@@ -182,6 +185,7 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
                       label="Descrição / Observação"
                       multiline
                       rows={2}
+                      disabled={isPaidEntry(entry)}
                     />
                   </Grid>
                 </Grid>
@@ -195,7 +199,7 @@ export default function FinanceEntryModal({ open, onClose, entryId, onSuccess, o
                   type="submit"
                   variant="contained"
                   startIcon={isSubmitting ? null : <SaveIcon />}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isPaidEntry(entry)}
                 >
                   {isSubmitting ? 'Atualizando...' : 'Atualizar'}
                 </Button>

@@ -51,7 +51,7 @@ import { CashClosureStatus } from './models/cashClosureStatus.model.js'
 import { Cte } from './models/cte.model.js'
 import { Nota } from './models/nota.model.js'
 import { CteNota } from './models/cteNota.model.js'
-import { Carga } from './models/carga.model.js'
+import { Shipment } from './models/shipment.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -141,7 +141,7 @@ export class AppContext extends Sequelize {
     this.Cte = this.define('cte', new Cte(), { tableName: 'Ctes' })
     this.Nota = this.define('nota', new Nota(), { tableName: 'nota' })
     this.CteNota = this.define('cteNota', new CteNota(), { tableName: 'CteNotas' })
-    this.Carga = this.define('carga', new Carga(), { tableName: 'carga' })
+    this.Shipment = this.define('shipment', new Shipment(), { tableName: 'carga' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
     this.Company.belongsTo(this.CompanyBusiness, { as: 'companyBusiness', foreignKey: 'companyBusinessId' })
@@ -271,13 +271,19 @@ export class AppContext extends Sequelize {
     this.Cte.belongsTo(this.Partner, { foreignKey: 'customerId', as: 'destinatario' })
     this.Cte.belongsTo(this.Partner, { foreignKey: 'senderId', as: 'sender' })
 
-    this.Carga.belongsTo(this.Partner, { as: 'customer', foreignKey: 'customerId' })
-    this.Carga.belongsTo(this.Partner, { as: 'receiver', foreignKey: 'receiverId' })
-    this.Carga.belongsTo(this.Partner, { as: 'expediter', foreignKey: 'expediterId' })
-    this.Carga.belongsTo(this.Partner, { as: 'thirdPartyPayer', foreignKey: 'thirdPartyPayerId' })
-    this.Carga.belongsTo(this.Company, { as: 'companyBranch', foreignKey: 'companyBranchId' })
-    this.Carga.belongsTo(this.User, { as: 'insertUser', foreignKey: 'insertUserId' })
-    this.Carga.belongsTo(this.User, { as: 'updateUser', foreignKey: 'updateUserId' })
+    this.Shipment.belongsTo(this.Partner, { as: 'customer', foreignKey: 'customerId' })
+    this.Shipment.belongsTo(this.Partner, { as: 'receiver', foreignKey: 'receiverId' })
+    this.Shipment.belongsTo(this.Partner, { as: 'expediter', foreignKey: 'expediterId' })
+    this.Shipment.belongsTo(this.Partner, { as: 'thirdPartyPayer', foreignKey: 'thirdPartyPayerId' })
+    this.Shipment.belongsTo(this.Company, { as: 'companyBranch', foreignKey: 'companyBranchId' })
+    this.Shipment.belongsTo(this.User, { as: 'insertUser', foreignKey: 'insertUserId' })
+    this.Shipment.belongsTo(this.User, { as: 'updateUser', foreignKey: 'updateUserId' })
+    this.Shipment.hasMany(this.Nota, { as: 'notas', foreignKey: 'loadId' })
+    this.Shipment.hasMany(this.Cte, { as: 'ctes', foreignKey: 'loadId' })
+    this.Shipment.hasMany(this.FreightLetter, { as: 'freightLetters', foreignKey: 'loadId' })
+    this.Nota.belongsTo(this.Shipment, { as: 'shipment', foreignKey: 'loadId' })
+    this.Cte.belongsTo(this.Shipment, { as: 'shipment', foreignKey: 'loadId' })
+    this.FreightLetter.belongsTo(this.Shipment, { as: 'shipment', foreignKey: 'loadId' })
 
     /*
     this.Company.addHook('afterFind', afterFind)

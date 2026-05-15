@@ -245,7 +245,7 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
   const canShowBatchBaixar = hasSelectedRows;
   const canShowBatchDesfazer = hasSelectedRows;
   const canShowBatchDelete = hasSelectedRows;
-  const canShowSingleEdit = table.selecteds.length === 1 && !isPaidEntry(table.selecteds[0]);
+  const canShowSingleEdit = table.selecteds.length === 1;
 
   const handleDeleteEntry = React.useCallback(async (row) => {
     if (!row) return;
@@ -638,7 +638,6 @@ export default function FinanceEntriesList({ operationType, title, initialTable,
             id: 'edit',
             label: 'Editar',
             icon: <EditNoteIcon fontSize="small" />,
-            disabled: isPaidEntry(actionMenuRow),
             onClick: () => actionMenuRow && handleEdit(actionMenuRow),
           },
           {
