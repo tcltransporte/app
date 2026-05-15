@@ -19,8 +19,9 @@ export async function findAll(params) {
 
 /**
  * @param {{ filename?: string, name?: string, xml: string }[]} items
+ * @param {{ loadId?: number|string|null }} [options]
  */
-export async function importFromXmls(items) {
+export async function importFromXmls(items, options = {}) {
   try {
     const session = await getSession()
     const companyId = session?.company?.id
@@ -34,6 +35,7 @@ export async function importFromXmls(items) {
     const result = await cteService.importFromXmls({
       companyId,
       companyBusinessId,
+      loadId: options?.loadId,
       items: Array.isArray(items) ? items : []
     })
     return ServiceResponse.success(result)

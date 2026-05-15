@@ -4,6 +4,19 @@ import { getSession } from '@/libs/session'
 import * as shipmentRepository from '@/app/repositories/shipment.repository'
 import * as shipmentLookupRepository from '@/app/repositories/shipment-lookup.repository'
 import * as shipmentCompositionRepository from '@/app/repositories/shipmentComposition.repository'
+import * as cteRepository from '@/app/repositories/cte.repository'
+import * as cteService from '@/app/services/cte.service'
+
+const SHIPMENT_LIST_INCLUDES = [
+  {
+    association: 'customer',
+    attributes: ['id', 'name', 'surname', 'cpfCnpj']
+  },
+  {
+    association: 'receiver',
+    attributes: ['id', 'name', 'surname', 'cpfCnpj']
+  }
+]
 
 const SHIPMENT_INCLUDES = [
   {
@@ -156,13 +169,30 @@ export async function findAll(transaction, params = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200)
   const safePage = Math.max(Number(page) || 1, 1)
 
-  return await shipmentRepository.findAll(transaction, {
+  const result = await shipmentRepository.findAll(transaction, {
     where,
     limit: safeLimit,
     offset: (safePage - 1) * safeLimit,
     order: [[normalizedSortBy, normalizedSortOrder]],
-    include: SHIPMENT_INCLUDES
+    include: SHIPMENT_LIST_INCLUDES
   })
+
+  const loadIds = (result.rows || []).map((row) => row.id)
+  const ctesCountMap = await cteRepository.countByLoadIds(transaction, loadIds)
+
+  return {
+    rows: (result.rows || []).map((row) => ({
+      ...row,
+      ctesCount: ctesCountMap.get(Number(row.id)) || 0
+    })),
+    count: result.count
+  }
+}
+
+export async function findCtesByShipmentId(transaction, shipmentId) {
+  const row = await assertShipmentAccess(transaction, shipmentId)
+  const session = await getSession()
+  return cteService.findByLoadId(transaction, shipmentId, session?.company?.id ?? row.companyBranchId)
 }
 
 function buildWritablePayload(data, { session, isCreate }) {

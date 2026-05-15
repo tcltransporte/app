@@ -247,6 +247,45 @@ export async function findAll(transaction, params = {}) {
 }
 
 /**
+ * CT-es vinculados a um romaneio (`IDCarga`).
+ * @param {import('sequelize').Transaction} transaction
+ * @param {number|string} loadId
+ * @param {number|string|null|undefined} companyId
+ */
+export async function findByLoadId(transaction, loadId, companyId) {
+  const parsedLoadId = Number(loadId)
+  if (!Number.isFinite(parsedLoadId) || parsedLoadId <= 0) {
+    return { rows: [], count: 0 }
+  }
+
+  const where = { loadId: parsedLoadId }
+  if (companyId != null && companyId !== '') {
+    where.companyBranchId = companyId
+  }
+
+  const result = await cteRepository.findAll(transaction, {
+    where,
+    limit: 500,
+    order: [['issuedAt', 'DESC']],
+    include: [
+      {
+        association: 'destinatario',
+        attributes: ['id', 'name', 'surname', 'cpfCnpj']
+      }
+    ]
+  })
+
+  const rows = (result.rows || []).map((row) => {
+    const remetenteFromXml = extractRemetenteDisplayFromXml(row.xml)
+    const destinatarioFromXml = extractDestinatarioDisplayFromXml(row.xml)
+    const { xml: _xml, ...rest } = row
+    return { ...rest, remetenteFromXml, destinatarioFromXml }
+  })
+
+  return { rows, count: rows.length }
+}
+
+/**
  * Atualiza `Origem` / `Destino` em `Ctes` a partir de `cMunIni` / `cMunFim` no XML, resolvendo `codigo_municipio` em `municipio`.
  * @param {{ companyId?: number|string, batchSize?: number, maxRows?: number|null }} params
  */
@@ -344,10 +383,12 @@ export async function backfillOrigemDestinoFromXml(params = {}) {
 /**
  * Importa vários XMLs de CT-e. Cada arquivo roda numa transação própria (commit ou rollback isolado).
  * Ignora chaves já existentes para a filial. Cria conta a receber + vínculos `CteNotas` quando aplicável.
- * @param {{ companyId: number|string, companyBusinessId: number|string, items: { filename?: string, name?: string, xml: string }[] }} params
+ * @param {{ companyId: number|string, companyBusinessId: number|string, loadId?: number|string|null, items: { filename?: string, name?: string, xml: string }[] }} params
  */
 export async function importFromXmls(params = {}) {
-  const { companyId, companyBusinessId, items = [] } = params
+  const { companyId, companyBusinessId, items = [], loadId } = params
+  const parsedLoadId = loadId != null && loadId !== '' ? Number(loadId) : null
+  const resolvedLoadId = Number.isFinite(parsedLoadId) && parsedLoadId > 0 ? parsedLoadId : null
   if (companyId == null || companyId === '') {
     throw new Error('Empresa não informada para importação')
   }
@@ -467,6 +508,7 @@ export async function importFromXmls(params = {}) {
           movementId: titleRecord.id,
           customerId,
           payerId: partner.id,
+          ...(resolvedLoadId != null ? { loadId: resolvedLoadId } : {}),
           ...(originCityId != null ? { originCityId } : {}),
           ...(destinationCityId != null ? { destinationCityId } : {})
         })

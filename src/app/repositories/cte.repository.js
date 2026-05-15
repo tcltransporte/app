@@ -1,4 +1,4 @@
-import { Op } from 'sequelize'
+import { Op, QueryTypes } from 'sequelize'
 import { AppContext } from '@/database'
 
 /**
@@ -78,9 +78,46 @@ export async function updateOrigemDestino(transaction, id, partial) {
 
 /**
  * @param {import('sequelize').Transaction} transaction
- * @param {{ limit?: number, offset?: number, companyBranchId?: number|string }} params
- * @returns {Promise<{ id: number, xml: string|null }[]>}
+ * @param {Array<number|string>} loadIds
+ * @returns {Promise<Map<number, number>>}
  */
+export async function countByLoadIds(transaction, loadIds = []) {
+  const ids = [...new Set(
+    (loadIds || [])
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id) && id > 0)
+  )]
+  if (!ids.length) return new Map()
+
+  const db = new AppContext()
+  return await db.withTransaction(transaction, async (t) => {
+    const keys = ids.map((_, i) => `:id${i}`).join(', ')
+    const replacements = Object.fromEntries(ids.map((v, i) => [`id${i}`, v]))
+
+    const rows = await db.query(
+      `SELECT [IDCarga] AS [loadId], COUNT(*) AS [ctesCount]
+       FROM [dbo].[Ctes]
+       WHERE [IDCarga] IN (${keys})
+       GROUP BY [IDCarga]`,
+      {
+        replacements,
+        transaction: t,
+        type: QueryTypes.SELECT
+      }
+    )
+
+    const map = new Map()
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const loadId = Number(row.loadId)
+      const count = Number(row.ctesCount)
+      if (Number.isFinite(loadId) && loadId > 0) {
+        map.set(loadId, Number.isFinite(count) ? count : 0)
+      }
+    }
+    return map
+  })
+}
+
 export async function findBatchWithXml(transaction, params = {}) {
   const limit = Math.min(Math.max(Number(params.limit) || 100, 1), 500)
   const offset = Math.max(Number(params.offset) || 0, 0)

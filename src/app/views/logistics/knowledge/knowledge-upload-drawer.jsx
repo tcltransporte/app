@@ -20,6 +20,7 @@ import {
   DeleteOutline as DeleteIcon
 } from '@mui/icons-material';
 import * as cteAction from '@/app/actions/cte.action';
+import * as shipmentAction from '@/app/actions/shipment.action';
 import { ServiceStatus } from '@/libs/service';
 import { alert } from '@/libs/alert';
 
@@ -37,7 +38,13 @@ function readFileAsText(file) {
   });
 }
 
-export default function KnowledgeUploadDrawer({ open, onClose, onImported }) {
+export default function KnowledgeUploadDrawer({
+  open,
+  onClose,
+  onImported,
+  loadId = null,
+  shipmentLabel = null
+}) {
   const [files, setFiles] = React.useState([]);
   const [dragOver, setDragOver] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
@@ -115,7 +122,9 @@ export default function KnowledgeUploadDrawer({ open, onClose, onImported }) {
           xml: await readFileAsText(file)
         }))
       );
-      const result = await cteAction.importFromXmls(items);
+      const result = loadId
+        ? await shipmentAction.importCtesForShipment(loadId, items)
+        : await cteAction.importFromXmls(items);
       if (result?.header?.status !== ServiceStatus.SUCCESS) {
         throw result;
       }
@@ -141,7 +150,7 @@ export default function KnowledgeUploadDrawer({ open, onClose, onImported }) {
     } finally {
       setSubmitting(false);
     }
-  }, [files, onClose, onImported, reset]);
+  }, [files, loadId, onClose, onImported, reset]);
 
   return (
     <Drawer
@@ -167,7 +176,9 @@ export default function KnowledgeUploadDrawer({ open, onClose, onImported }) {
         <Stack direction="row" spacing={1} alignItems="center">
           <CloudUploadIcon fontSize="small" />
           <Typography variant="subtitle1" fontWeight={700}>
-            Importar XML de CT-e
+            {loadId
+              ? `Importar CT-e na carga${shipmentLabel ? ` — ${shipmentLabel}` : ''}`
+              : 'Importar XML de CT-e'}
           </Typography>
         </Stack>
         <IconButton onClick={handleClose} size="small" sx={{ color: 'inherit' }} disabled={submitting}>

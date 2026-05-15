@@ -2,6 +2,7 @@
 
 import { AppContext } from "@/database"
 import * as shipmentService from "@/app/services/shipment.service"
+import { importFromXmls } from "@/app/actions/cte.action"
 import { ServiceResponse } from "@/libs/service"
 
 export async function findAll(params) {
@@ -83,6 +84,34 @@ export async function findNcmById(id) {
       const result = await shipmentService.findNcmById(t, id)
       return ServiceResponse.success(result)
     })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+export async function findCtesByShipmentId(shipmentId) {
+  const db = new AppContext()
+  try {
+    return await db.withTransaction(null, async (t) => {
+      const result = await shipmentService.findCtesByShipmentId(t, shipmentId)
+      return ServiceResponse.success(result)
+    })
+  } catch (error) {
+    return ServiceResponse.error(error)
+  }
+}
+
+/**
+ * @param {number|string} shipmentId
+ * @param {{ filename?: string, name?: string, xml: string }[]} items
+ */
+export async function importCtesForShipment(shipmentId, items) {
+  const db = new AppContext()
+  try {
+    await db.withTransaction(null, async (t) => {
+      await shipmentService.findCtesByShipmentId(t, shipmentId)
+    })
+    return await importFromXmls(items, { loadId: shipmentId })
   } catch (error) {
     return ServiceResponse.error(error)
   }

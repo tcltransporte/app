@@ -1,14 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Badge } from '@mui/material';
+import { Badge, IconButton } from '@mui/material';
 import {
   Search as SearchIcon,
   FilterList as FilterIcon,
   Add as AddIcon,
-  Event as EventIcon
+  Event as EventIcon,
+  MoreVert as MoreVertIcon,
+  EditNote as EditNoteIcon,
+  Description as DescriptionIcon
 } from '@mui/icons-material';
-import { Container, Table, Toolbar, RangeModal } from '@/components/common';
+import { Container, Table, Toolbar, RangeModal, ActionMenu } from '@/components/common';
+import UnifiedChip from '@/components/common/UnifiedChip';
 import { useTable, useFilter, useRangeFilter } from '@/hooks';
 import * as shipmentAction from '@/app/actions/shipment.action';
 import { ServiceStatus } from '@/libs/service';
@@ -16,6 +20,7 @@ import { alert } from '@/libs/alert';
 import { formatSqlDate } from '@/libs/date';
 import ShipmentFilter from './shipment-filter';
 import ShipmentFormModal from './shipment-form-modal';
+import ShipmentCtesDrawer from './shipment-ctes-drawer';
 
 function partnerLabel(partner) {
   if (!partner) return '';
@@ -35,6 +40,9 @@ export default function ShipmentList({
   const filter = useFilter({ initialFilters });
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState(null);
+  const [ctesDrawer, setCtesDrawer] = React.useState({ open: false, shipmentId: null, label: '' });
+  const [actionMenuAnchor, setActionMenuAnchor] = React.useState(null);
+  const [actionMenuRow, setActionMenuRow] = React.useState(null);
 
   const handleOpenCreate = React.useCallback(() => {
     setEditingId(null);
@@ -50,6 +58,29 @@ export default function ShipmentList({
   const handleCloseForm = React.useCallback(() => {
     setFormOpen(false);
     setEditingId(null);
+  }, []);
+
+  const handleOpenCtesDrawer = React.useCallback((row) => {
+    if (!row?.id) return;
+    const label = row.transportDocumentId
+      ? `Doc. ${row.transportDocumentId}`
+      : String(row.id);
+    setCtesDrawer({ open: true, shipmentId: row.id, label });
+  }, []);
+
+  const handleCloseCtesDrawer = React.useCallback(() => {
+    setCtesDrawer({ open: false, shipmentId: null, label: '' });
+  }, []);
+
+  const handleOpenActionMenu = React.useCallback((event, row) => {
+    event.stopPropagation();
+    setActionMenuAnchor(event.currentTarget);
+    setActionMenuRow(row);
+  }, []);
+
+  const handleCloseActionMenu = React.useCallback(() => {
+    setActionMenuAnchor(null);
+    setActionMenuRow(null);
   }, []);
 
   const rangeFilter = useRangeFilter({
@@ -135,7 +166,7 @@ export default function ShipmentList({
     {
       field: 'transportDocumentId',
       headerName: 'Nº Doc',
-      width: 100,
+      width: 100
     },
     {
       field: 'customer',
@@ -170,8 +201,59 @@ export default function ShipmentList({
       width: 120,
       align: 'right',
       renderCell: (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    },
+    {
+      field: 'ctesCount',
+      headerName: 'CT-es',
+      width: 88,
+      align: 'center',
+      sortable: false,
+      renderCell: (value, row) => {
+        const count = Number(value) || 0;
+        return (
+          <span title="Ver CT-es da carga">
+            <UnifiedChip
+              label={String(count)}
+              color={count > 0 ? 'primary' : 'default'}
+              variant="filled"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenCtesDrawer(row);
+              }}
+              chipSx={{
+                cursor: 'pointer',
+                minWidth: 32,
+                boxShadow: (theme) =>
+                  count > 0 ? `0 2px 4px ${theme.palette.primary.main}44` : 'none',
+                '&:hover': {
+                  opacity: 0.9,
+                  transform: 'scale(1.05)',
+                  boxShadow: (theme) =>
+                    count > 0 ? `0 4px 8px ${theme.palette.primary.main}66` : undefined
+                },
+                transition: 'all 0.2s'
+              }}
+            />
+          </span>
+        );
+      }
+    },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 50,
+      align: 'center',
+      sortable: false,
+      renderCell: (_, row) => (
+        <IconButton
+          size="small"
+          onClick={(e) => handleOpenActionMenu(e, row)}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
+      )
     }
-  ]), []);
+  ]), [handleOpenCtesDrawer, handleOpenActionMenu]);
 
   React.useEffect(() => {
     if (table.orderedColumns.length === 0 && columns.length > 0) {
@@ -297,6 +379,36 @@ export default function ShipmentList({
         shipmentId={editingId}
         onClose={handleCloseForm}
         onSuccess={() => fetchTable()}
+      />
+
+      <ShipmentCtesDrawer
+        open={ctesDrawer.open}
+        shipmentId={ctesDrawer.shipmentId}
+        shipmentLabel={ctesDrawer.label}
+        onClose={handleCloseCtesDrawer}
+        onCtesChanged={() => fetchTable()}
+      />
+
+      <ActionMenu
+        open={Boolean(actionMenuAnchor)}
+        anchorEl={actionMenuAnchor}
+        onClose={handleCloseActionMenu}
+        placement="bottom-end"
+        zoomAwareVertical
+        items={[
+          {
+            id: 'edit',
+            label: 'Editar',
+            icon: <EditNoteIcon fontSize="small" />,
+            onClick: () => actionMenuRow && handleEdit(actionMenuRow)
+          },
+          {
+            id: 'ctes',
+            label: `Ver CT-es (${Number(actionMenuRow?.ctesCount) || 0})`,
+            icon: <DescriptionIcon fontSize="small" />,
+            onClick: () => actionMenuRow && handleOpenCtesDrawer(actionMenuRow)
+          }
+        ]}
       />
     </Container>
   );
